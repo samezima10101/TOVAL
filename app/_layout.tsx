@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 export default function RootLayout() {
@@ -8,23 +8,23 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <StatusBar hidden={true} />
       <SafeAreaView style={styles.globalContainer}>
-        {/* 🔝 グローバルヘッダー：ポイントゲージ */}
+        {/* 🔝 グローバルヘッダー：ポイントゲージ
         <View style={styles.globalHeader}>
           <Text style={styles.pointText}>120 NT</Text>
           <View style={styles.gaugeBackground}>
             <View style={[styles.gaugeFill]} />
           </View>
-        </View>
+        </View>*/}
 
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" options={{ title: "ホーム" }} />
           <Stack.Screen name="memory" options={{ title: "メモリー" }} />
         </Stack>
 
-        {/* ⬇️ グローバルフッター：広告バナー枠 */}
+        {/* ⬇️ グローバルフッター：広告バナー枠 
         <View style={styles.adBanner}>
           <Text style={styles.adText}>Habit App (広告スペース)</Text>
-        </View>
+        </View>*/}
       </SafeAreaView>
     </SafeAreaProvider>
   );

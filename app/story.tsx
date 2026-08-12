@@ -3,10 +3,10 @@ import { router } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const gemImage = require("@/assets/faces/faceG01.png");
-const altaImage = require("@/assets/faces/faceA01.png");
+const gemImage = require("@/assets/faces/G01-1-dot.png");
+const altaImage = require("@/assets/faces/A01-1.png");
 const speaker = "ジェム";
-const text = "おつかれ～ \n今日も頑張ったね";
+const text = "おつかれ～ 今日も頑張ったね";
 
 export default function StoryScreen() {
   const theme = Colors;
@@ -21,12 +21,9 @@ export default function StoryScreen() {
           onPress={() => router.replace("/")}
           style={styles.closeButton}
         >
-          <Text style={[styles.closeText, { color: theme.textSub }]}>
-            ホームへ戻る
-          </Text>
+          <Text style={[styles.closeText, { color: theme.textSub }]}>戻る</Text>
         </TouchableOpacity>
       </View>
-
       {/* 2. キャラクター画像表示エリア */}
       <View style={styles.charactersContainer}>
         {/* 左のキャラクター（上司） */}
@@ -44,21 +41,29 @@ export default function StoryScreen() {
       </View>
 
       {/* 3. メッセージウィンドウ（タップで次へ） */}
-      <TouchableOpacity
-        style={[
-          styles.messageBox,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-        onPress={() => router.replace("/")}
-      >
-        <Text style={[styles.speakerName, { color: theme.primary }]}>
-          {speaker}
-        </Text>
-        <Text style={[styles.messageText, { color: theme.text }]}>{text}</Text>
-        <Text style={[styles.tapPrompt, { color: theme.textSub }]}>
-          Tap to next ▼
-        </Text>
-      </TouchableOpacity>
+      <View style={{ alignItems: "center" }}>
+        <TouchableOpacity
+          activeOpacity={1}
+          style={[
+            styles.messageBox,
+            {
+              backgroundColor: theme.surface,
+              borderColor: theme.border,
+            },
+          ]}
+          onPress={() => router.replace("/")}
+        >
+          <Text style={[styles.speakerName, { color: theme.primary }]}>
+            {speaker}
+          </Text>
+          <Text style={[styles.messageText, { color: theme.text }]}>
+            {text}
+          </Text>
+          <Text style={[styles.tapPrompt, { color: theme.textSub }]}>
+            Tap to next ▼
+          </Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 }
@@ -90,19 +95,17 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   characterImage: {
-    width: "50%",
-    height: "80%",
-  },
-  activeCharacter: {
-    opacity: 1.0,
-  },
-  inactiveCharacter: {
-    opacity: 0.5, // 話していない方を少し暗く
+    width: "45%",
+    height: "120%",
+    marginHorizontal: -10,
+    marginBottom: -20,
   },
   messageBox: {
-    minHeight: 250,
+    height: 120,
+    width: 500,
     margin: 20,
-    padding: 30,
+    padding: 20,
+    paddingLeft: 40,
     borderWidth: 2,
     borderRadius: 15,
     shadowColor: "#000",
@@ -110,16 +113,18 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 6,
     elevation: 5,
-    marginBottom: 10,
+    marginBottom: 20,
     marginTop: -40,
+    opacity: 0.9,
   },
   speakerName: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 10,
+    marginBottom: 5,
+    marginTop: -10,
   },
   messageText: {
-    fontSize: 18,
+    fontSize: 16,
     lineHeight: 28,
   },
   tapPrompt: {
