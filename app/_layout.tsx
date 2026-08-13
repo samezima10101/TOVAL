@@ -18,6 +18,15 @@ export default function RootLayout() {
 
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" options={{ title: "ホーム" }} />
+          <Stack.Screen
+            name="timer-modal"
+            options={{
+              presentation: "modal",
+              title: "タイマー設定",
+            }}
+          />
+          <Stack.Screen name="timer" options={{ title: "タイマー" }} />
+          <Stack.Screen name="story" options={{ title: "ストーリー" }} />
           <Stack.Screen name="memory" options={{ title: "メモリー" }} />
         </Stack>
 

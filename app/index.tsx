@@ -17,10 +17,7 @@ export default function HomeScreen() {
       <View style={styles.footer}>
         <PrimaryButton
           title="集中モードを開始"
-          onPress={() => router.push("/timer")}
-          style={{
-            width: "60%",
-          }}
+          onPress={() => router.push("/timer-modal")}
         />
         <TouchableOpacity onPress={() => router.push("/memory")}>
           <Text style={[styles.footerLink, { color: theme.textSub }]}>
