@@ -3,8 +3,8 @@ import { router } from "expo-router";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const gemImage = require("@/assets/faces/faceG01.png");
-const altaImage = require("@/assets/faces/faceA01.png");
+const gemImage = require("@/assets/faces/G01-1.png");
+const altaImage = require("@/assets/faces/A01-1.png");
 const speaker = "ジェム";
 const text = "おつかれ～ \n今日も頑張ったね";
 
