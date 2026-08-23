@@ -23,7 +23,13 @@ export default function MemoryScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
-          onPress={() => router.replace("/")}
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace("/");
+            }
+          }}
           style={styles.backButton}
           accessibilityRole="button"
           accessibilityLabel="ホームへ戻る"
