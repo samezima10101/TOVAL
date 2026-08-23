@@ -1,50 +1,38 @@
-# Welcome to your Expo app 👋
+# My-June Alpha
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+My-June は、1件のタスクに集中するオフラインの Expo アプリです。Alpha では、実時間で復元できるタイマー、1秒=1 NT の報酬、日次完了、全3話のストーリー解放と端末内メモリーを提供します。
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## 開発
 
 ```bash
-npm run reset-project
+npm install
+npm run start
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+対象は Expo SDK 54 の iOS / Android（Expo Go）です。SDK 54 は React Native 0.81、React 19.1 を対象とし、Android 7+ / iOS 15.1+ が公式の最小環境です。
 
-## Learn more
+## 検証
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm run lint
+npx tsc --noEmit
+npm test
+npx expo-doctor
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+## Alpha の仕様
 
-## Join the community
+- タスクは1件。初回にタスク名を入力し、後から編集できます。
+- タイマーは0分から23時間55分まで、5分単位または1時間単位で設定できます。
+- 予定時間前のキャンセルは報酬・完了・ストーリー解放を発生させません。予定時間到達後は終了だけが可能です。
+- 終了ボタンを押した時刻までの実経過秒をNTとして保存します。アプリを閉じても開始時刻から復元します。
+- その日の初回完了時に次の1話だけ解放し、全3話解放後も完了とNT獲得は継続します。
+- ストーリー再生（メモリーを含む）は報酬を発生させません。
 
-Join our community of developers creating universal apps.
+状態は `@react-native-async-storage/async-storage` のバージョン付きスナップショット1件へ保存します。Alpha ではクラウド同期、通知、ショップ、イベント、不正対策、複数タスクを対象外とします。
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+ストーリー本文は `habit-test` の HEAD `c3eb5ab` にある `episode01.ts`〜`episode03.ts` と `StoryData.ts` のタイトルを、実行時依存なしの型付き静的データとして移植しています。既存の My-June の立ち絵4枚（Gem / Alta）へ表情を対応付けています。
+
+## 端末で確認する項目
+
+初回入力と再起動後の保持、0分即終了、通常カウント、期限前キャンセル、バックグラウンド／force-close 後の復元、期限後の延長、終了連打、同日複数完了、日付跨ぎ、3日分のストーリー解放、全話解放後の継続報酬、メモリー再生を iOS / Android 実機または Expo Go で確認してください。

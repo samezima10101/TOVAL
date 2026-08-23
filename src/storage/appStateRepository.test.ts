@@ -1,0 +1,88 @@
+import mockAsyncStorage from "@react-native-async-storage/async-storage/jest/async-storage-mock";
+
+import {
+  createAppStateRepository,
+  createInitialAppState,
+  parsePersistedState,
+} from "./appStateRepository";
+
+jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
+
+class FakeStorage {
+  value: string | null = null;
+  shouldFailRead = false;
+  shouldFailWrite = false;
+
+  async getItem(): Promise<string | null> {
+    if (this.shouldFailRead) {
+      throw new Error("read failed");
+    }
+    return this.value;
+  }
+
+  async setItem(_key: string, value: string): Promise<void> {
+    if (this.shouldFailWrite) {
+      throw new Error("write failed");
+    }
+    this.value = value;
+  }
+}
+
+describe("app state repository", () => {
+  it("returns a safe initial state for missing or corrupted data", async () => {
+    const storage = new FakeStorage();
+    const repository = createAppStateRepository(storage);
+
+    await expect(repository.load()).resolves.toEqual(createInitialAppState());
+    storage.value = "{not-json";
+    await expect(repository.load()).resolves.toEqual(createInitialAppState());
+    storage.value = JSON.stringify({ schemaVersion: 1, taskName: 42 });
+    await expect(repository.load()).resolves.toEqual(createInitialAppState());
+  });
+
+  it("migrates a compatible legacy snapshot and rejects unknown current data", () => {
+    const legacy = parsePersistedState(
+      JSON.stringify({
+        schemaVersion: 0,
+        taskName: "旧タスク",
+        totalNt: 12,
+        totalCompletions: 1,
+      }),
+    );
+    expect(legacy).toMatchObject({
+      schemaVersion: 1,
+      taskName: "旧タスク",
+      totalNt: 12,
+      totalCompletions: 1,
+    });
+    expect(parsePersistedState(JSON.stringify({ schemaVersion: 99 }))).toBeNull();
+  });
+
+  it("writes and reads one validated snapshot", async () => {
+    const storage = new FakeStorage();
+    const repository = createAppStateRepository(storage);
+    const state = { ...createInitialAppState(), taskName: "読書" };
+
+    await repository.save(state);
+    expect(storage.value).toContain('"taskName":"読書"');
+    await expect(repository.load()).resolves.toEqual(state);
+  });
+
+  it("returns retryable errors instead of swallowing storage failures", async () => {
+    const readStorage = new FakeStorage();
+    readStorage.shouldFailRead = true;
+    await expect(createAppStateRepository(readStorage).load()).rejects.toMatchObject({
+      name: "AppStateStorageError",
+      operation: "read",
+    });
+
+    const writeStorage = new FakeStorage();
+    writeStorage.shouldFailWrite = true;
+    await expect(
+      createAppStateRepository(writeStorage).save({ ...createInitialAppState(), taskName: "読書" }),
+    ).rejects.toMatchObject({
+      name: "AppStateStorageError",
+      operation: "write",
+    });
+  });
+});

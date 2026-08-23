@@ -1,153 +1,203 @@
-import { Colors } from "@/constants/theme";
 import { router } from "expo-router";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import React from "react";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+
+import { Colors } from "@/constants/theme";
+import { formatLocalDate } from "@/src/domain/date";
+import { STORY_EPISODES } from "@/src/domain/storyData";
+import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function MemoryScreen() {
-  const theme = Colors;
-  const memoryList = [
-    {
-      id: 1,
-      displayTitle: "Episode 1",
-      displayDate: "2024-06-01",
-      isUnlocked: true,
-    },
-  ];
+  const { state } = useAppState();
+
+  if (!state) {
+    return null;
+  }
+
+  const unlocked = new Map(
+    state.unlockedStories.map((story) => [story.episodeId, story.unlockedDate]),
+  );
+  const allUnlocked = unlocked.size === STORY_EPISODES.length;
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
-      {/* ヘッダー部分 */}
-      <View style={[styles.header, { borderBottomColor: theme.border }]}>
+    <View style={styles.container}>
+      <View style={styles.header}>
         <TouchableOpacity
           onPress={() => router.replace("/")}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="ホームへ戻る"
         >
-          <Text style={[styles.backText, { color: theme.textSub }]}>
-            ＜ ホーム
-          </Text>
+          <Text style={styles.backText}>＜ ホーム</Text>
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.text }]}>
-          メモリー
-        </Text>
+        <Text style={styles.headerTitle}>メモリー</Text>
         <View style={styles.headerSpacer} />
       </View>
 
-      {/* エピソード一覧 */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {memoryList.map((item) => (
-          <View
-            key={item.id}
-            style={[
-              styles.card,
-              {
-                backgroundColor: theme.surface,
-                borderColor: item.isUnlocked ? theme.primary : theme.border,
-                opacity: item.isUnlocked ? 1.0 : 0.6,
-              },
-            ]}
-          >
-            {/* 左側：テキスト情報 */}
-            <View style={styles.cardContent}>
-              <Text
-                style={[
-                  styles.episodeNum,
-                  { color: item.isUnlocked ? theme.primary : theme.textSub },
-                ]}
-              >
-                Episode {String(item.id).padStart(2, "0")}
-              </Text>
-              <Text
-                style={[
-                  styles.episodeTitle,
-                  { color: item.isUnlocked ? theme.text : theme.textSub },
-                ]}
-              >
-                {item.displayTitle}
-              </Text>
-              <Text style={[styles.unlockDate, { color: theme.textSub }]}>
-                解放日: {item.displayDate}
-              </Text>
-            </View>
-
-            {/* 右側：再生ボタン */}
-            <TouchableOpacity
-              style={[
-                styles.playButton,
-                {
-                  backgroundColor: item.isUnlocked
-                    ? theme.primary
-                    : theme.border,
-                },
-              ]}
-              disabled={!item.isUnlocked}
-              onPress={() => {
-                router.push("/story");
-              }}
-            >
-              <Text
-                style={[
-                  styles.playButtonText,
-                  { color: item.isUnlocked ? "#FFFFFF" : theme.textSub },
-                ]}
-              >
-                {item.isUnlocked ? "▶ 再生" : "🔒"}
-              </Text>
-            </TouchableOpacity>
+        <Text style={styles.intro}>
+          解放したストーリーを、いつでも読み返せます。
+        </Text>
+        {allUnlocked ? (
+          <View style={styles.completeBanner}>
+            <Text style={styles.completeText}>すべて解放済み</Text>
           </View>
-        ))}
+        ) : null}
+        {STORY_EPISODES.map((episode) => {
+          const unlockedDate = unlocked.get(episode.id);
+          const isUnlocked = Boolean(unlockedDate);
+          return (
+            <View
+              key={episode.id}
+              style={[styles.card, isUnlocked ? styles.unlockedCard : styles.lockedCard]}
+            >
+              <View style={styles.cardContent}>
+                <Text style={[styles.episodeNum, !isUnlocked && styles.lockedText]}>
+                  Episode {String(episode.id).padStart(2, "0")}
+                </Text>
+                <Text style={[styles.episodeTitle, !isUnlocked && styles.lockedText]}>
+                  {isUnlocked ? episode.title : "未解放のストーリー"}
+                </Text>
+                <Text style={styles.unlockDate}>
+                  {isUnlocked && unlockedDate
+                    ? `解放日: ${formatLocalDate(unlockedDate)}`
+                    : "タスク完了で解放"}
+                </Text>
+              </View>
+              <TouchableOpacity
+                style={[styles.playButton, !isUnlocked && styles.lockedPlayButton]}
+                disabled={!isUnlocked}
+                onPress={() =>
+                  router.push({
+                    pathname: "/story",
+                    params: { episode: String(episode.id), source: "memory" },
+                  })
+                }
+                accessibilityRole="button"
+                accessibilityLabel={isUnlocked ? `${episode.title}を再生` : "未解放"}
+                accessibilityState={{ disabled: !isUnlocked }}
+              >
+                <Text style={styles.playButtonText}>{isUnlocked ? "▶ 再生" : "🔒"}</Text>
+              </TouchableOpacity>
+            </View>
+          );
+        })}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 
-// 💅 スタイルシート（変更なしですがそのまま残します）
 const styles = StyleSheet.create({
-  container: { flex: 1 },
+  container: {
+    backgroundColor: Colors.background,
+    flex: 1,
+  },
   header: {
-    flexDirection: "row",
     alignItems: "center",
+    borderBottomColor: Colors.border,
+    borderBottomWidth: 1,
+    flexDirection: "row",
     justifyContent: "space-between",
     paddingHorizontal: 20,
-    paddingVertical: 15,
-    borderBottomWidth: 1,
+    paddingVertical: 13,
   },
-  backButton: { paddingVertical: 10, paddingRight: 10 },
-  backText: { fontSize: 16, fontWeight: "bold" },
-  headerTitle: { fontSize: 18, fontWeight: "bold" },
-  headerSpacer: { width: 60 },
-  scrollContainer: { padding: 20, paddingBottom: 40 },
+  backButton: {
+    paddingRight: 10,
+    paddingVertical: 8,
+  },
+  backText: {
+    color: Colors.textSub,
+    fontSize: 15,
+    fontWeight: "700",
+  },
+  headerTitle: {
+    color: Colors.text,
+    fontSize: 19,
+    fontWeight: "800",
+  },
+  headerSpacer: {
+    width: 62,
+  },
+  scrollContainer: {
+    padding: 20,
+    paddingBottom: 34,
+  },
+  intro: {
+    color: Colors.textSub,
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 16,
+  },
+  completeBanner: {
+    backgroundColor: "#E7F7ED",
+    borderColor: Colors.accent,
+    borderRadius: 10,
+    borderWidth: 1,
+    marginBottom: 14,
+    padding: 12,
+  },
+  completeText: {
+    color: Colors.accent,
+    fontSize: 14,
+    fontWeight: "800",
+    textAlign: "center",
+  },
   card: {
-    flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 15,
-    marginBottom: 15,
+    borderRadius: 14,
     borderWidth: 2,
-    borderRadius: 12,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 14,
+    padding: 15,
   },
-  cardContent: { flex: 1, paddingRight: 15 },
-  episodeNum: { fontSize: 14, fontWeight: "bold", marginBottom: 4 },
-  episodeTitle: { fontSize: 16, fontWeight: "bold", marginBottom: 8 },
-  unlockDate: { fontSize: 12 },
+  unlockedCard: {
+    backgroundColor: Colors.surface,
+    borderColor: Colors.primary,
+  },
+  lockedCard: {
+    backgroundColor: "#EEF1F5",
+    borderColor: Colors.border,
+    opacity: 0.72,
+  },
+  cardContent: {
+    flex: 1,
+    paddingRight: 12,
+  },
+  episodeNum: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 5,
+  },
+  episodeTitle: {
+    color: Colors.text,
+    fontSize: 17,
+    fontWeight: "800",
+    lineHeight: 24,
+  },
+  lockedText: {
+    color: Colors.textSub,
+  },
+  unlockDate: {
+    color: Colors.textSub,
+    fontSize: 12,
+    marginTop: 7,
+  },
   playButton: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    justifyContent: "center",
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: Colors.primary,
+    borderRadius: 32,
+    height: 64,
+    justifyContent: "center",
+    width: 64,
   },
-  playButtonText: { fontSize: 14, fontWeight: "bold" },
+  lockedPlayButton: {
+    backgroundColor: Colors.border,
+  },
+  playButtonText: {
+    color: Colors.surface,
+    fontSize: 12,
+    fontWeight: "800",
+  },
 });
