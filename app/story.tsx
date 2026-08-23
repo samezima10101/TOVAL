@@ -62,7 +62,9 @@ export default function StoryScreen() {
           メモリーから解放済みのストーリーを選んでください。
         </Text>
         <TouchableOpacity
-          onPress={() => router.replace(source === "memory" ? "/memory" : "/")}
+          onPress={() =>
+            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
+          }
           style={styles.homeButton}
           accessibilityRole="button"
           accessibilityLabel="戻る"
@@ -80,7 +82,11 @@ export default function StoryScreen() {
 
   const handleNext = () => {
     if (isLastLine) {
-      router.replace(source === "memory" ? "/memory" : "/");
+      if (source === "memory") {
+        router.dismissTo("/memory");
+      } else {
+        router.replace("/");
+      }
       return;
     }
     setLineIndex((index) => index + 1);
@@ -93,7 +99,9 @@ export default function StoryScreen() {
           Episode {String(episode.id).padStart(2, "0")}　{episode.title}
         </Text>
         <TouchableOpacity
-          onPress={() => router.replace(source === "memory" ? "/memory" : "/")}
+          onPress={() =>
+            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
+          }
           style={styles.closeButton}
           accessibilityRole="button"
           accessibilityLabel="ストーリーを閉じる"
