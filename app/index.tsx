@@ -60,27 +60,6 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.intro}>
-          <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
-          <Text style={styles.taskName}>
-            {state.taskName || "タスクを設定してください"}
-          </Text>
-          <View style={styles.statusRow}>
-            <View
-              style={[styles.statusDot, completedToday && styles.statusDotDone]}
-            />
-            <Text style={styles.statusText}>
-              {completedToday ? "今日のタスクは完了" : "今日は未完了"}
-            </Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <Stat label="累計完了" value={`${state.totalCompletions}回`} />
-          <Stat label="ストーリー" value={`${unlockedCount} / 3話`} />
-          <Stat label="現在のNT" value={`${state.totalNt} NT`} />
-        </View>
-
         <View style={styles.storyCard}>
           <View style={styles.storyCardHeader}>
             <View style={styles.storyCardCopy}>
@@ -124,6 +103,27 @@ export default function HomeScreen() {
           </View>
         </View>
 
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
+          <Text style={styles.taskName}>
+            {state.taskName || "タスクを設定してください"}
+          </Text>
+          <View style={styles.statusRow}>
+            <View
+              style={[styles.statusDot, completedToday && styles.statusDotDone]}
+            />
+            <Text style={styles.statusText}>
+              {completedToday ? "今日のタスクは完了" : "今日は未完了"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.statsCard}>
+          <Stat label="累計完了" value={`${state.totalCompletions}回`} />
+          <Stat label="ストーリー" value={`${unlockedCount} / 3話`} />
+          <Stat label="現在のNT" value={`${state.totalNt} NT`} />
+        </View>
+
         {state.activeTimer ? (
           <TouchableOpacity
             style={styles.activeBanner}
@@ -165,6 +165,14 @@ export default function HomeScreen() {
             accessibilityLabel="メモリーを開く"
           >
             <Text style={styles.linkText}>📖 メモリーを見る</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/log")}
+            style={styles.linkButton}
+            accessibilityRole="button"
+            accessibilityLabel="ログを開く"
+          >
+            <Text style={styles.linkText}>📅 ログを見る</Text>
           </TouchableOpacity>
         </View>
 

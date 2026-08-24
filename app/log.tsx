@@ -1,7 +1,9 @@
 import CustomCalendar from "@/components/log/CustomCalendar";
 import LogModal from "@/components/log/LogModal";
+import { Colors } from "@/constants/theme";
+import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function CalendarScreen() {
   const mockLoginData: Record<
@@ -34,6 +36,14 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
+      <TouchableOpacity
+        onPress={() => router.dismissTo("/")}
+        style={styles.backButton}
+        accessibilityRole="button"
+        accessibilityLabel="ホームへ戻る"
+      >
+        <Text style={styles.backText}>＜ ホーム</Text>
+      </TouchableOpacity>
       <CustomCalendar
         selectedDate={selectedDate}
         loginData={mockLoginData}
@@ -55,5 +65,14 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 16,
     backgroundColor: "#fff",
+  },
+  backButton: {
+    paddingRight: 10,
+    paddingVertical: 8,
+  },
+  backText: {
+    color: Colors.textSub,
+    fontSize: 15,
+    fontWeight: "700",
   },
 });
