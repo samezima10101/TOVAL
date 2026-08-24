@@ -1,15 +1,9 @@
 import { router, useLocalSearchParams } from "expo-router";
 import React from "react";
-import {
-  Image,
-  ImageSourcePropType,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import StoryCharacters from "@/components/StoryCharacters";
 import { Colors } from "@/constants/theme";
 import {
   getStoryEpisode,
@@ -17,21 +11,8 @@ import {
   STORY_CHARACTER_BY_SPEAKER,
   STORY_CHARACTER_NAMES,
 } from "@/src/domain/storyData";
-import { EpisodeId, Expression, StoryCharacter } from "@/src/domain/types";
+import { EpisodeId } from "@/src/domain/types";
 import { useAppState } from "@/src/state/AppStateProvider";
-
-const faceAssets: Record<StoryCharacter, Record<Expression, ImageSourcePropType>> = {
-  gem: {
-    normal: require("@/assets/faces/G01-1.png"),
-    talk: require("@/assets/faces/G01-2.png"),
-    doubt: require("@/assets/faces/G01-2.png"),
-  },
-  alta: {
-    normal: require("@/assets/faces/A01-1.png"),
-    talk: require("@/assets/faces/A01-2.png"),
-    doubt: require("@/assets/faces/A01-2.png"),
-  },
-};
 
 function parseEpisodeId(value: string | string[] | undefined): EpisodeId | null {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -43,7 +24,8 @@ export default function StoryScreen() {
   const { state } = useAppState();
   const params = useLocalSearchParams<{ episode?: string; source?: string }>();
   const episodeId = parseEpisodeId(params.episode);
-  const source = params.source === "memory" ? "memory" : "unlock";
+  const source =
+    params.source === "memory" ? "memory" : params.source === "home" ? "home" : "unlock";
   const episode = episodeId ? getStoryEpisode(episodeId) : undefined;
   const isUnlocked = Boolean(
     episodeId && state?.unlockedStories.some((story) => story.episodeId === episodeId),
@@ -77,9 +59,6 @@ export default function StoryScreen() {
 
   const line = episode.lines[lineIndex];
   const isLastLine = lineIndex === episode.lines.length - 1;
-  const bossCharacter = STORY_CHARACTER_BY_SPEAKER.boss;
-  const subCharacter = STORY_CHARACTER_BY_SPEAKER.sub;
-
   const handleNext = () => {
     if (isLastLine) {
       if (source === "memory") {
@@ -110,20 +89,11 @@ export default function StoryScreen() {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.charactersContainer}>
-        <Image
-          source={faceAssets[bossCharacter][line.left]}
-          style={[styles.characterImage, line.speaker === "boss" ? styles.activeCharacter : styles.inactiveCharacter]}
-          resizeMode="contain"
-          accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
-        />
-        <Image
-          source={faceAssets[subCharacter][line.right]}
-          style={[styles.characterImage, line.speaker === "sub" ? styles.activeCharacter : styles.inactiveCharacter]}
-          resizeMode="contain"
-          accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
-        />
-      </View>
+      <StoryCharacters
+        leftExpression={line.left}
+        rightExpression={line.right}
+        activeSpeaker={line.speaker}
+      />
 
       <TouchableOpacity
         style={styles.messageBox}
@@ -172,23 +142,6 @@ const styles = StyleSheet.create({
     color: Colors.textSub,
     fontSize: 13,
     fontWeight: "700",
-  },
-  charactersContainer: {
-    alignItems: "flex-end",
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    minHeight: 240,
-  },
-  characterImage: {
-    height: "88%",
-    width: "50%",
-  },
-  activeCharacter: {
-    opacity: 1,
-  },
-  inactiveCharacter: {
-    opacity: 0.42,
   },
   messageBox: {
     backgroundColor: Colors.surface,

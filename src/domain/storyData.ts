@@ -3,6 +3,7 @@ import {
   Speaker,
   StoryCharacter,
   StoryEpisode,
+  UnlockedStory,
 } from "./types";
 
 /** Character identity is kept with story content, not inferred by the UI. */
@@ -104,6 +105,14 @@ export const STORY_EPISODES: readonly StoryEpisode[] = episodes;
 
 export function getStoryEpisode(id: number): StoryEpisode | undefined {
   return episodes.find((episode) => episode.id === id);
+}
+
+/** The most recently unlocked episode is the home screen's talk entry. */
+export function getLatestUnlockedEpisode(
+  unlockedStories: readonly UnlockedStory[],
+): StoryEpisode | undefined {
+  const latestStory = unlockedStories[unlockedStories.length - 1];
+  return latestStory ? getStoryEpisode(latestStory.episodeId) : undefined;
 }
 
 export function isEpisodeId(value: number): value is EpisodeId {

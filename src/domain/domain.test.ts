@@ -1,6 +1,7 @@
 import { localDateKey } from "./date";
 import { cancelTimer, completeTimer } from "./completion";
 import { formatDuration, getTimerSnapshot } from "./timer";
+import { getLatestUnlockedEpisode } from "./storyData";
 import { AppState, ActiveTimer } from "./types";
 
 function stateWithTimer(timer: ActiveTimer): AppState {
@@ -57,6 +58,18 @@ describe("timer calculations", () => {
     expect(formatDuration(3_599)).toBe("00:59:59");
     expect(formatDuration(3_600)).toBe("01:00:00");
     expect(formatDuration(86_101)).toBe("23:55:01");
+  });
+});
+
+describe("home story talk entry", () => {
+  it("has no entry without an unlocked story and targets the latest unlock", () => {
+    expect(getLatestUnlockedEpisode([])).toBeUndefined();
+    expect(
+      getLatestUnlockedEpisode([
+        { episodeId: 1, unlockedDate: "2025-01-01" },
+        { episodeId: 2, unlockedDate: "2025-01-02" },
+      ]),
+    ).toMatchObject({ id: 2, title: "上司からの労い" });
   });
 });
 
