@@ -1,133 +1,211 @@
-import { Colors } from "@/constants/theme";
-import { router } from "expo-router";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import React from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const gemImage = require("@/assets/faces/G01-1.png");
-const altaImage = require("@/assets/faces/A01-1.png");
-const speaker = "ジェム";
-const text = "おつかれ～ \n今日も頑張ったね";
+import StoryCharacters from "@/components/StoryCharacters";
+import { Colors } from "@/constants/theme";
+import {
+  getStoryEpisode,
+  isEpisodeId,
+  STORY_CHARACTER_BY_SPEAKER,
+  STORY_CHARACTER_NAMES,
+} from "@/src/domain/storyData";
+import { EpisodeId } from "@/src/domain/types";
+import { useAppState } from "@/src/state/AppStateProvider";
+
+function parseEpisodeId(value: string | string[] | undefined): EpisodeId | null {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = raw ? Number(raw) : NaN;
+  return isEpisodeId(parsed) ? parsed : null;
+}
 
 export default function StoryScreen() {
-  const theme = Colors;
+  const { state } = useAppState();
+  const params = useLocalSearchParams<{ episode?: string; source?: string }>();
+  const episodeId = parseEpisodeId(params.episode);
+  const source =
+    params.source === "memory" ? "memory" : params.source === "home" ? "home" : "unlock";
+  const episode = episodeId ? getStoryEpisode(episodeId) : undefined;
+  const isUnlocked = Boolean(
+    episodeId && state?.unlockedStories.some((story) => story.episodeId === episodeId),
+  );
+  const [lineIndex, setLineIndex] = React.useState(0);
+
+  React.useEffect(() => {
+    setLineIndex(0);
+  }, [episodeId]);
+
+  if (!episode || !isUnlocked) {
+    return (
+      <SafeAreaView style={styles.invalidContainer} edges={["top", "bottom"]}>
+        <Text style={styles.invalidTitle}>このストーリーはまだ読めません</Text>
+        <Text style={styles.invalidDescription}>
+          メモリーから解放済みのストーリーを選んでください。
+        </Text>
+        <TouchableOpacity
+          onPress={() =>
+            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
+          }
+          style={styles.homeButton}
+          accessibilityRole="button"
+          accessibilityLabel="戻る"
+        >
+          <Text style={styles.homeButtonText}>戻る</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
+
+  const line = episode.lines[lineIndex];
+  const isLastLine = lineIndex === episode.lines.length - 1;
+  const handleNext = () => {
+    if (isLastLine) {
+      if (source === "memory") {
+        router.dismissTo("/memory");
+      } else {
+        router.replace("/");
+      }
+      return;
+    }
+    setLineIndex((index) => index + 1);
+  };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.background }]}
-    >
-      {/* 1. ヘッダー（閉じるボタン） */}
+    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
+        <Text style={styles.episodeTitle} numberOfLines={2}>
+          Episode {String(episode.id).padStart(2, "0")}　{episode.title}
+        </Text>
         <TouchableOpacity
-          onPress={() => router.replace("/")}
+          onPress={() =>
+            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
+          }
           style={styles.closeButton}
+          accessibilityRole="button"
+          accessibilityLabel="ストーリーを閉じる"
         >
-          <Text style={[styles.closeText, { color: theme.textSub }]}>
-            ホームへ戻る
-          </Text>
+          <Text style={styles.closeText}>閉じる</Text>
         </TouchableOpacity>
       </View>
 
-      {/* 2. キャラクター画像表示エリア */}
-      <View style={styles.charactersContainer}>
-        {/* 左のキャラクター（上司） */}
-        <Image
-          source={gemImage}
-          style={[styles.characterImage]}
-          resizeMode="contain"
-        />
-        {/* 右のキャラクター（部下） */}
-        <Image
-          source={altaImage}
-          style={[styles.characterImage]}
-          resizeMode="contain"
-        />
-      </View>
+      <StoryCharacters
+        leftExpression={line.left}
+        rightExpression={line.right}
+        activeSpeaker={line.speaker}
+      />
 
-      {/* 3. メッセージウィンドウ（タップで次へ） */}
       <TouchableOpacity
-        style={[
-          styles.messageBox,
-          { backgroundColor: theme.surface, borderColor: theme.border },
-        ]}
-        onPress={() => router.replace("/")}
+        style={styles.messageBox}
+        onPress={handleNext}
+        activeOpacity={0.9}
+        accessibilityRole="button"
+        accessibilityLabel={isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"}
       >
-        <Text style={[styles.speakerName, { color: theme.primary }]}>
-          {speaker}
+        <Text style={styles.speakerName}>
+          {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]]}
         </Text>
-        <Text style={[styles.messageText, { color: theme.text }]}>{text}</Text>
-        <Text style={[styles.tapPrompt, { color: theme.textSub }]}>
-          Tap to next ▼
-        </Text>
+        <Text style={styles.messageText}>{line.text}</Text>
+        <Text style={styles.tapPrompt}>{isLastLine ? "Tap to close ▼" : "Tap to next ▼"}</Text>
       </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
-// 💅 スタイルシート（以前と同じですがそのまま残します）
 const styles = StyleSheet.create({
   container: {
+    backgroundColor: Colors.background,
     flex: 1,
-    justifyContent: "space-between",
   },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    alignItems: "flex-start",
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 18,
+    paddingTop: 8,
+  },
+  episodeTitle: {
+    color: Colors.text,
+    flex: 1,
+    fontSize: 16,
+    fontWeight: "800",
+    marginRight: 10,
   },
   closeButton: {
-    padding: 10,
-    backgroundColor: "rgba(255, 255, 255, 0.7)",
-    borderRadius: 20,
+    borderColor: Colors.border,
+    borderRadius: 18,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   closeText: {
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  charactersContainer: {
-    flex: 1,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "flex-end",
-  },
-  characterImage: {
-    width: "50%",
-    height: "80%",
-  },
-  activeCharacter: {
-    opacity: 1.0,
-  },
-  inactiveCharacter: {
-    opacity: 0.5, // 話していない方を少し暗く
+    color: Colors.textSub,
+    fontSize: 13,
+    fontWeight: "700",
   },
   messageBox: {
-    minHeight: 250,
-    margin: 20,
-    padding: 30,
+    backgroundColor: Colors.surface,
+    borderColor: Colors.border,
+    borderRadius: 16,
     borderWidth: 2,
-    borderRadius: 15,
+    elevation: 4,
+    margin: 18,
+    minHeight: 190,
+    padding: 24,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.08,
     shadowRadius: 6,
-    elevation: 5,
-    marginBottom: 10,
-    marginTop: -40,
   },
   speakerName: {
+    color: Colors.primary,
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: "800",
     marginBottom: 10,
   },
   messageText: {
+    color: Colors.text,
     fontSize: 18,
-    lineHeight: 28,
+    lineHeight: 30,
   },
   tapPrompt: {
+    bottom: 14,
+    color: Colors.textSub,
+    fontSize: 13,
+    fontWeight: "700",
     position: "absolute",
-    bottom: 15,
-    right: 20,
+    right: 18,
+  },
+  invalidContainer: {
+    alignItems: "center",
+    backgroundColor: Colors.background,
+    flex: 1,
+    justifyContent: "center",
+    padding: 24,
+  },
+  invalidTitle: {
+    color: Colors.text,
+    fontSize: 20,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  invalidDescription: {
+    color: Colors.textSub,
     fontSize: 14,
-    fontWeight: "bold",
-    opacity: 0.7,
+    lineHeight: 22,
+    marginTop: 10,
+    textAlign: "center",
+  },
+  homeButton: {
+    backgroundColor: Colors.accent,
+    borderRadius: 24,
+    marginTop: 22,
+    paddingHorizontal: 30,
+    paddingVertical: 13,
+  },
+  homeButtonText: {
+    color: Colors.surface,
+    fontSize: 16,
+    fontWeight: "700",
   },
 });

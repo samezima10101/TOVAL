@@ -1,40 +1,59 @@
 import { Colors } from "@/constants/theme";
-import { StyleSheet, Text, TouchableOpacity, ViewStyle } from "react-native";
+import {
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  ViewStyle,
+} from "react-native";
 
 export default function PrimaryButton({
   title,
   onPress,
   style,
+  disabled = false,
+  loading = false,
+  accessibilityLabel,
 }: {
   title: string;
   onPress: () => void;
   style?: ViewStyle;
+  disabled?: boolean;
+  loading?: boolean;
+  accessibilityLabel?: string;
 }) {
+  const unavailable = disabled || loading;
   return (
     <TouchableOpacity
-      style={[styles.button, style]}
+      style={[styles.button, style, unavailable && styles.disabled]}
       onPress={onPress}
-      activeOpacity={0.8} // 押した時の「へこみ具合」
+      disabled={unavailable}
+      activeOpacity={0.8}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel ?? title}
+      accessibilityState={{ disabled: unavailable, busy: loading }}
     >
-      <Text style={styles.text}>{title}</Text>
+      {loading ? <ActivityIndicator color={Colors.surface} /> : <Text style={styles.text}>{title}</Text>}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: Colors.accent, // テーマのアクセントカラー（緑）
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 30,
     alignItems: "center",
+    backgroundColor: Colors.accent,
+    borderRadius: 30,
+    elevation: 3,
     justifyContent: "center",
-    // ふんわりとした影をつける
+    paddingHorizontal: 32,
+    paddingVertical: 16,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 6,
-    elevation: 3,
+  },
+  disabled: {
+    opacity: 0.5,
   },
   text: {
     color: Colors.surface,
