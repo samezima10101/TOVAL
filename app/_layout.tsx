@@ -19,6 +19,7 @@ export default function RootLayout() {
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" options={{ title: "ホーム" }} />
           <Stack.Screen name="memory" options={{ title: "メモリー" }} />
+          <Stack.Screen name="log" options={{ title: "ログ" }} />
         </Stack>
 
         {/* ⬇️ グローバルフッター：広告バナー枠 */}

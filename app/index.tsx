@@ -27,6 +27,11 @@ export default function HomeScreen() {
             📖 Memory
           </Text>
         </TouchableOpacity>
+        <TouchableOpacity onPress={() => router.push("/log")}>
+          <Text style={[styles.footerLink, { color: theme.textSub }]}>
+            📅 Log
+          </Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
