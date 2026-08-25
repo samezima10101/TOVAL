@@ -97,6 +97,7 @@ export function AppStateProvider({
   const [hydrationError, setHydrationError] = useState<Error | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
+  const lifecyclePersistencePendingRef = useRef(false);
   const appIsActiveRef = useRef(NativeAppState.currentState === "active");
   const timerRouteFocusedRef = useRef(false);
 
@@ -123,11 +124,22 @@ export function AppStateProvider({
     return current;
   }, []);
 
+  const persistLifecycleState = useCallback(
+    async (nextState: AppState) => {
+      // Keep the pending marker on failure so a later lifecycle event retries.
+      lifecyclePersistencePendingRef.current = true;
+      await repository.save(nextState);
+      lifecyclePersistencePendingRef.current = false;
+    },
+    [repository],
+  );
+
   const applyTimerEligibility = useCallback(
     (change: {
       appIsActive?: boolean;
       routeFocused?: boolean;
       changedAt: number;
+      persistUnchanged?: boolean;
     }) =>
       enqueue(async () => {
         if (change.appIsActive !== undefined) {
@@ -139,6 +151,7 @@ export function AppStateProvider({
 
         const current = stateRef.current;
         if (!current?.activeTimer) {
+          lifecyclePersistencePendingRef.current = false;
           return;
         }
 
@@ -146,31 +159,55 @@ export function AppStateProvider({
         const nextTimer = eligible
           ? resumeTimer(current.activeTimer, change.changedAt)
           : pauseTimer(current.activeTimer, change.changedAt);
+        const shouldPersist =
+          change.persistUnchanged === true || lifecyclePersistencePendingRef.current;
         if (nextTimer === current.activeTimer) {
+          if (shouldPersist) {
+            await persistLifecycleState(current);
+          }
           return;
         }
 
         const nextState = { ...current, activeTimer: nextTimer };
-        await repository.save(nextState);
-        commitState(nextState);
+        if (!eligible) {
+          // Lifecycle safety takes precedence over save-before-publish: never keep
+          // counting while inactive merely because persistence is unavailable.
+          commitState(nextState);
+        }
+        await persistLifecycleState(nextState);
+        if (eligible) {
+          commitState(nextState);
+        }
       }),
-    [commitState, enqueue, repository],
+    [commitState, enqueue, persistLifecycleState],
   );
 
   const retryHydration = useCallback(async () => {
     setStatus("loading");
     setHydrationError(null);
     try {
-      const loaded = normalizeHydratedState(await repository.load());
+      const persisted = await repository.load();
+      const loaded = normalizeHydratedState(persisted);
+      const hadUnknownRunningSegment =
+        persisted.activeTimer !== null && persisted.activeTimer.runningSince !== null;
       stateRef.current = loaded;
       setState(loaded);
       setStatus("ready");
+
+      try {
+        await applyTimerEligibility({
+          changedAt: Date.now(),
+          persistUnchanged: hadUnknownRunningSegment,
+        });
+      } catch {
+        // Hydration is usable with a paused timer; lifecycle persistence will retry.
+      }
     } catch (error) {
       const normalized = error instanceof Error ? error : new Error(String(error));
       setHydrationError(normalized);
       setStatus("error");
     }
-  }, [repository]);
+  }, [applyTimerEligibility, repository]);
 
   useEffect(() => {
     void retryHydration();
@@ -203,6 +240,7 @@ export function AppStateProvider({
         const current = requireState();
         const nextState = { ...current, taskName: normalized };
         await repository.save(nextState);
+        lifecyclePersistencePendingRef.current = false;
         commitState(nextState);
       }),
     [commitState, enqueue, repository, requireState],
@@ -227,6 +265,7 @@ export function AppStateProvider({
         };
         const nextState = { ...current, activeTimer };
         await repository.save(nextState);
+        lifecyclePersistencePendingRef.current = false;
         commitState(nextState);
         return activeTimer;
       }),
@@ -246,6 +285,7 @@ export function AppStateProvider({
         }
 
         await repository.save(outcome.state);
+        lifecyclePersistencePendingRef.current = false;
         commitState(outcome.state);
         return true;
       }),
@@ -265,6 +305,7 @@ export function AppStateProvider({
         }
 
         await repository.save(outcome.state);
+        lifecyclePersistencePendingRef.current = false;
         commitState(outcome.state);
         return outcome;
       }),

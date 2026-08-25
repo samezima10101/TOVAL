@@ -224,9 +224,162 @@ describe("AppStateProvider timer lifecycle", () => {
       accumulatedMs: 750,
       runningSince: null,
     });
+    expect(repository.savedStates).toHaveLength(1);
+    expect(repository.savedStates[0].activeTimer?.runningSince).toBeNull();
     await act(async () => {
       renderer.unmount();
     });
     appStateSpy.mockRestore();
+  });
+
+  it("reconciles route focus reported before hydration resolves", async () => {
+    const nativeAppState = NativeAppState as unknown as { currentState: string | null };
+    const previousAppState = nativeAppState.currentState;
+    nativeAppState.currentState = "active";
+    const appStateSpy = jest
+      .spyOn(NativeAppState, "addEventListener")
+      .mockReturnValue({ remove: jest.fn() });
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(1_000);
+    let resolveLoad!: (state: AppState) => void;
+    const loadPromise = new Promise<AppState>((resolve) => {
+      resolveLoad = resolve;
+    });
+    const savedStates: AppState[] = [];
+    const repository = {
+      load: () => loadPromise,
+      save: async (nextState: AppState) => {
+        savedStates.push(nextState);
+      },
+    };
+    let context!: ReturnType<typeof useAppState>;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    const Probe = () => {
+      context = useAppState();
+      return null;
+    };
+
+    try {
+      await act(async () => {
+        renderer = TestRenderer.create(
+          <AppStateProvider repository={repository}>
+            <Probe />
+          </AppStateProvider>,
+        );
+      });
+      await act(async () => {
+        await context.setTimerRouteFocused(true, 1_000);
+      });
+      expect(context.status).toBe("loading");
+
+      await act(async () => {
+        resolveLoad({
+          schemaVersion: 2,
+          userName: "",
+          taskName: "読書",
+          totalNt: 0,
+          totalCompletions: 0,
+          lastCompletionDate: null,
+          unlockedStories: [],
+          activeTimer: {
+            sessionId: "hydrated-session",
+            plannedSeconds: 60,
+            startedTaskName: "読書",
+            accumulatedMs: 750,
+            runningSince: null,
+          },
+        });
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      });
+
+      expect(context.status).toBe("ready");
+      expect(context.state?.activeTimer).toMatchObject({
+        accumulatedMs: 750,
+        runningSince: 1_000,
+      });
+      expect(savedStates).toHaveLength(1);
+    } finally {
+      if (renderer) {
+        await act(async () => {
+          renderer.unmount();
+        });
+      }
+      appStateSpy.mockRestore();
+      nowSpy.mockRestore();
+      nativeAppState.currentState = previousAppState;
+    }
+  });
+
+  it("fails closed on a pause save error and resumes from the recovered active time", async () => {
+    const repository = makeRepository();
+    const nativeAppState = NativeAppState as unknown as { currentState: string | null };
+    const previousAppState = nativeAppState.currentState;
+    nativeAppState.currentState = "active";
+    let appStateChange!: (nextState: "active" | "background") => void;
+    const appStateSpy = jest
+      .spyOn(NativeAppState, "addEventListener")
+      .mockImplementation((type, listener) => {
+        if (type === "change") {
+          appStateChange = listener as (nextState: "active" | "background") => void;
+        }
+        return { remove: jest.fn() };
+      });
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(1_000);
+    let context!: ReturnType<typeof useAppState>;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    const Probe = () => {
+      context = useAppState();
+      return null;
+    };
+    const flushLifecycle = () =>
+      new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+    try {
+      await act(async () => {
+        renderer = TestRenderer.create(
+          <AppStateProvider repository={repository}>
+            <Probe />
+          </AppStateProvider>,
+        );
+      });
+      await act(async () => {
+        await context.startTimer(2);
+        await context.setTimerRouteFocused(true, 1_000);
+      });
+
+      repository.failWrite = true;
+      nowSpy.mockReturnValue(2_000);
+      await act(async () => {
+        appStateChange("background");
+        await flushLifecycle();
+      });
+      expect(context.state?.activeTimer).toMatchObject({
+        accumulatedMs: 1_000,
+        runningSince: null,
+      });
+
+      repository.failWrite = false;
+      nowSpy.mockReturnValue(7_000);
+      await act(async () => {
+        appStateChange("active");
+        await flushLifecycle();
+      });
+      expect(context.state?.activeTimer?.runningSince).toBe(7_000);
+
+      let outcome!: Awaited<ReturnType<typeof context.finishTimer>>;
+      await act(async () => {
+        outcome = await context.finishTimer(8_000);
+      });
+      expect(outcome.earnedNt).toBe(2);
+      expect(context.state?.activeTimer).toBeNull();
+    } finally {
+      if (renderer) {
+        await act(async () => {
+          renderer.unmount();
+        });
+      }
+      appStateSpy.mockRestore();
+      nowSpy.mockRestore();
+      nativeAppState.currentState = previousAppState;
+    }
   });
 });
