@@ -34,11 +34,7 @@ export default function HomeStoryCard({
         <View style={styles.storyCardCopy}>
           <Text style={styles.storyCardEyebrow}>STORY TALK</Text>
           <Text style={styles.storyCardTitle}>
-            {unreadEpisode
-              ? "新しい会話を読む"
-              : latestUnlockedEpisode
-                ? "会話を読み返す"
-                : "今日も一緒に集中"}
+            {unreadEpisode ? "新しい会話を読む" : "今日も一緒に集中"}
           </Text>
         </View>
         {unreadEpisode ? (
