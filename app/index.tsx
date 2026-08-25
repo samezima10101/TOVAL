@@ -1,22 +1,17 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import React from "react";
-import {
-  Image,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import HomeStoryCard from "@/components/home/HomeStoryCard";
 import PrimaryButton from "@/components/PrimaryButton";
-import StoryCharacters from "@/components/StoryCharacters";
 import TaskNameModal from "@/components/TaskNameModal";
 import TimerSetupModal from "@/components/TimerSetupModal";
 import { Colors } from "@/constants/theme";
 import { todayKey } from "@/src/domain/date";
-import { getLatestUnlockedEpisode } from "@/src/domain/storyData";
+import {
+  getLatestUnreadEpisode,
+  getLatestUnlockedEpisode,
+} from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function HomeScreen() {
@@ -31,6 +26,7 @@ export default function HomeScreen() {
   const completedToday = state.lastCompletionDate === todayKey();
   const unlockedCount = state.unlockedStories.length;
   const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
+  const latestUnreadEpisode = getLatestUnreadEpisode(state.unlockedStories);
   const needsTask = state.taskName.trim().length === 0;
 
   const handleStartTimer = async (plannedSeconds: number) => {
@@ -45,13 +41,13 @@ export default function HomeScreen() {
   };
 
   const handleOpenTalk = () => {
-    if (!latestUnlockedEpisode) {
+    if (!latestUnreadEpisode) {
       return;
     }
 
     router.push({
       pathname: "/story",
-      params: { episode: String(latestUnlockedEpisode.id), source: "home" },
+      params: { episode: String(latestUnreadEpisode.id), source: "home" },
     });
   };
 
@@ -61,57 +57,12 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.storyCard}>
-          <View style={styles.storyCardHeader}>
-            <View style={styles.storyCardCopy}>
-              <Text style={styles.storyCardEyebrow}>STORY TALK</Text>
-              <Text style={styles.storyCardTitle}>
-                {latestUnlockedEpisode
-                  ? "解放された会話を読む"
-                  : "今日も一緒に集中"}
-              </Text>
-            </View>
-            {latestUnlockedEpisode ? (
-              <TouchableOpacity
-                onPress={handleOpenTalk}
-                style={styles.talkButton}
-                accessibilityRole="button"
-                accessibilityLabel={`${latestUnlockedEpisode.title}を読む`}
-                accessibilityHint="解放済みのストーリーを開きます"
-              >
-                <Ionicons
-                  name="chatbubble-ellipses-outline"
-                  size={29}
-                  color={Colors.surface}
-                />
-              </TouchableOpacity>
-            ) : null}
-          </View>
-
-          <TouchableOpacity
-            style={styles.secret}
-            onPress={() => router.push("/shop")}
-            accessibilityRole="button"
-            accessibilityLabel="ショップを開く"
-          >
-            <Image source={require("@/assets/images/react-logo.png")} />
-          </TouchableOpacity>
-
-          <StoryCharacters containerStyle={styles.homeCharacters} />
-
-          <View style={styles.storyCardFooter}>
-            <Text style={styles.storyCardDescription}>
-              {latestUnlockedEpisode
-                ? `Episode ${String(latestUnlockedEpisode.id).padStart(2, "0")}　${latestUnlockedEpisode.title}`
-                : "キャラクターたちが、ここで待っています。"}
-            </Text>
-            {latestUnlockedEpisode ? (
-              <Text style={styles.storyCardHint}>
-                吹き出しをタップして会話を読む
-              </Text>
-            ) : null}
-          </View>
-        </View>
+        <HomeStoryCard
+          latestUnlockedEpisode={latestUnlockedEpisode}
+          unreadEpisode={latestUnreadEpisode}
+          onOpenTalk={handleOpenTalk}
+          onOpenShop={() => router.push("/shop")}
+        />
 
         <View style={styles.intro}>
           <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
@@ -280,77 +231,6 @@ const styles = StyleSheet.create({
     marginTop: 30,
     paddingHorizontal: 14,
     paddingVertical: 18,
-  },
-  storyCard: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderRadius: 20,
-    borderWidth: 1,
-    marginTop: 22,
-    overflow: "hidden",
-  },
-  storyCardHeader: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingTop: 18,
-  },
-  storyCardCopy: {
-    flex: 1,
-    paddingRight: 14,
-  },
-  storyCardEyebrow: {
-    color: Colors.textSub,
-    fontSize: 12,
-    fontWeight: "800",
-    letterSpacing: 1.2,
-  },
-  storyCardTitle: {
-    color: Colors.text,
-    fontSize: 18,
-    fontWeight: "800",
-    marginTop: 5,
-  },
-  talkButton: {
-    alignItems: "center",
-    backgroundColor: Colors.primary,
-    borderRadius: 30,
-    elevation: 3,
-    height: 58,
-    justifyContent: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.14,
-    shadowRadius: 4,
-    width: 58,
-  },
-  secret: {
-    position: "absolute",
-    top: 70,
-  },
-  homeCharacters: {
-    flex: 0,
-    height: 220,
-    marginTop: 2,
-    minHeight: 0,
-  },
-  storyCardFooter: {
-    backgroundColor: "#F8FAFD",
-    borderTopColor: Colors.border,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-  },
-  storyCardDescription: {
-    color: Colors.text,
-    fontSize: 14,
-    fontWeight: "700",
-  },
-  storyCardHint: {
-    color: Colors.textSub,
-    fontSize: 12,
-    marginTop: 4,
   },
   stat: {
     alignItems: "center",

@@ -1,4 +1,4 @@
-export const APP_SCHEMA_VERSION = 2;
+export const APP_SCHEMA_VERSION = 3;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
 
@@ -24,6 +24,7 @@ export type StoryEpisode = {
 export type UnlockedStory = {
   episodeId: EpisodeId;
   unlockedDate: string;
+  isRead: boolean;
 };
 
 export type ActiveTimer = {

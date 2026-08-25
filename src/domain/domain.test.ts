@@ -6,12 +6,15 @@ import {
   pauseTimer,
   resumeTimer,
 } from "./timer";
-import { getLatestUnlockedEpisode } from "./storyData";
-import { AppState, ActiveTimer } from "./types";
+import {
+  getLatestUnreadEpisode,
+  getLatestUnlockedEpisode,
+} from "./storyData";
+import { APP_SCHEMA_VERSION, AppState, ActiveTimer } from "./types";
 
 function stateWithTimer(timer: ActiveTimer): AppState {
   return {
-    schemaVersion: 2,
+    schemaVersion: APP_SCHEMA_VERSION,
     userName: "",
     taskName: "読書",
     totalNt: 7,
@@ -110,10 +113,22 @@ describe("home story talk entry", () => {
     expect(getLatestUnlockedEpisode([])).toBeUndefined();
     expect(
       getLatestUnlockedEpisode([
-        { episodeId: 1, unlockedDate: "2025-01-01" },
-        { episodeId: 2, unlockedDate: "2025-01-02" },
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+        { episodeId: 2, unlockedDate: "2025-01-02", isRead: false },
       ]),
     ).toMatchObject({ id: 2, title: "上司からの労い" });
+    expect(
+      getLatestUnreadEpisode([
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+        { episodeId: 2, unlockedDate: "2025-01-02", isRead: true },
+        { episodeId: 3, unlockedDate: "2025-01-03", isRead: false },
+      ]),
+    ).toMatchObject({ id: 3, title: "部下の決意" });
+    expect(
+      getLatestUnreadEpisode([
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+      ]),
+    ).toBeUndefined();
   });
 });
 
@@ -135,6 +150,9 @@ describe("completion rules", () => {
     expect(outcome.status).toBe("completed");
     expect(outcome.earnedNt).toBe(61);
     expect(outcome.unlockedEpisode).toBe(1);
+    expect(outcome.state.unlockedStories).toEqual([
+      { episodeId: 1, unlockedDate: localDateKey(finishedAt), isRead: false },
+    ]);
     expect(outcome.state.activeTimer).toBeNull();
     expect(outcome.state.totalNt).toBe(68);
     expect(outcome.state.totalCompletions).toBe(3);
@@ -205,8 +223,8 @@ describe("completion rules", () => {
       }),
       lastCompletionDate: dayOne,
       unlockedStories: [
-        { episodeId: 1, unlockedDate: dayOne },
-        { episodeId: 2, unlockedDate: dayOne },
+        { episodeId: 1, unlockedDate: dayOne, isRead: true },
+        { episodeId: 2, unlockedDate: dayOne, isRead: true },
       ],
     };
     const third = completeTimer(state, finishedAt + 24 * 60 * 60 * 1000);

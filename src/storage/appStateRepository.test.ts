@@ -47,13 +47,17 @@ describe("app state repository", () => {
         taskName: "旧タスク",
         totalNt: 12,
         totalCompletions: 1,
+        unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-01" }],
       }),
     );
     expect(legacy).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       taskName: "旧タスク",
       totalNt: 12,
       totalCompletions: 1,
+      unlockedStories: [
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+      ],
       activeTimer: null,
     });
     expect(parsePersistedState(JSON.stringify({ schemaVersion: 99 }))).toBeNull();
@@ -79,16 +83,56 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 2,
+      schemaVersion: 3,
       userName: "ユーザー",
       totalNt: 12,
       totalCompletions: 1,
-      unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-01" }],
+      unlockedStories: [
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+      ],
       activeTimer: {
         sessionId: "legacy-session",
         plannedSeconds: 3_600,
         startedTaskName: "旧タスク",
         accumulatedMs: 0,
+        runningSince: null,
+      },
+    });
+  });
+
+  it("migrates a v2 snapshot and marks existing stories as read", () => {
+    const migrated = parsePersistedState(
+      JSON.stringify({
+        schemaVersion: 2,
+        userName: "ユーザー",
+        taskName: "旧タスク",
+        totalNt: 24,
+        totalCompletions: 2,
+        lastCompletionDate: "2025-01-02",
+        unlockedStories: [
+          { episodeId: 1, unlockedDate: "2025-01-01" },
+          { episodeId: 2, unlockedDate: "2025-01-02" },
+        ],
+        activeTimer: {
+          sessionId: "v2-session",
+          plannedSeconds: 600,
+          startedTaskName: "旧タスク",
+          accumulatedMs: 1_250,
+          runningSince: null,
+        },
+      }),
+    );
+
+    expect(migrated).toMatchObject({
+      schemaVersion: 3,
+      totalNt: 24,
+      unlockedStories: [
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+        { episodeId: 2, unlockedDate: "2025-01-02", isRead: true },
+      ],
+      activeTimer: {
+        sessionId: "v2-session",
+        accumulatedMs: 1_250,
         runningSince: null,
       },
     });

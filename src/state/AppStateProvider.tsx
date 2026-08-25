@@ -16,7 +16,12 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
-import { MAX_PLANNED_SECONDS, AppState, ActiveTimer } from "@/src/domain/types";
+import {
+  MAX_PLANNED_SECONDS,
+  AppState,
+  ActiveTimer,
+  EpisodeId,
+} from "@/src/domain/types";
 import {
   appStateRepository,
   AppStateRepository,
@@ -45,6 +50,7 @@ type AppStateContextValue = {
   hydrationError: Error | null;
   retryHydration: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
+  markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
@@ -211,6 +217,29 @@ export function AppStateProvider({
     [commitState, enqueue, repository, requireState],
   );
 
+  const markStoryRead = useCallback(
+    (episodeId: EpisodeId) =>
+      enqueue(async () => {
+        const current = requireState();
+        const storyIndex = current.unlockedStories.findIndex(
+          (story) => story.episodeId === episodeId,
+        );
+        if (storyIndex === -1 || current.unlockedStories[storyIndex].isRead) {
+          return;
+        }
+
+        const nextState: AppState = {
+          ...current,
+          unlockedStories: current.unlockedStories.map((story, index) =>
+            index === storyIndex ? { ...story, isRead: true } : story,
+          ),
+        };
+        await repository.save(nextState);
+        commitState(nextState);
+      }),
+    [commitState, enqueue, repository, requireState],
+  );
+
   const startTimer = useCallback(
     (plannedSeconds: number) =>
       enqueue(async () => {
@@ -281,6 +310,7 @@ export function AppStateProvider({
       hydrationError,
       retryHydration,
       setTaskName,
+      markStoryRead,
       startTimer,
       setTimerRouteFocused,
       cancelTimer,
@@ -290,6 +320,7 @@ export function AppStateProvider({
       cancelTimer,
       finishTimer,
       hydrationError,
+      markStoryRead,
       retryHydration,
       setTaskName,
       setTimerRouteFocused,

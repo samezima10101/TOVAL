@@ -21,7 +21,7 @@ function parseEpisodeId(value: string | string[] | undefined): EpisodeId | null 
 }
 
 export default function StoryScreen() {
-  const { state } = useAppState();
+  const { state, markStoryRead } = useAppState();
   const params = useLocalSearchParams<{ episode?: string; source?: string }>();
   const episodeId = parseEpisodeId(params.episode);
   const source =
@@ -31,6 +31,9 @@ export default function StoryScreen() {
     episodeId && state?.unlockedStories.some((story) => story.episodeId === episodeId),
   );
   const [lineIndex, setLineIndex] = React.useState(0);
+  const [isProcessing, setIsProcessing] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const isProcessingRef = React.useRef(false);
 
   React.useEffect(() => {
     setLineIndex(0);
@@ -59,16 +62,35 @@ export default function StoryScreen() {
 
   const line = episode.lines[lineIndex];
   const isLastLine = lineIndex === episode.lines.length - 1;
-  const handleNext = () => {
-    if (isLastLine) {
+  const handleNext = async () => {
+    if (isProcessingRef.current) {
+      return;
+    }
+    if (!isLastLine) {
+      setLineIndex((index) => index + 1);
+      return;
+    }
+
+    setError(null);
+    isProcessingRef.current = true;
+    setIsProcessing(true);
+    try {
+      await markStoryRead(episode.id);
       if (source === "memory") {
         router.dismissTo("/memory");
       } else {
         router.replace("/");
       }
-      return;
+    } catch (cause) {
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "ストーリーを保存できませんでした。もう一度お試しください。",
+      );
+    } finally {
+      isProcessingRef.current = false;
+      setIsProcessing(false);
     }
-    setLineIndex((index) => index + 1);
   };
 
   return (
@@ -82,12 +104,16 @@ export default function StoryScreen() {
             source === "memory" ? router.dismissTo("/memory") : router.replace("/")
           }
           style={styles.closeButton}
+          disabled={isProcessing}
           accessibilityRole="button"
           accessibilityLabel="ストーリーを閉じる"
+          accessibilityState={{ disabled: isProcessing }}
         >
           <Text style={styles.closeText}>閉じる</Text>
         </TouchableOpacity>
       </View>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
 
       <StoryCharacters
         leftExpression={line.left}
@@ -96,11 +122,13 @@ export default function StoryScreen() {
       />
 
       <TouchableOpacity
-        style={styles.messageBox}
-        onPress={handleNext}
+        style={[styles.messageBox, isProcessing && styles.messageBoxDisabled]}
+        onPress={() => void handleNext()}
+        disabled={isProcessing}
         activeOpacity={0.9}
         accessibilityRole="button"
         accessibilityLabel={isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"}
+        accessibilityState={{ disabled: isProcessing }}
       >
         <Text style={styles.speakerName}>
           {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]]}
@@ -157,6 +185,9 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.08,
     shadowRadius: 6,
   },
+  messageBoxDisabled: {
+    opacity: 0.7,
+  },
   speakerName: {
     color: Colors.primary,
     fontSize: 18,
@@ -175,6 +206,19 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     position: "absolute",
     right: 18,
+  },
+  error: {
+    backgroundColor: "#FFF1F0",
+    borderColor: Colors.warning,
+    borderRadius: 8,
+    borderWidth: 1,
+    color: Colors.warning,
+    fontSize: 13,
+    marginHorizontal: 18,
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+    textAlign: "center",
   },
   invalidContainer: {
     alignItems: "center",
