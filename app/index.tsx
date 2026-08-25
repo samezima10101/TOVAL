@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import React from "react";
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,8 +11,8 @@ import {
 } from "react-native";
 
 import PrimaryButton from "@/components/PrimaryButton";
-import TaskNameModal from "@/components/TaskNameModal";
 import StoryCharacters from "@/components/StoryCharacters";
+import TaskNameModal from "@/components/TaskNameModal";
 import TimerSetupModal from "@/components/TimerSetupModal";
 import { Colors } from "@/constants/theme";
 import { todayKey } from "@/src/domain/date";
@@ -60,27 +61,14 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.intro}>
-          <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
-          <Text style={styles.taskName}>{state.taskName || "タスクを設定してください"}</Text>
-          <View style={styles.statusRow}>
-            <View style={[styles.statusDot, completedToday && styles.statusDotDone]} />
-            <Text style={styles.statusText}>{completedToday ? "今日のタスクは完了" : "今日は未完了"}</Text>
-          </View>
-        </View>
-
-        <View style={styles.statsCard}>
-          <Stat label="累計完了" value={`${state.totalCompletions}回`} />
-          <Stat label="ストーリー" value={`${unlockedCount} / 3話`} />
-          <Stat label="現在のNT" value={`${state.totalNt} NT`} />
-        </View>
-
         <View style={styles.storyCard}>
           <View style={styles.storyCardHeader}>
             <View style={styles.storyCardCopy}>
               <Text style={styles.storyCardEyebrow}>STORY TALK</Text>
               <Text style={styles.storyCardTitle}>
-                {latestUnlockedEpisode ? "解放された会話を読む" : "今日も一緒に集中"}
+                {latestUnlockedEpisode
+                  ? "解放された会話を読む"
+                  : "今日も一緒に集中"}
               </Text>
             </View>
             {latestUnlockedEpisode ? (
@@ -100,6 +88,15 @@ export default function HomeScreen() {
             ) : null}
           </View>
 
+          <TouchableOpacity
+            style={styles.secret}
+            onPress={() => router.push("/shop")}
+            accessibilityRole="button"
+            accessibilityLabel="ショップを開く"
+          >
+            <Image source={require("@/assets/images/react-logo.png")} />
+          </TouchableOpacity>
+
           <StoryCharacters containerStyle={styles.homeCharacters} />
 
           <View style={styles.storyCardFooter}>
@@ -109,9 +106,32 @@ export default function HomeScreen() {
                 : "キャラクターたちが、ここで待っています。"}
             </Text>
             {latestUnlockedEpisode ? (
-              <Text style={styles.storyCardHint}>吹き出しをタップして会話を読む</Text>
+              <Text style={styles.storyCardHint}>
+                吹き出しをタップして会話を読む
+              </Text>
             ) : null}
           </View>
+        </View>
+
+        <View style={styles.intro}>
+          <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
+          <Text style={styles.taskName}>
+            {state.taskName || "タスクを設定してください"}
+          </Text>
+          <View style={styles.statusRow}>
+            <View
+              style={[styles.statusDot, completedToday && styles.statusDotDone]}
+            />
+            <Text style={styles.statusText}>
+              {completedToday ? "今日のタスクは完了" : "今日は未完了"}
+            </Text>
+          </View>
+        </View>
+
+        <View style={styles.statsCard}>
+          <Stat label="累計完了" value={`${state.totalCompletions}回`} />
+          <Stat label="ストーリー" value={`${unlockedCount} / 3話`} />
+          <Stat label="現在のNT" value={`${state.totalNt} NT`} />
         </View>
 
         {state.activeTimer ? (
@@ -156,12 +176,22 @@ export default function HomeScreen() {
           >
             <Text style={styles.linkText}>📖 メモリーを見る</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/log")}
+            style={styles.linkButton}
+            accessibilityRole="button"
+            accessibilityLabel="ログを開く"
+          >
+            <Text style={styles.linkText}>📅 ログを見る</Text>
+          </TouchableOpacity>
         </View>
 
         <View style={styles.storyProgress}>
           <Text style={styles.storyProgressTitle}>STORY PROGRESS</Text>
           <Text style={styles.storyProgressText}>
-            {unlockedCount === 3 ? "すべて解放済み" : `次の完了で ${unlockedCount + 1}話目を解放できます`}
+            {unlockedCount === 3
+              ? "すべて解放済み"
+              : `次の完了で ${unlockedCount + 1}話目を解放できます`}
           </Text>
         </View>
       </ScrollView>
@@ -294,6 +324,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 4,
     width: 58,
+  },
+  secret: {
+    position: "absolute",
+    top: 70,
   },
   homeCharacters: {
     flex: 0,

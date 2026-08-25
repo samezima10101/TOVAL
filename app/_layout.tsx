@@ -44,8 +44,16 @@ function AppShell() {
         <SafeAreaView edges={["top"]} style={styles.safeAreaTop}>
           <View style={styles.globalHeader} accessibilityRole="header">
             <Text style={styles.pointText}>{state.totalNt} NT</Text>
-            <View style={styles.gaugeBackground} accessibilityLabel={`${state.totalNt} NT`}>
-              <View style={[styles.gaugeFill, { width: `${Math.min(100, state.totalNt % 100)}%` }]} />
+            <View
+              style={styles.gaugeBackground}
+              accessibilityLabel={`${state.totalNt} NT`}
+            >
+              <View
+                style={[
+                  styles.gaugeFill,
+                  { width: `${Math.min(100, state.totalNt % 100)}%` },
+                ]}
+              />
             </View>
           </View>
         </SafeAreaView>
@@ -56,6 +64,8 @@ function AppShell() {
           <Stack.Screen name="memory" options={{ title: "メモリー" }} />
           <Stack.Screen name="timer" options={{ title: "タイマー" }} />
           <Stack.Screen name="story" options={{ title: "ストーリー" }} />
+          <Stack.Screen name="log" options={{ title: "ログ" }} />
+          <Stack.Screen name="shop" options={{ title: "ショップ" }} />
         </Stack>
       </View>
       {!immersive ? (
@@ -91,7 +101,11 @@ function StatusMessage({
       <Text style={styles.statusTitle}>{message}</Text>
       {detail ? <Text style={styles.statusDetail}>{detail}</Text> : null}
       {actionLabel && onAction ? (
-        <PrimaryButton title={actionLabel} onPress={onAction} style={styles.retryButton} />
+        <PrimaryButton
+          title={actionLabel}
+          onPress={onAction}
+          style={styles.retryButton}
+        />
       ) : null}
     </SafeAreaView>
   );
