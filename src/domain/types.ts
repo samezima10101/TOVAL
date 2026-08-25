@@ -1,4 +1,4 @@
-export const APP_SCHEMA_VERSION = 1;
+export const APP_SCHEMA_VERSION = 2;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
 
@@ -28,9 +28,10 @@ export type UnlockedStory = {
 
 export type ActiveTimer = {
   sessionId: string;
-  startedAt: number;
   plannedSeconds: number;
   startedTaskName: string;
+  accumulatedMs: number;
+  runningSince: number | null;
 };
 
 export type AppState = {

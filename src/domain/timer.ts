@@ -9,11 +9,46 @@ export type TimerSnapshot = {
   earnedNt: number;
 };
 
+/**
+ * Returns the elapsed concentration time without rounding milliseconds.
+ * A timer with no running segment is intentionally frozen at accumulatedMs.
+ */
+export function getTimerElapsedMs(timer: ActiveTimer, now = Date.now()): number {
+  const runningMs =
+    timer.runningSince === null ? 0 : Math.max(0, now - timer.runningSince);
+  return Math.max(0, timer.accumulatedMs + runningMs);
+}
+
+/** Starts a paused segment. Calling this for a running timer is a no-op. */
+export function resumeTimer(timer: ActiveTimer, resumedAt = Date.now()): ActiveTimer {
+  if (timer.runningSince !== null) {
+    return timer;
+  }
+
+  return {
+    ...timer,
+    runningSince: resumedAt,
+  };
+}
+
+/** Closes the current segment. Calling this for a paused timer is a no-op. */
+export function pauseTimer(timer: ActiveTimer, pausedAt = Date.now()): ActiveTimer {
+  if (timer.runningSince === null) {
+    return timer;
+  }
+
+  return {
+    ...timer,
+    accumulatedMs: getTimerElapsedMs(timer, pausedAt),
+    runningSince: null,
+  };
+}
+
 export function getTimerSnapshot(
   timer: ActiveTimer,
   now = Date.now(),
 ): TimerSnapshot {
-  const elapsedMs = Math.max(0, now - timer.startedAt);
+  const elapsedMs = getTimerElapsedMs(timer, now);
   const elapsedSeconds = Math.floor(elapsedMs / 1000);
   const remainingSeconds = Math.max(0, timer.plannedSeconds - elapsedSeconds);
   const overtimeSeconds = Math.max(0, elapsedSeconds - timer.plannedSeconds);

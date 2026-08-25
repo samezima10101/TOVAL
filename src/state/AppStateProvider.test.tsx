@@ -1,6 +1,7 @@
 import mockAsyncStorage from "@react-native-async-storage/async-storage/jest/async-storage-mock";
 import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
+import { AppState as NativeAppState } from "react-native";
 
 import { AppState } from "@/src/domain/types";
 import { AppStateProvider, useAppState } from "./AppStateProvider";
@@ -10,6 +11,7 @@ jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 type TestRepository = {
   state: AppState;
   failWrite: boolean;
+  savedStates: AppState[];
   load: () => Promise<AppState>;
   save: (state: AppState) => Promise<void>;
 };
@@ -17,7 +19,7 @@ type TestRepository = {
 function makeRepository(): TestRepository {
   const repository: TestRepository = {
     state: {
-      schemaVersion: 1,
+      schemaVersion: 2,
       userName: "",
       taskName: "読書",
       totalNt: 0,
@@ -27,6 +29,7 @@ function makeRepository(): TestRepository {
       activeTimer: null,
     },
     failWrite: false,
+    savedStates: [],
     async load() {
       return repository.state;
     },
@@ -35,6 +38,7 @@ function makeRepository(): TestRepository {
         throw new Error("write failed");
       }
       repository.state = nextState;
+      repository.savedStates.push(nextState);
     },
   };
   return repository;
@@ -80,5 +84,149 @@ describe("AppStateProvider persistence ordering", () => {
     await act(async () => {
       renderer!.unmount();
     });
+  });
+});
+
+describe("AppStateProvider timer lifecycle", () => {
+  it("counts only eligible route time and ignores repeated transitions and inactive gaps", async () => {
+    const repository = makeRepository();
+    const nativeAppState = NativeAppState as unknown as { currentState: string | null };
+    const previousAppState = nativeAppState.currentState;
+    nativeAppState.currentState = "active";
+
+    let appStateChange!: (nextState: "active" | "background") => void;
+    const appStateSubscription = { remove: jest.fn() };
+    const appStateSpy = jest
+      .spyOn(NativeAppState, "addEventListener")
+      .mockImplementation((type, listener) => {
+        if (type === "change") {
+          appStateChange = listener as (nextState: "active" | "background") => void;
+        }
+        return appStateSubscription;
+      });
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(1_000);
+    let context!: ReturnType<typeof useAppState>;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    const Probe = () => {
+      context = useAppState();
+      return null;
+    };
+
+    try {
+      await act(async () => {
+        renderer = TestRenderer.create(
+          <AppStateProvider repository={repository}>
+            <Probe />
+          </AppStateProvider>,
+        );
+      });
+      await act(async () => {
+        await context.startTimer(3);
+        await context.setTimerRouteFocused(true, 1_000);
+        await context.setTimerRouteFocused(true, 1_100);
+      });
+      expect(repository.savedStates).toHaveLength(2);
+      expect(repository.state.activeTimer).toMatchObject({
+        accumulatedMs: 0,
+        runningSince: 1_000,
+      });
+
+      nowSpy.mockReturnValue(2_250);
+      appStateChange("background");
+      await act(async () => {
+        await context.setTimerRouteFocused(true, 2_250);
+      });
+      expect(repository.state.activeTimer).toMatchObject({
+        accumulatedMs: 1_250,
+        runningSince: null,
+      });
+      expect(repository.savedStates).toHaveLength(3);
+
+      nowSpy.mockReturnValue(4_000);
+      appStateChange("background");
+      appStateChange("background");
+      await act(async () => {
+        await context.setTimerRouteFocused(true, 4_000);
+      });
+      expect(repository.savedStates).toHaveLength(3);
+
+      nowSpy.mockReturnValue(5_000);
+      appStateChange("active");
+      await act(async () => {
+        await context.setTimerRouteFocused(true, 5_000);
+      });
+      expect(repository.state.activeTimer?.runningSince).toBe(5_000);
+
+      await act(async () => {
+        await context.setTimerRouteFocused(false, 5_500);
+      });
+      expect(repository.state.activeTimer).toMatchObject({
+        accumulatedMs: 1_750,
+        runningSince: null,
+      });
+
+      nowSpy.mockReturnValue(9_000);
+      appStateChange("active");
+      await act(async () => {
+        await context.setTimerRouteFocused(false, 9_000);
+        await context.setTimerRouteFocused(true, 9_000);
+      });
+      expect(repository.state.activeTimer?.runningSince).toBe(9_000);
+
+      let outcome!: Awaited<ReturnType<typeof context.finishTimer>>;
+      await act(async () => {
+        outcome = await context.finishTimer(10_250);
+      });
+      expect(outcome.earnedNt).toBe(3);
+      expect(repository.state.activeTimer).toBeNull();
+    } finally {
+      if (renderer) {
+        await act(async () => {
+          renderer.unmount();
+        });
+      }
+      appStateSpy.mockRestore();
+      nowSpy.mockRestore();
+      nativeAppState.currentState = previousAppState;
+    }
+  });
+
+  it("hydrates an unknown running segment paused without crediting relaunch time", async () => {
+    const appStateSpy = jest
+      .spyOn(NativeAppState, "addEventListener")
+      .mockReturnValue({ remove: jest.fn() });
+    const repository = makeRepository();
+    repository.state = {
+      ...repository.state,
+      activeTimer: {
+        sessionId: "relaunch-session",
+        plannedSeconds: 60,
+        startedTaskName: "読書",
+        accumulatedMs: 750,
+        runningSince: 1_000,
+      },
+    };
+    let context!: ReturnType<typeof useAppState>;
+    let renderer!: TestRenderer.ReactTestRenderer;
+    const Probe = () => {
+      context = useAppState();
+      return null;
+    };
+
+    await act(async () => {
+      renderer = TestRenderer.create(
+        <AppStateProvider repository={repository}>
+          <Probe />
+        </AppStateProvider>,
+      );
+    });
+    expect(context.state?.activeTimer).toMatchObject({
+      accumulatedMs: 750,
+      runningSince: null,
+    });
+    await act(async () => {
+      renderer.unmount();
+    });
+    appStateSpy.mockRestore();
   });
 });
