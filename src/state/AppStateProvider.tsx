@@ -15,13 +15,16 @@ import {
   completeTimer,
   CompletionOutcome,
 } from "@/src/domain/completion";
-import { pauseTimer, resumeTimer } from "@/src/domain/timer";
 import { MAX_PLANNED_SECONDS, AppState, ActiveTimer } from "@/src/domain/types";
 import {
   appStateRepository,
   AppStateRepository,
   createInitialAppState,
 } from "@/src/storage/appStateRepository";
+import {
+  normalizeHydratedState,
+  useTimerLifecycle,
+} from "./useTimerLifecycle";
 
 export type HydrationStatus = "loading" | "ready" | "error";
 
@@ -67,24 +70,6 @@ function assertPlannedSeconds(value: number): asserts value is number {
   }
 }
 
-/**
- * A running segment from a previous process cannot be dated to the last
- * eligible moment. Hydrate it paused and retain only persisted elapsed time.
- */
-function normalizeHydratedState(state: AppState): AppState {
-  if (!state.activeTimer || state.activeTimer.runningSince === null) {
-    return state;
-  }
-
-  return {
-    ...state,
-    activeTimer: {
-      ...state.activeTimer,
-      runningSince: null,
-    },
-  };
-}
-
 export function AppStateProvider({
   children,
   repository = appStateRepository,
@@ -97,9 +82,6 @@ export function AppStateProvider({
   const [hydrationError, setHydrationError] = useState<Error | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
-  const lifecyclePersistencePendingRef = useRef(false);
-  const appIsActiveRef = useRef(NativeAppState.currentState === "active");
-  const timerRouteFocusedRef = useRef(false);
 
   const commitState = useCallback((nextState: AppState) => {
     stateRef.current = nextState;
@@ -124,63 +106,16 @@ export function AppStateProvider({
     return current;
   }, []);
 
-  const persistLifecycleState = useCallback(
-    async (nextState: AppState) => {
-      // Keep the pending marker on failure so a later lifecycle event retries.
-      lifecyclePersistencePendingRef.current = true;
-      await repository.save(nextState);
-      lifecyclePersistencePendingRef.current = false;
-    },
-    [repository],
-  );
-
-  const applyTimerEligibility = useCallback(
-    (change: {
-      appIsActive?: boolean;
-      routeFocused?: boolean;
-      changedAt: number;
-      persistUnchanged?: boolean;
-    }) =>
-      enqueue(async () => {
-        if (change.appIsActive !== undefined) {
-          appIsActiveRef.current = change.appIsActive;
-        }
-        if (change.routeFocused !== undefined) {
-          timerRouteFocusedRef.current = change.routeFocused;
-        }
-
-        const current = stateRef.current;
-        if (!current?.activeTimer) {
-          lifecyclePersistencePendingRef.current = false;
-          return;
-        }
-
-        const eligible = appIsActiveRef.current && timerRouteFocusedRef.current;
-        const nextTimer = eligible
-          ? resumeTimer(current.activeTimer, change.changedAt)
-          : pauseTimer(current.activeTimer, change.changedAt);
-        const shouldPersist =
-          change.persistUnchanged === true || lifecyclePersistencePendingRef.current;
-        if (nextTimer === current.activeTimer) {
-          if (shouldPersist) {
-            await persistLifecycleState(current);
-          }
-          return;
-        }
-
-        const nextState = { ...current, activeTimer: nextTimer };
-        if (!eligible) {
-          // Lifecycle safety takes precedence over save-before-publish: never keep
-          // counting while inactive merely because persistence is unavailable.
-          commitState(nextState);
-        }
-        await persistLifecycleState(nextState);
-        if (eligible) {
-          commitState(nextState);
-        }
-      }),
-    [commitState, enqueue, persistLifecycleState],
-  );
+  const {
+    applyTimerEligibility,
+    persistState,
+    setTimerRouteFocused,
+  } = useTimerLifecycle({
+    repository,
+    stateRef,
+    enqueue,
+    commitState,
+  });
 
   const retryHydration = useCallback(async () => {
     setStatus("loading");
@@ -224,12 +159,6 @@ export function AppStateProvider({
     return () => subscription.remove();
   }, [applyTimerEligibility]);
 
-  const setTimerRouteFocused = useCallback(
-    (focused: boolean, changedAt = Date.now()) =>
-      applyTimerEligibility({ routeFocused: focused, changedAt }),
-    [applyTimerEligibility],
-  );
-
   const setTaskName = useCallback(
     (taskName: string) =>
       enqueue(async () => {
@@ -239,11 +168,10 @@ export function AppStateProvider({
         }
         const current = requireState();
         const nextState = { ...current, taskName: normalized };
-        await repository.save(nextState);
-        lifecyclePersistencePendingRef.current = false;
+        await persistState(nextState);
         commitState(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [commitState, enqueue, persistState, requireState],
   );
 
   const startTimer = useCallback(
@@ -264,12 +192,11 @@ export function AppStateProvider({
           runningSince: null,
         };
         const nextState = { ...current, activeTimer };
-        await repository.save(nextState);
-        lifecyclePersistencePendingRef.current = false;
+        await persistState(nextState);
         commitState(nextState);
         return activeTimer;
       }),
-    [commitState, enqueue, repository, requireState],
+    [commitState, enqueue, persistState, requireState],
   );
 
   const cancelTimer = useCallback(
@@ -284,12 +211,11 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await repository.save(outcome.state);
-        lifecyclePersistencePendingRef.current = false;
+        await persistState(outcome.state);
         commitState(outcome.state);
         return true;
       }),
-    [commitState, enqueue, repository, requireState],
+    [commitState, enqueue, persistState, requireState],
   );
 
   const finishTimer = useCallback(
@@ -304,12 +230,11 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await repository.save(outcome.state);
-        lifecyclePersistencePendingRef.current = false;
+        await persistState(outcome.state);
         commitState(outcome.state);
         return outcome;
       }),
-    [commitState, enqueue, repository, requireState],
+    [commitState, enqueue, persistState, requireState],
   );
 
   const value = useMemo<AppStateContextValue>(
