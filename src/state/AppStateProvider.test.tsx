@@ -1,32 +1,54 @@
 import mockAsyncStorage from "@react-native-async-storage/async-storage/jest/async-storage-mock";
 import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
+import { AppState as NativeAppState } from "react-native";
 
 import { AppState } from "@/src/domain/types";
-import { AppStateProvider, useAppState } from "./AppStateProvider";
+import { AppStateRepository } from "@/src/storage/appStateRepository";
+import {
+  AppStateProvider,
+  TimerNotReadyError,
+  useAppState,
+} from "./AppStateProvider";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 
-type TestRepository = {
+type TestRepository = AppStateRepository & {
   state: AppState;
   failWrite: boolean;
-  load: () => Promise<AppState>;
-  save: (state: AppState) => Promise<void>;
+  savedStates: AppState[];
 };
+type AppStateContext = ReturnType<typeof useAppState>;
+type NativeAppStateChange = (nextState: "active" | "background") => void;
+
+type ProviderHarness = {
+  readonly context: AppStateContext;
+  unmount: () => Promise<void>;
+};
+
+type NativeAppStateFixture = {
+  emit: NativeAppStateChange;
+  restore: () => void;
+};
+
+function makeInitialState(activeTimer: AppState["activeTimer"] = null): AppState {
+  return {
+    schemaVersion: 2,
+    userName: "",
+    taskName: "読書",
+    totalNt: 0,
+    totalCompletions: 0,
+    lastCompletionDate: null,
+    unlockedStories: [],
+    activeTimer,
+  };
+}
 
 function makeRepository(): TestRepository {
   const repository: TestRepository = {
-    state: {
-      schemaVersion: 2,
-      userName: "",
-      taskName: "読書",
-      totalNt: 0,
-      totalCompletions: 0,
-      lastCompletionDate: null,
-      unlockedStories: [],
-      activeTimer: null,
-    },
+    state: makeInitialState(),
     failWrite: false,
+    savedStates: [],
     async load() {
       return repository.state;
     },
@@ -35,50 +57,247 @@ function makeRepository(): TestRepository {
         throw new Error("write failed");
       }
       repository.state = nextState;
+      repository.savedStates.push(nextState);
     },
   };
   return repository;
 }
 
+async function renderProvider(repository: AppStateRepository): Promise<ProviderHarness> {
+  let context!: AppStateContext;
+  const Probe = () => {
+    context = useAppState();
+    return null;
+  };
+  let renderer!: TestRenderer.ReactTestRenderer;
+
+  await act(async () => {
+    renderer = TestRenderer.create(
+      <AppStateProvider repository={repository}>
+        <Probe />
+      </AppStateProvider>,
+    );
+  });
+
+  return {
+    get context() {
+      return context;
+    },
+    unmount: async () => {
+      await act(async () => {
+        renderer.unmount();
+      });
+    },
+  };
+}
+
+function mockNativeAppState(initialState?: string | null): NativeAppStateFixture {
+  const nativeAppState = NativeAppState as unknown as {
+    currentState: string | null;
+  };
+  const previousAppState = nativeAppState.currentState;
+  if (initialState !== undefined) {
+    nativeAppState.currentState = initialState;
+  }
+
+  let appStateChange!: NativeAppStateChange;
+  const appStateSpy = jest
+    .spyOn(NativeAppState, "addEventListener")
+    .mockImplementation((type, listener) => {
+      if (type === "change") {
+        appStateChange = listener as NativeAppStateChange;
+      }
+      return { remove: jest.fn() };
+    });
+
+  return {
+    emit: (nextState) => appStateChange(nextState),
+    restore: () => {
+      appStateSpy.mockRestore();
+      nativeAppState.currentState = previousAppState;
+    },
+  };
+}
+
+const flushLifecycle = () =>
+  new Promise<void>((resolve) => setTimeout(resolve, 0));
+
 describe("AppStateProvider persistence ordering", () => {
   it("does not publish a state change when saving the snapshot fails", async () => {
     const repository = makeRepository();
-    let context!: ReturnType<typeof useAppState>;
-    const Probe = () => {
-      context = useAppState();
-      return null;
-    };
-    let renderer: TestRenderer.ReactTestRenderer;
+    const harness = await renderProvider(repository);
 
-    await act(async () => {
-      renderer = TestRenderer.create(
-        <AppStateProvider repository={repository}>
-          <Probe />
-        </AppStateProvider>,
+    try {
+      repository.failWrite = true;
+      await act(async () => {
+        await expect(harness.context.startTimer(0)).rejects.toThrow("write failed");
+      });
+      expect(harness.context.state?.activeTimer).toBeNull();
+
+      repository.failWrite = false;
+      await act(async () => {
+        await harness.context.startTimer(0);
+      });
+      expect(harness.context.state?.activeTimer).not.toBeNull();
+
+      repository.failWrite = true;
+      await act(async () => {
+        await expect(harness.context.finishTimer(Date.now())).rejects.toThrow("write failed");
+      });
+      expect(harness.context.state?.activeTimer).not.toBeNull();
+    } finally {
+      await harness.unmount();
+    }
+  });
+});
+
+describe("AppStateProvider timer lifecycle", () => {
+  it("counts only eligible route time and ignores repeated transitions and inactive gaps", async () => {
+    const repository = makeRepository();
+    const appState = mockNativeAppState("active");
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(1_000);
+    const harness = await renderProvider(repository);
+
+    try {
+      await act(async () => {
+        await harness.context.startTimer(3);
+        await harness.context.setTimerRouteFocused(true, 1_000);
+        await harness.context.setTimerRouteFocused(true, 1_100);
+      });
+      expect(repository.savedStates).toHaveLength(2);
+      expect(repository.state.activeTimer).toMatchObject({
+        accumulatedMs: 0,
+        runningSince: 1_000,
+      });
+
+      nowSpy.mockReturnValue(2_250);
+      await act(async () => {
+        appState.emit("background");
+        await flushLifecycle();
+      });
+      expect(repository.state.activeTimer).toMatchObject({
+        accumulatedMs: 1_250,
+        runningSince: null,
+      });
+      expect(repository.savedStates).toHaveLength(3);
+
+      nowSpy.mockReturnValue(4_000);
+      await act(async () => {
+        appState.emit("background");
+        appState.emit("background");
+        await flushLifecycle();
+      });
+      expect(repository.savedStates).toHaveLength(3);
+
+      nowSpy.mockReturnValue(5_000);
+      await act(async () => {
+        appState.emit("active");
+        await flushLifecycle();
+      });
+      expect(repository.state.activeTimer?.runningSince).toBe(5_000);
+
+      await act(async () => {
+        await harness.context.setTimerRouteFocused(false, 5_500);
+      });
+      expect(repository.state.activeTimer).toMatchObject({
+        accumulatedMs: 1_750,
+        runningSince: null,
+      });
+
+      nowSpy.mockReturnValue(9_000);
+      await act(async () => {
+        appState.emit("active");
+        await flushLifecycle();
+        await harness.context.setTimerRouteFocused(false, 9_000);
+        await harness.context.setTimerRouteFocused(true, 9_000);
+      });
+      expect(repository.state.activeTimer?.runningSince).toBe(9_000);
+
+      let outcome!: Awaited<ReturnType<typeof harness.context.finishTimer>>;
+      await act(async () => {
+        outcome = await harness.context.finishTimer(10_250);
+      });
+      expect(outcome.earnedNt).toBe(3);
+      expect(repository.state.activeTimer).toBeNull();
+    } finally {
+      await harness.unmount();
+      appState.restore();
+      nowSpy.mockRestore();
+    }
+  });
+
+  it("hydrates an old running segment paused without crediting closed time", async () => {
+    const appState = mockNativeAppState("background");
+    const repository = makeRepository();
+    repository.state = makeInitialState({
+      sessionId: "relaunch-session",
+      plannedSeconds: 60,
+      startedTaskName: "読書",
+      accumulatedMs: 750,
+      runningSince: 1_000,
+    });
+    const harness = await renderProvider(repository);
+
+    try {
+      expect(harness.context.state?.activeTimer).toMatchObject({
+        accumulatedMs: 750,
+        runningSince: null,
+      });
+      expect(repository.savedStates).toHaveLength(1);
+      await expect(harness.context.finishTimer(61_000)).rejects.toBeInstanceOf(
+        TimerNotReadyError,
       );
-    });
-    expect(context.status).toBe("ready");
+    } finally {
+      await harness.unmount();
+      appState.restore();
+    }
+  });
 
-    repository.failWrite = true;
-    await act(async () => {
-      await expect(context.startTimer(0)).rejects.toThrow("write failed");
+  it("reconciles route focus reported before hydration resolves", async () => {
+    const appState = mockNativeAppState("active");
+    const nowSpy = jest.spyOn(Date, "now").mockReturnValue(1_000);
+    let resolveLoad!: (state: AppState) => void;
+    const loadPromise = new Promise<AppState>((resolve) => {
+      resolveLoad = resolve;
     });
-    expect(context.state?.activeTimer).toBeNull();
+    const savedStates: AppState[] = [];
+    const repository: AppStateRepository = {
+      load: () => loadPromise,
+      save: async (state) => {
+        savedStates.push(state);
+      },
+    };
+    const harness = await renderProvider(repository);
 
-    repository.failWrite = false;
-    await act(async () => {
-      await context.startTimer(0);
-    });
-    expect(context.state?.activeTimer).not.toBeNull();
+    try {
+      await act(async () => {
+        await harness.context.setTimerRouteFocused(true, 1_000);
+      });
+      expect(harness.context.status).toBe("loading");
 
-    repository.failWrite = true;
-    await act(async () => {
-      await expect(context.finishTimer(Date.now())).rejects.toThrow("write failed");
-    });
-    expect(context.state?.activeTimer).not.toBeNull();
+      await act(async () => {
+        resolveLoad(
+          makeInitialState({
+            sessionId: "hydrated-session",
+            plannedSeconds: 60,
+            startedTaskName: "読書",
+            accumulatedMs: 750,
+            runningSince: null,
+          }),
+        );
+        await flushLifecycle();
+      });
 
-    await act(async () => {
-      renderer!.unmount();
-    });
+      expect(harness.context.status).toBe("ready");
+      expect(harness.context.state?.activeTimer).toMatchObject({
+        accumulatedMs: 750,
+        runningSince: 1_000,
+      });
+      expect(savedStates).toHaveLength(1);
+    } finally {
+      await harness.unmount();
+      appState.restore();
+      nowSpy.mockRestore();
+    }
   });
 });

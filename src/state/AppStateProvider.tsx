@@ -15,16 +15,13 @@ import {
   completeTimer,
   CompletionOutcome,
 } from "@/src/domain/completion";
+import { pauseTimer, resumeTimer } from "@/src/domain/timer";
 import { MAX_PLANNED_SECONDS, AppState, ActiveTimer } from "@/src/domain/types";
 import {
   appStateRepository,
   AppStateRepository,
   createInitialAppState,
 } from "@/src/storage/appStateRepository";
-import {
-  normalizeHydratedState,
-  useTimerLifecycle,
-} from "./useTimerLifecycle";
 
 export type HydrationStatus = "loading" | "ready" | "error";
 
@@ -56,6 +53,26 @@ type AppStateContextValue = {
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(undefined);
 
+type TimerEligibilityChange = {
+  appIsActive?: boolean;
+  routeFocused?: boolean;
+  changedAt: number;
+};
+
+function normalizeHydratedState(state: AppState): AppState {
+  if (!state.activeTimer || state.activeTimer.runningSince === null) {
+    return state;
+  }
+
+  return {
+    ...state,
+    activeTimer: {
+      ...state.activeTimer,
+      runningSince: null,
+    },
+  };
+}
+
 function makeSessionId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
 }
@@ -82,6 +99,8 @@ export function AppStateProvider({
   const [hydrationError, setHydrationError] = useState<Error | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
+  const appIsActiveRef = useRef(NativeAppState.currentState === "active");
+  const timerRouteFocusedRef = useRef(false);
 
   const commitState = useCallback((nextState: AppState) => {
     stateRef.current = nextState;
@@ -106,16 +125,41 @@ export function AppStateProvider({
     return current;
   }, []);
 
-  const {
-    applyTimerEligibility,
-    persistState,
-    setTimerRouteFocused,
-  } = useTimerLifecycle({
-    repository,
-    stateRef,
-    enqueue,
-    commitState,
-  });
+  const applyTimerEligibility = useCallback(
+    ({ appIsActive, routeFocused, changedAt }: TimerEligibilityChange) =>
+      enqueue(async () => {
+        if (appIsActive !== undefined) {
+          appIsActiveRef.current = appIsActive;
+        }
+        if (routeFocused !== undefined) {
+          timerRouteFocusedRef.current = routeFocused;
+        }
+
+        const current = stateRef.current;
+        if (!current?.activeTimer) {
+          return;
+        }
+
+        const eligible = appIsActiveRef.current && timerRouteFocusedRef.current;
+        const nextTimer = eligible
+          ? resumeTimer(current.activeTimer, changedAt)
+          : pauseTimer(current.activeTimer, changedAt);
+        if (nextTimer === current.activeTimer) {
+          return;
+        }
+
+        const nextState = { ...current, activeTimer: nextTimer };
+        await repository.save(nextState);
+        commitState(nextState);
+      }),
+    [commitState, enqueue, repository],
+  );
+
+  const setTimerRouteFocused = useCallback(
+    (focused: boolean, changedAt = Date.now()) =>
+      applyTimerEligibility({ routeFocused: focused, changedAt }),
+    [applyTimerEligibility],
+  );
 
   const retryHydration = useCallback(async () => {
     setStatus("loading");
@@ -123,20 +167,13 @@ export function AppStateProvider({
     try {
       const persisted = await repository.load();
       const loaded = normalizeHydratedState(persisted);
-      const hadUnknownRunningSegment =
-        persisted.activeTimer !== null && persisted.activeTimer.runningSince !== null;
+      if (loaded !== persisted) {
+        await repository.save(loaded);
+      }
       stateRef.current = loaded;
       setState(loaded);
       setStatus("ready");
-
-      try {
-        await applyTimerEligibility({
-          changedAt: Date.now(),
-          persistUnchanged: hadUnknownRunningSegment,
-        });
-      } catch {
-        // Hydration is usable with a paused timer; lifecycle persistence will retry.
-      }
+      void applyTimerEligibility({ changedAt: Date.now() }).catch(() => undefined);
     } catch (error) {
       const normalized = error instanceof Error ? error : new Error(String(error));
       setHydrationError(normalized);
@@ -168,10 +205,10 @@ export function AppStateProvider({
         }
         const current = requireState();
         const nextState = { ...current, taskName: normalized };
-        await persistState(nextState);
+        await repository.save(nextState);
         commitState(nextState);
       }),
-    [commitState, enqueue, persistState, requireState],
+    [commitState, enqueue, repository, requireState],
   );
 
   const startTimer = useCallback(
@@ -192,11 +229,11 @@ export function AppStateProvider({
           runningSince: null,
         };
         const nextState = { ...current, activeTimer };
-        await persistState(nextState);
+        await repository.save(nextState);
         commitState(nextState);
         return activeTimer;
       }),
-    [commitState, enqueue, persistState, requireState],
+    [commitState, enqueue, repository, requireState],
   );
 
   const cancelTimer = useCallback(
@@ -211,11 +248,11 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await persistState(outcome.state);
+        await repository.save(outcome.state);
         commitState(outcome.state);
         return true;
       }),
-    [commitState, enqueue, persistState, requireState],
+    [commitState, enqueue, repository, requireState],
   );
 
   const finishTimer = useCallback(
@@ -230,11 +267,11 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await persistState(outcome.state);
+        await repository.save(outcome.state);
         commitState(outcome.state);
         return outcome;
       }),
-    [commitState, enqueue, persistState, requireState],
+    [commitState, enqueue, repository, requireState],
   );
 
   const value = useMemo<AppStateContextValue>(
