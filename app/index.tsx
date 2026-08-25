@@ -2,6 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import React from "react";
 import {
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -86,6 +87,15 @@ export default function HomeScreen() {
               </TouchableOpacity>
             ) : null}
           </View>
+
+          <TouchableOpacity
+            style={styles.secret}
+            onPress={() => router.push("/shop")}
+            accessibilityRole="button"
+            accessibilityLabel="ショップを開く"
+          >
+            <Image source={require("@/assets/images/react-logo.png")} />
+          </TouchableOpacity>
 
           <StoryCharacters containerStyle={styles.homeCharacters} />
 
@@ -314,6 +324,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.14,
     shadowRadius: 4,
     width: 58,
+  },
+  secret: {
+    position: "absolute",
+    top: 70,
   },
   homeCharacters: {
     flex: 0,

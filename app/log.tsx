@@ -11,17 +11,17 @@ export default function CalendarScreen() {
     { storyTitle: string; totalTimerMinutes: number; taskMemo: string }
   > = {
     "2026-08-12": {
-      storyTitle: "ファースト・コンタクト",
+      storyTitle: "タスク完了！",
       totalTimerMinutes: 45,
       taskMemo: "P.8 ~ P.12",
     },
     "2026-08-19": {
-      storyTitle: "遥か彼方のラサイル星",
+      storyTitle: "上司からの労い",
       totalTimerMinutes: 120,
       taskMemo: "P.13 ~ P.20 今日は調子よかった。嘘。眠い。疲れた。しんどい。",
     },
     "2026-08-25": {
-      storyTitle: "「３日坊主」って誰？",
+      storyTitle: "部下の決意",
       totalTimerMinutes: 30,
       taskMemo: "P.21 ~ P.25",
     },

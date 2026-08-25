@@ -65,6 +65,7 @@ function AppShell() {
           <Stack.Screen name="timer" options={{ title: "タイマー" }} />
           <Stack.Screen name="story" options={{ title: "ストーリー" }} />
           <Stack.Screen name="log" options={{ title: "ログ" }} />
+          <Stack.Screen name="shop" options={{ title: "ショップ" }} />
         </Stack>
       </View>
       {!immersive ? (
