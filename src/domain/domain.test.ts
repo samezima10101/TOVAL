@@ -1,12 +1,17 @@
 import { localDateKey } from "./date";
 import { cancelTimer, completeTimer } from "./completion";
-import { formatDuration, getTimerSnapshot } from "./timer";
+import {
+  formatDuration,
+  getTimerSnapshot,
+  pauseTimer,
+  resumeTimer,
+} from "./timer";
 import { getLatestUnlockedEpisode } from "./storyData";
 import { AppState, ActiveTimer } from "./types";
 
 function stateWithTimer(timer: ActiveTimer): AppState {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     userName: "",
     taskName: "読書",
     totalNt: 7,
@@ -20,13 +25,15 @@ function stateWithTimer(timer: ActiveTimer): AppState {
 describe("timer calculations", () => {
   const timer: ActiveTimer = {
     sessionId: "session",
-    startedAt: 1_000,
     plannedSeconds: 60,
     startedTaskName: "読書",
+    accumulatedMs: 0,
+    runningSince: 1_000,
   };
 
   it("handles zero elapsed, exact deadline, remaining, and overtime", () => {
     expect(getTimerSnapshot(timer, 1_000)).toMatchObject({
+      elapsedMs: 0,
       elapsedSeconds: 0,
       remainingSeconds: 60,
       overtimeSeconds: 0,
@@ -34,6 +41,7 @@ describe("timer calculations", () => {
       earnedNt: 0,
     });
     expect(getTimerSnapshot(timer, 30_999)).toMatchObject({
+      elapsedMs: 29_999,
       elapsedSeconds: 29,
       remainingSeconds: 31,
       isComplete: false,
@@ -50,6 +58,42 @@ describe("timer calculations", () => {
       overtimeSeconds: 1,
       isComplete: true,
     });
+  });
+
+  it("keeps partial seconds in milliseconds until the snapshot floors them", () => {
+    const pausedTimer: ActiveTimer = {
+      ...timer,
+      accumulatedMs: 1_250,
+      runningSince: null,
+    };
+    expect(getTimerSnapshot(pausedTimer, 100_000)).toMatchObject({
+      elapsedMs: 1_250,
+      elapsedSeconds: 1,
+      earnedNt: 1,
+    });
+
+    const resumedTimer = resumeTimer(pausedTimer, 5_000);
+    expect(getTimerSnapshot(resumedTimer, 6_250)).toMatchObject({
+      elapsedMs: 2_500,
+      elapsedSeconds: 2,
+      earnedNt: 2,
+    });
+  });
+
+  it("makes repeated pause and resume transitions idempotent", () => {
+    const running = resumeTimer(
+      { ...timer, runningSince: null },
+      1_000,
+    );
+    expect(resumeTimer(running, 2_000)).toBe(running);
+
+    const paused = pauseTimer(running, 2_250);
+    expect(paused).toMatchObject({ accumulatedMs: 1_250, runningSince: null });
+    expect(pauseTimer(paused, 9_000)).toBe(paused);
+
+    const resumed = resumeTimer(paused, 10_000);
+    expect(resumed.runningSince).toBe(10_000);
+    expect(getTimerSnapshot(resumed, 11_000).elapsedMs).toBe(2_250);
   });
 
   it("floors NT and formats hours beyond 59 minutes", () => {
@@ -80,9 +124,10 @@ describe("completion rules", () => {
     const outcome = completeTimer(
       stateWithTimer({
         sessionId: "session",
-        startedAt: finishedAt - 61_234,
         plannedSeconds: 60,
         startedTaskName: "読書",
+        accumulatedMs: 0,
+        runningSince: finishedAt - 61_234,
       }),
       finishedAt,
     );
@@ -99,9 +144,10 @@ describe("completion rules", () => {
   it("does not reward cancellation or an early finish", () => {
     const state = stateWithTimer({
       sessionId: "session",
-      startedAt: finishedAt,
       plannedSeconds: 60,
       startedTaskName: "読書",
+      accumulatedMs: 0,
+      runningSince: finishedAt,
     });
     const early = completeTimer(state, finishedAt + 59_999);
     expect(early.status).toBe("not-ready");
@@ -119,9 +165,10 @@ describe("completion rules", () => {
     const firstState = completeTimer(
       stateWithTimer({
         sessionId: "first",
-        startedAt: finishedAt,
         plannedSeconds: 0,
         startedTaskName: "読書",
+        accumulatedMs: 0,
+        runningSince: finishedAt,
       }),
       finishedAt,
     ).state;
@@ -132,9 +179,10 @@ describe("completion rules", () => {
         ...firstState,
         activeTimer: {
           sessionId: "second",
-          startedAt: finishedAt,
           plannedSeconds: 0,
           startedTaskName: "読書",
+          accumulatedMs: 0,
+          runningSince: finishedAt,
         },
       },
       finishedAt + 10_000,
@@ -150,9 +198,10 @@ describe("completion rules", () => {
     const state: AppState = {
       ...stateWithTimer({
         sessionId: "session",
-        startedAt: finishedAt,
         plannedSeconds: 0,
         startedTaskName: "読書",
+        accumulatedMs: 0,
+        runningSince: finishedAt,
       }),
       lastCompletionDate: dayOne,
       unlockedStories: [
@@ -168,9 +217,10 @@ describe("completion rules", () => {
       ...third.state,
       activeTimer: {
         sessionId: "fourth",
-        startedAt: finishedAt,
         plannedSeconds: 0,
         startedTaskName: "読書",
+        accumulatedMs: 0,
+        runningSince: finishedAt,
       },
     };
     const fourth = completeTimer(allStoriesState, finishedAt + 2 * 24 * 60 * 60 * 1000);

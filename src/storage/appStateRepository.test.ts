@@ -50,12 +50,48 @@ describe("app state repository", () => {
       }),
     );
     expect(legacy).toMatchObject({
-      schemaVersion: 1,
+      schemaVersion: 2,
       taskName: "旧タスク",
       totalNt: 12,
       totalCompletions: 1,
+      activeTimer: null,
     });
     expect(parsePersistedState(JSON.stringify({ schemaVersion: 99 }))).toBeNull();
+  });
+
+  it("migrates a v1 in-flight timer as paused without preserving unknown elapsed time", () => {
+    const migrated = parsePersistedState(
+      JSON.stringify({
+        schemaVersion: 1,
+        userName: "ユーザー",
+        taskName: "旧タスク",
+        totalNt: 12,
+        totalCompletions: 1,
+        lastCompletionDate: "2025-01-01",
+        unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-01" }],
+        activeTimer: {
+          sessionId: "legacy-session",
+          startedAt: 1_000,
+          plannedSeconds: 3_600,
+          startedTaskName: "旧タスク",
+        },
+      }),
+    );
+
+    expect(migrated).toMatchObject({
+      schemaVersion: 2,
+      userName: "ユーザー",
+      totalNt: 12,
+      totalCompletions: 1,
+      unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-01" }],
+      activeTimer: {
+        sessionId: "legacy-session",
+        plannedSeconds: 3_600,
+        startedTaskName: "旧タスク",
+        accumulatedMs: 0,
+        runningSince: null,
+      },
+    });
   });
 
   it("writes and reads one validated snapshot", async () => {
@@ -66,6 +102,31 @@ describe("app state repository", () => {
     await repository.save(state);
     expect(storage.value).toContain('"taskName":"読書"');
     await expect(repository.load()).resolves.toEqual(state);
+  });
+
+  it("round-trips running and paused segment snapshots", async () => {
+    const storage = new FakeStorage();
+    const repository = createAppStateRepository(storage);
+    const running = {
+      ...createInitialAppState(),
+      taskName: "読書",
+      activeTimer: {
+        sessionId: "session",
+        plannedSeconds: 60,
+        startedTaskName: "読書",
+        accumulatedMs: 1_250,
+        runningSince: 5_000,
+      },
+    };
+    await repository.save(running);
+    await expect(repository.load()).resolves.toEqual(running);
+
+    const paused = {
+      ...running,
+      activeTimer: { ...running.activeTimer, runningSince: null },
+    };
+    await repository.save(paused);
+    await expect(repository.load()).resolves.toEqual(paused);
   });
 
   it("returns retryable errors instead of swallowing storage failures", async () => {

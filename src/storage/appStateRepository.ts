@@ -3,9 +3,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { localDateKey } from "@/src/domain/date";
 import {
   APP_SCHEMA_VERSION,
+  ActiveTimer,
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
+  UnlockedStory,
 } from "@/src/domain/types";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
@@ -63,8 +65,44 @@ const isDateKey = (value: unknown): value is string => {
 const isEpisodeId = (value: unknown): value is EpisodeId =>
   value === 1 || value === 2 || value === 3;
 
+function isNonNegativeSafeInteger(value: unknown): value is number {
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
 function parseActiveTimer(value: unknown): AppState["activeTimer"] | null | undefined {
   if (value === null) {
+    return null;
+  }
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const { sessionId, plannedSeconds, startedTaskName, accumulatedMs, runningSince } = value;
+  if (
+    typeof sessionId !== "string" ||
+    sessionId.trim().length === 0 ||
+    !isNonNegativeSafeInteger(accumulatedMs) ||
+    (runningSince !== null && !isNonNegativeSafeInteger(runningSince)) ||
+    typeof plannedSeconds !== "number" ||
+    !Number.isInteger(plannedSeconds) ||
+    plannedSeconds < 0 ||
+    plannedSeconds > MAX_PLANNED_SECONDS ||
+    typeof startedTaskName !== "string"
+  ) {
+    return undefined;
+  }
+
+  return {
+    sessionId,
+    plannedSeconds,
+    startedTaskName,
+    accumulatedMs,
+    runningSince,
+  };
+}
+
+function parseV1ActiveTimer(value: unknown): ActiveTimer | null | undefined {
+  if (value === null || value === undefined) {
     return null;
   }
   if (!isRecord(value)) {
@@ -75,9 +113,7 @@ function parseActiveTimer(value: unknown): AppState["activeTimer"] | null | unde
   if (
     typeof sessionId !== "string" ||
     sessionId.trim().length === 0 ||
-    typeof startedAt !== "number" ||
-    !Number.isFinite(startedAt) ||
-    startedAt < 0 ||
+    !isNonNegativeSafeInteger(startedAt) ||
     typeof plannedSeconds !== "number" ||
     !Number.isInteger(plannedSeconds) ||
     plannedSeconds < 0 ||
@@ -87,7 +123,15 @@ function parseActiveTimer(value: unknown): AppState["activeTimer"] | null | unde
     return undefined;
   }
 
-  return { sessionId, startedAt, plannedSeconds, startedTaskName };
+  // v1 had one wall-clock start and cannot distinguish active from background time.
+  // Keep the session, but restart accounting paused so unknown time is never credited.
+  return {
+    sessionId,
+    plannedSeconds,
+    startedTaskName,
+    accumulatedMs: 0,
+    runningSince: null,
+  };
 }
 
 export function validateAppState(value: unknown): value is AppState {
@@ -127,38 +171,59 @@ export function validateAppState(value: unknown): value is AppState {
   return parseActiveTimer(value.activeTimer) !== undefined;
 }
 
+function parseLegacyUnlockedStories(value: unknown): UnlockedStory[] {
+  if (!Array.isArray(value) || value.length > 3) {
+    return [];
+  }
+
+  const ids = new Set<number>();
+  const stories: UnlockedStory[] = [];
+  for (const story of value) {
+    if (
+      !isRecord(story) ||
+      !isEpisodeId(story.episodeId) ||
+      !isDateKey(story.unlockedDate) ||
+      ids.has(story.episodeId)
+    ) {
+      return [];
+    }
+    ids.add(story.episodeId);
+    stories.push({
+      episodeId: story.episodeId,
+      unlockedDate: story.unlockedDate,
+    });
+  }
+  return stories;
+}
+
 function migrateLegacyState(value: Record<string, unknown>): AppState | null {
-  if (value.schemaVersion !== 0 && value.schemaVersion !== undefined) {
+  if (
+    value.schemaVersion !== 0 &&
+    value.schemaVersion !== 1 &&
+    value.schemaVersion !== undefined
+  ) {
     return null;
   }
 
   const initial = createInitialAppState();
-  const migrated: Record<string, unknown> = {
+  const activeTimer = parseV1ActiveTimer(value.activeTimer);
+  const migrated: AppState = {
     ...initial,
-    schemaVersion: APP_SCHEMA_VERSION,
     userName: typeof value.userName === "string" ? value.userName : "",
     taskName: typeof value.taskName === "string" ? value.taskName : "",
-    totalNt:
-      typeof value.totalNt === "number" && Number.isInteger(value.totalNt) && value.totalNt >= 0
-        ? value.totalNt
-        : 0,
-    totalCompletions:
-      typeof value.totalCompletions === "number" &&
-      Number.isInteger(value.totalCompletions) &&
-      value.totalCompletions >= 0
-        ? value.totalCompletions
-        : 0,
+    totalNt: isNonNegativeSafeInteger(value.totalNt) ? value.totalNt : 0,
+    totalCompletions: isNonNegativeSafeInteger(value.totalCompletions)
+      ? value.totalCompletions
+      : 0,
     lastCompletionDate:
       value.lastCompletionDate === null || isDateKey(value.lastCompletionDate)
         ? value.lastCompletionDate
         : null,
-    unlockedStories: Array.isArray(value.unlockedStories)
-      ? value.unlockedStories
-      : [],
-    activeTimer: value.activeTimer ?? null,
+    unlockedStories: parseLegacyUnlockedStories(value.unlockedStories),
+    activeTimer: activeTimer ?? null,
   };
 
-  return validateAppState(migrated) ? migrated : initial;
+  return migrated;
 }
 
 export function parsePersistedState(raw: string): AppState | null {

@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import React from "react";
 import {
   Alert,
@@ -17,11 +17,20 @@ import { formatDuration, getTimerSnapshot } from "@/src/domain/timer";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function TimerScreen() {
-  const { state, cancelTimer, finishTimer } = useAppState();
+  const { state, cancelTimer, finishTimer, setTimerRouteFocused } = useAppState();
   const [now, setNow] = React.useState(Date.now);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const activeTimer = state?.activeTimer ?? null;
+
+  useFocusEffect(
+    React.useCallback(() => {
+      void setTimerRouteFocused(true).catch(() => undefined);
+      return () => {
+        void setTimerRouteFocused(false).catch(() => undefined);
+      };
+    }, [setTimerRouteFocused]),
+  );
 
   React.useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
