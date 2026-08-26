@@ -107,12 +107,25 @@ export function getStoryEpisode(id: number): StoryEpisode | undefined {
   return episodes.find((episode) => episode.id === id);
 }
 
-/** The most recently unlocked episode is the home screen's talk entry. */
+/** The most recently unlocked episode is shown in the home story card. */
 export function getLatestUnlockedEpisode(
   unlockedStories: readonly UnlockedStory[],
 ): StoryEpisode | undefined {
   const latestStory = unlockedStories[unlockedStories.length - 1];
   return latestStory ? getStoryEpisode(latestStory.episodeId) : undefined;
+}
+
+/** The newest unread episode is the home screen's temporary talk entry. */
+export function getLatestUnreadEpisode(
+  unlockedStories: readonly UnlockedStory[],
+): StoryEpisode | undefined {
+  for (let index = unlockedStories.length - 1; index >= 0; index -= 1) {
+    const story = unlockedStories[index];
+    if (!story.isRead) {
+      return getStoryEpisode(story.episodeId);
+    }
+  }
+  return undefined;
 }
 
 export function isEpisodeId(value: number): value is EpisodeId {

@@ -161,6 +161,7 @@ export function validateAppState(value: unknown): value is AppState {
       !isRecord(story) ||
       !isEpisodeId(story.episodeId) ||
       !isDateKey(story.unlockedDate) ||
+      typeof story.isRead !== "boolean" ||
       ids.has(story.episodeId)
     ) {
       return false;
@@ -191,6 +192,8 @@ function parseLegacyUnlockedStories(value: unknown): UnlockedStory[] {
     stories.push({
       episodeId: story.episodeId,
       unlockedDate: story.unlockedDate,
+      // Existing stories predate unread tracking and should not appear as new updates.
+      isRead: true,
     });
   }
   return stories;
@@ -200,13 +203,17 @@ function migrateLegacyState(value: Record<string, unknown>): AppState | null {
   if (
     value.schemaVersion !== 0 &&
     value.schemaVersion !== 1 &&
+    value.schemaVersion !== 2 &&
     value.schemaVersion !== undefined
   ) {
     return null;
   }
 
   const initial = createInitialAppState();
-  const activeTimer = parseV1ActiveTimer(value.activeTimer);
+  const activeTimer =
+    value.schemaVersion === 2
+      ? parseActiveTimer(value.activeTimer)
+      : parseV1ActiveTimer(value.activeTimer);
   const migrated: AppState = {
     ...initial,
     userName: typeof value.userName === "string" ? value.userName : "",

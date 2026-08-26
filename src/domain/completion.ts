@@ -53,7 +53,7 @@ function nextUnlockedStory(
         unlockedEpisode,
         unlockedStories: [
           ...state.unlockedStories.map((story) => ({ ...story })),
-          { episodeId: unlockedEpisode, unlockedDate: dateKey },
+          { episodeId: unlockedEpisode, unlockedDate: dateKey, isRead: false },
         ],
       };
     }

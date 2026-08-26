@@ -3,7 +3,7 @@ import React from "react";
 import TestRenderer, { act } from "react-test-renderer";
 import { AppState as NativeAppState } from "react-native";
 
-import { AppState } from "@/src/domain/types";
+import { APP_SCHEMA_VERSION, AppState } from "@/src/domain/types";
 import { AppStateRepository } from "@/src/storage/appStateRepository";
 import {
   AppStateProvider,
@@ -33,7 +33,7 @@ type NativeAppStateFixture = {
 
 function makeInitialState(activeTimer: AppState["activeTimer"] = null): AppState {
   return {
-    schemaVersion: 2,
+    schemaVersion: APP_SCHEMA_VERSION,
     userName: "",
     taskName: "読書",
     totalNt: 0,
@@ -145,6 +145,47 @@ describe("AppStateProvider persistence ordering", () => {
         await expect(harness.context.finishTimer(Date.now())).rejects.toThrow("write failed");
       });
       expect(harness.context.state?.activeTimer).not.toBeNull();
+    } finally {
+      await harness.unmount();
+    }
+  });
+});
+
+describe("AppStateProvider story read state", () => {
+  it("persists a read story, is idempotent, and leaves state unchanged on failure", async () => {
+    const repository = makeRepository();
+    repository.state = {
+      ...repository.state,
+      unlockedStories: [
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+        { episodeId: 2, unlockedDate: "2025-01-02", isRead: false },
+      ],
+    };
+    const harness = await renderProvider(repository);
+
+    try {
+      await act(async () => {
+        await harness.context.markStoryRead(1);
+      });
+      expect(repository.state.unlockedStories).toEqual([
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+        { episodeId: 2, unlockedDate: "2025-01-02", isRead: false },
+      ]);
+      expect(repository.savedStates).toHaveLength(1);
+
+      await act(async () => {
+        await harness.context.markStoryRead(1);
+      });
+      expect(repository.savedStates).toHaveLength(1);
+
+      repository.failWrite = true;
+      await act(async () => {
+        await expect(harness.context.markStoryRead(2)).rejects.toThrow("write failed");
+      });
+      expect(harness.context.state?.unlockedStories).toEqual(
+        repository.state.unlockedStories,
+      );
+      expect(repository.state.unlockedStories[1].isRead).toBe(false);
     } finally {
       await harness.unmount();
     }
