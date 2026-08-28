@@ -3,7 +3,6 @@ import React from "react";
 import {
   Alert,
   ImageBackground,
-  AppState as NativeAppState,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -14,12 +13,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors } from "@/src/constants/theme";
 import { formatDuration, getTimerSnapshot } from "@/src/domain/timer";
+import useTimerTick from "@/src/hooks/useTimerTick";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function TimerScreen() {
   const { state, cancelTimer, finishTimer, setTimerRouteFocused } =
     useAppState();
-  const [now, setNow] = React.useState(Date.now);
+  const now = useTimerTick();
+
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const activeTimer = state?.activeTimer ?? null;
@@ -32,23 +33,6 @@ export default function TimerScreen() {
       };
     }, [setTimerRouteFocused]),
   );
-
-  React.useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    const subscription = NativeAppState.addEventListener(
-      "change",
-      (nextState) => {
-        if (nextState === "active") {
-          setNow(Date.now());
-        }
-      },
-    );
-
-    return () => {
-      clearInterval(interval);
-      subscription.remove();
-    };
-  }, []);
 
   React.useEffect(() => {
     if (!activeTimer) {
@@ -74,33 +58,32 @@ export default function TimerScreen() {
         {
           text: "キャンセルする",
           style: "destructive",
-          onPress: () => void performCancel(),
+          onPress: async () => {
+            setError(null);
+            setIsProcessing(true);
+            try {
+              await cancelTimer(Date.now());
+              router.replace("/");
+            } catch (cause) {
+              setError(
+                cause instanceof Error
+                  ? cause.message
+                  : "キャンセルできませんでした。",
+              );
+            } finally {
+              setIsProcessing(false);
+            }
+          },
         },
       ],
     );
   };
 
-  const performCancel = async () => {
-    setError(null);
-    setIsProcessing(true);
-    try {
-      await cancelTimer(Date.now());
-      router.replace("/");
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "キャンセルできませんでした。",
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
-
   const handleFinish = async () => {
     setError(null);
     setIsProcessing(true);
-    const finishedAt = Date.now();
     try {
-      const outcome = await finishTimer(finishedAt);
+      const outcome = await finishTimer(Date.now());
       if (outcome.unlockedEpisode) {
         router.replace({
           pathname: "/story",

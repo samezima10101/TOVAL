@@ -2,7 +2,7 @@ import Ionicons from "@expo/vector-icons/Ionicons";
 import React from "react";
 import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import StoryCharacters from "@/src/components/StoryCharacters";
+import StoryCharacters from "@/src/components/story/StoryCharacters";
 import { Colors } from "@/src/constants/theme";
 import { StoryEpisode } from "@/src/domain/types";
 

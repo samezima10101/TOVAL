@@ -1,3 +1,4 @@
+import { todayKey } from "@/src/domain/date";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
@@ -21,7 +22,7 @@ export default function CustomCalendar({
 }: CustomCalendarProps) {
   return (
     <Calendar
-      current="2026-08-01" // 初期表示月
+      current={todayKey()}
       dayComponent={({ date, state }: { date?: DateData; state?: string }) => {
         if (!date) return null;
 

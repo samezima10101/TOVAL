@@ -1,13 +1,14 @@
 import { router } from "expo-router";
 import React from "react";
 import {
-    ScrollView,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 
+import BackButton from "@/src/components/common/BackButton";
 import { Colors } from "@/src/constants/theme";
 import { formatLocalDate } from "@/src/domain/date";
 import { STORY_EPISODES } from "@/src/domain/storyData";
@@ -28,14 +29,7 @@ export default function MemoryScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.dismissTo("/")}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="ホームへ戻る"
-        >
-          <Text style={styles.backText}>＜ ホーム</Text>
-        </TouchableOpacity>
+        <BackButton />
         <Text style={styles.headerTitle}>メモリー</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -123,15 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 13,
-  },
-  backButton: {
-    paddingRight: 10,
-    paddingVertical: 8,
-  },
-  backText: {
-    color: Colors.textSub,
-    fontSize: 15,
-    fontWeight: "700",
   },
   headerTitle: {
     color: Colors.text,

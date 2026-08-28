@@ -3,14 +3,11 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import StoryCharacters from "@/src/components/StoryCharacters";
+import BackButton from "@/src/components/common/BackButton";
+import StoryCharacters from "@/src/components/story/StoryCharacters";
+import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
-import {
-  getStoryEpisode,
-  isEpisodeId,
-  STORY_CHARACTER_BY_SPEAKER,
-  STORY_CHARACTER_NAMES,
-} from "@/src/domain/storyData";
+import { getStoryEpisode, isEpisodeId } from "@/src/domain/storyData";
 import { EpisodeId } from "@/src/domain/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -37,6 +34,7 @@ export default function StoryScreen() {
     episodeId &&
     state?.unlockedStories.some((story) => story.episodeId === episodeId),
   );
+
   const [lineIndex, setLineIndex] = React.useState(0);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -46,6 +44,14 @@ export default function StoryScreen() {
     setLineIndex(0);
   }, [episodeId]);
 
+  const handleClose = () => {
+    if (source === "memory") {
+      router.dismissTo("/memory");
+    } else {
+      router.replace("/");
+    }
+  };
+
   if (!episode || !isUnlocked) {
     return (
       <SafeAreaView style={styles.invalidContainer} edges={["top", "bottom"]}>
@@ -53,24 +59,14 @@ export default function StoryScreen() {
         <Text style={styles.invalidDescription}>
           メモリーから解放済みのストーリーを選んでください。
         </Text>
-        <TouchableOpacity
-          onPress={() =>
-            source === "memory"
-              ? router.dismissTo("/memory")
-              : router.replace("/")
-          }
-          style={styles.homeButton}
-          accessibilityRole="button"
-          accessibilityLabel="戻る"
-        >
-          <Text style={styles.homeButtonText}>戻る</Text>
-        </TouchableOpacity>
+        <BackButton label="戻る" onPress={handleClose} />
       </SafeAreaView>
     );
   }
 
   const line = episode.lines[lineIndex];
   const isLastLine = lineIndex === episode.lines.length - 1;
+
   const handleNext = async () => {
     if (isProcessingRef.current) {
       return;
@@ -85,11 +81,7 @@ export default function StoryScreen() {
     setIsProcessing(true);
     try {
       await markStoryRead(episode.id);
-      if (source === "memory") {
-        router.dismissTo("/memory");
-      } else {
-        router.replace("/");
-      }
+      handleClose(); // 成功時も共通の戻る関数を使用
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -106,14 +98,10 @@ export default function StoryScreen() {
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Text style={styles.episodeTitle} numberOfLines={2}>
-          Episode {String(episode.id).padStart(2, "0")}　{episode.title}
+          Episode {String(episode.id).padStart(2, "0")} {episode.title}
         </Text>
         <TouchableOpacity
-          onPress={() =>
-            source === "memory"
-              ? router.dismissTo("/memory")
-              : router.replace("/")
-          }
+          onPress={handleClose}
           style={styles.closeButton}
           disabled={isProcessing}
           accessibilityRole="button"
@@ -132,25 +120,13 @@ export default function StoryScreen() {
         activeSpeaker={line.speaker}
       />
 
-      <TouchableOpacity
-        style={[styles.messageBox, isProcessing && styles.messageBoxDisabled]}
-        onPress={() => void handleNext()}
-        disabled={isProcessing}
-        activeOpacity={0.9}
-        accessibilityRole="button"
-        accessibilityLabel={
-          isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"
-        }
-        accessibilityState={{ disabled: isProcessing }}
-      >
-        <Text style={styles.speakerName}>
-          {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]]}
-        </Text>
-        <Text style={styles.messageText}>{line.text}</Text>
-        <Text style={styles.tapPrompt}>
-          {isLastLine ? "Tap to close ▼" : "Tap to next ▼"}
-        </Text>
-      </TouchableOpacity>
+      <StoryMessageBox
+        speaker={line.speaker}
+        text={line.text}
+        isLastLine={isLastLine}
+        isProcessing={isProcessing}
+        onNext={handleNext}
+      />
     </SafeAreaView>
   );
 }
@@ -185,42 +161,6 @@ const styles = StyleSheet.create({
     color: Colors.textSub,
     fontSize: 13,
     fontWeight: "700",
-  },
-  messageBox: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderRadius: 16,
-    borderWidth: 2,
-    elevation: 4,
-    margin: 18,
-    minHeight: 190,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  messageBoxDisabled: {
-    opacity: 0.7,
-  },
-  speakerName: {
-    color: Colors.primary,
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 10,
-  },
-  messageText: {
-    color: Colors.text,
-    fontSize: 18,
-    lineHeight: 30,
-  },
-  tapPrompt: {
-    bottom: 14,
-    color: Colors.textSub,
-    fontSize: 13,
-    fontWeight: "700",
-    position: "absolute",
-    right: 18,
   },
   error: {
     backgroundColor: "#FFF1F0",
