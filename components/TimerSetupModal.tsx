@@ -1,18 +1,12 @@
-import React from "react";
 import { Colors } from "@/constants/theme";
 import { MAX_PLANNED_SECONDS } from "@/src/domain/types";
+import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 const MAX_MINUTES = MAX_PLANNED_SECONDS / 60;
 
 function clampMinutes(value: number): number {
   return Math.max(0, Math.min(MAX_MINUTES, Math.round(value / 5) * 5));
-}
-
-function displayMinutes(minutes: number): string {
-  const hours = Math.floor(minutes / 60);
-  const remainder = minutes % 60;
-  return `${String(hours).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
 }
 
 export default function TimerSetupModal({
@@ -30,32 +24,42 @@ export default function TimerSetupModal({
   onStart: (plannedSeconds: number) => Promise<void>;
   onResume: () => void;
 }) {
-  const [minutes, setMinutes] = React.useState(() => clampMinutes(initialMinutes));
+  const [totalMinutes, setTotalMinutes] = React.useState(() =>
+    clampMinutes(initialMinutes),
+  );
   const [isStarting, setIsStarting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     if (visible) {
-      setMinutes(clampMinutes(initialMinutes));
+      setTotalMinutes(clampMinutes(initialMinutes));
       setError(null);
     }
   }, [initialMinutes, visible]);
 
   const adjust = (amount: number) => {
-    setMinutes((current) => clampMinutes(current + amount));
+    setTotalMinutes((current) => clampMinutes(current + amount));
   };
 
   const handleStart = async () => {
     setError(null);
     setIsStarting(true);
     try {
-      await onStart(minutes * 60);
+      await onStart(totalMinutes * 60);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "タイマーを開始できませんでした。");
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "タイマーを開始できませんでした。",
+      );
     } finally {
       setIsStarting(false);
     }
   };
+
+  // UI表示用の時間と分を計算
+  const displayHours = Math.floor(totalMinutes / 60);
+  const displayMins = totalMinutes % 60;
 
   return (
     <Modal
@@ -87,46 +91,70 @@ export default function TimerSetupModal({
               <Text style={styles.description}>
                 5分単位、または1時間単位で調整できます。0:00はデバッグ用です。
               </Text>
-              <View style={styles.timeRow}>
-                <TouchableOpacity
-                  onPress={() => adjust(-60)}
-                  style={styles.adjustButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="1時間減らす"
-                >
-                  <Text style={styles.adjustText}>−1h</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => adjust(-5)}
-                  style={styles.adjustButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="5分減らす"
-                >
-                  <Text style={styles.adjustText}>−5m</Text>
-                </TouchableOpacity>
-                <Text style={styles.timeText} accessibilityLabel={`設定時間 ${displayMinutes(minutes)}`}>
-                  {displayMinutes(minutes)}
-                </Text>
-                <TouchableOpacity
-                  onPress={() => adjust(5)}
-                  style={styles.adjustButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="5分増やす"
-                >
-                  <Text style={styles.adjustText}>＋5m</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => adjust(60)}
-                  style={styles.adjustButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="1時間増やす"
-                >
-                  <Text style={styles.adjustText}>＋1h</Text>
-                </TouchableOpacity>
+
+              <View style={styles.pickerContainer}>
+                {/* 時間の設定カラム */}
+                <View style={styles.pickerColumn}>
+                  <TouchableOpacity
+                    onPress={() => adjust(60)}
+                    style={styles.arrowButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="1時間増やす"
+                  >
+                    <Text style={styles.arrowText}>＋</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.numberText, { color: Colors.primary }]}>
+                    {displayHours}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => adjust(-60)}
+                    style={styles.arrowButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="1時間減らす"
+                  >
+                    <Text style={styles.arrowText}>－</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.unitText, { color: Colors.textSub }]}>
+                    hour
+                  </Text>
+                </View>
+
+                <Text style={[styles.colon, { color: Colors.text }]}>:</Text>
+
+                {/* 分の設定カラム */}
+                <View style={styles.pickerColumn}>
+                  <TouchableOpacity
+                    onPress={() => adjust(5)}
+                    style={styles.arrowButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="5分増やす"
+                  >
+                    <Text style={styles.arrowText}>＋</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.numberText, { color: Colors.primary }]}>
+                    {String(displayMins).padStart(2, "0")}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => adjust(-5)}
+                    style={styles.arrowButton}
+                    accessibilityRole="button"
+                    accessibilityLabel="5分減らす"
+                  >
+                    <Text style={styles.arrowText}>－</Text>
+                  </TouchableOpacity>
+                  <Text style={[styles.unitText, { color: Colors.textSub }]}>
+                    min
+                  </Text>
+                </View>
               </View>
+
               {error ? <Text style={styles.error}>{error}</Text> : null}
+
               <TouchableOpacity
-                style={[styles.primaryAction, isStarting && styles.disabledAction]}
+                style={[
+                  styles.primaryAction,
+                  isStarting && styles.disabledAction,
+                ]}
                 onPress={() => void handleStart()}
                 disabled={isStarting}
                 accessibilityRole="button"
@@ -179,34 +207,44 @@ const styles = StyleSheet.create({
     marginTop: 12,
     textAlign: "center",
   },
-  timeRow: {
-    alignItems: "center",
+
+  // 新しいピッカーUI用のスタイル
+  pickerContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 24,
-  },
-  timeText: {
-    color: Colors.text,
-    flex: 1,
-    fontSize: 30,
-    fontVariant: ["tabular-nums"],
-    fontWeight: "700",
-    textAlign: "center",
-  },
-  adjustButton: {
     alignItems: "center",
-    borderColor: Colors.border,
-    borderRadius: 10,
-    borderWidth: 1,
-    minWidth: 42,
-    paddingHorizontal: 5,
-    paddingVertical: 10,
+    justifyContent: "center",
+    marginTop: 24,
+    marginBottom: 10,
   },
-  adjustText: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontWeight: "700",
+  pickerColumn: {
+    alignItems: "center",
+    width: 80,
   },
+  arrowButton: {
+    padding: 10,
+  },
+  arrowText: {
+    fontSize: 24,
+    color: Colors.border,
+    fontWeight: "bold",
+  },
+  numberText: {
+    fontSize: 48,
+    fontWeight: "bold",
+    marginVertical: 10,
+    fontVariant: ["tabular-nums"],
+  },
+  unitText: {
+    fontSize: 16,
+    marginTop: 5,
+  },
+  colon: {
+    fontSize: 36,
+    fontWeight: "bold",
+    marginHorizontal: 10,
+    marginBottom: 25, // 「hour/min」のテキスト分だけ少し上にズラして中央を合わせるための余白
+  },
+
   primaryAction: {
     alignItems: "center",
     backgroundColor: Colors.accent,
