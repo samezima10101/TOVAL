@@ -10,10 +10,10 @@ import {
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
-import TaskNameModal from "@/src/components/TaskNameModal";
-import TimerSetupModal from "@/src/components/TimerSetupModal";
+import TaskNameModal from "@/src/components/home/TaskNameModal";
+import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Colors } from "@/src/constants/theme";
-import { todayKey } from "@/src/domain/date";
+import { todayKey } from "@/src/domain/common/date";
 import {
   getLatestUnlockedEpisode,
   getLatestUnreadEpisode,

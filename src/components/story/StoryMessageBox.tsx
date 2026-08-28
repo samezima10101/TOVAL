@@ -2,11 +2,11 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
 import { Colors } from "@/src/constants/theme";
+import type { Speaker } from "@/src/domain/common/types";
 import {
     STORY_CHARACTER_BY_SPEAKER,
     STORY_CHARACTER_NAMES,
 } from "@/src/domain/storyData";
-import type { Speaker } from "@/src/domain/types";
 
 type Props = {
   speaker: Speaker;

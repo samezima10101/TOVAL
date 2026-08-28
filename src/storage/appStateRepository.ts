@@ -1,6 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { localDateKey } from "@/src/domain/date";
+import { localDateKey } from "@/src/domain/common/date";
 import {
   APP_SCHEMA_VERSION,
   ActiveTimer,
@@ -8,7 +8,7 @@ import {
   EpisodeId,
   MAX_PLANNED_SECONDS,
   UnlockedStory,
-} from "@/src/domain/types";
+} from "@/src/domain/common/types";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
 
@@ -20,11 +20,7 @@ export type StorageLike = {
 export class AppStateStorageError extends Error {
   readonly operation: "read" | "write";
 
-  constructor(
-    operation: "read" | "write",
-    message: string,
-    cause?: unknown,
-  ) {
+  constructor(operation: "read" | "write", message: string, cause?: unknown) {
     super(message);
     this.name = "AppStateStorageError";
     this.operation = operation;
@@ -69,7 +65,9 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
-function parseActiveTimer(value: unknown): AppState["activeTimer"] | null | undefined {
+function parseActiveTimer(
+  value: unknown,
+): AppState["activeTimer"] | null | undefined {
   if (value === null) {
     return null;
   }
@@ -77,7 +75,13 @@ function parseActiveTimer(value: unknown): AppState["activeTimer"] | null | unde
     return undefined;
   }
 
-  const { sessionId, plannedSeconds, startedTaskName, accumulatedMs, runningSince } = value;
+  const {
+    sessionId,
+    plannedSeconds,
+    startedTaskName,
+    accumulatedMs,
+    runningSince,
+  } = value;
   if (
     typeof sessionId !== "string" ||
     sessionId.trim().length === 0 ||
@@ -148,7 +152,8 @@ export function validateAppState(value: unknown): value is AppState {
     typeof value.totalCompletions !== "number" ||
     !Number.isInteger(value.totalCompletions) ||
     value.totalCompletions < 0 ||
-    (value.lastCompletionDate !== null && !isDateKey(value.lastCompletionDate)) ||
+    (value.lastCompletionDate !== null &&
+      !isDateKey(value.lastCompletionDate)) ||
     !Array.isArray(value.unlockedStories) ||
     value.unlockedStories.length > 3
   ) {
@@ -261,7 +266,11 @@ export function createAppStateRepository(
       try {
         raw = await storage.getItem(APP_STATE_STORAGE_KEY);
       } catch (error) {
-        throw new AppStateStorageError("read", "アプリ状態を読み込めませんでした。", error);
+        throw new AppStateStorageError(
+          "read",
+          "アプリ状態を読み込めませんでした。",
+          error,
+        );
       }
 
       if (raw === null) {
@@ -273,13 +282,20 @@ export function createAppStateRepository(
 
     async save(state) {
       if (!validateAppState(state)) {
-        throw new AppStateStorageError("write", "保存するアプリ状態が不正です。");
+        throw new AppStateStorageError(
+          "write",
+          "保存するアプリ状態が不正です。",
+        );
       }
 
       try {
         await storage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(state));
       } catch (error) {
-        throw new AppStateStorageError("write", "アプリ状態を保存できませんでした。", error);
+        throw new AppStateStorageError(
+          "write",
+          "アプリ状態を保存できませんでした。",
+          error,
+        );
       }
     },
   };

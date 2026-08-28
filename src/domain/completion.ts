@@ -1,11 +1,11 @@
-import { localDateKey } from "./date";
-import { getTimerSnapshot } from "./timer";
+import { localDateKey } from "./common/date";
 import {
   AppState,
   EpisodeId,
   STORY_COUNT,
   UnlockedStory,
-} from "./types";
+} from "./common/types";
+import { getTimerSnapshot } from "./timer";
 
 export type CompletionStatus = "completed" | "not-ready" | "no-active-timer";
 
@@ -45,7 +45,9 @@ function nextUnlockedStory(
     };
   }
 
-  const unlockedIds = new Set(state.unlockedStories.map((story) => story.episodeId));
+  const unlockedIds = new Set(
+    state.unlockedStories.map((story) => story.episodeId),
+  );
   for (let id = 1; id <= STORY_COUNT; id += 1) {
     if (!unlockedIds.has(id as EpisodeId)) {
       const unlockedEpisode = id as EpisodeId;

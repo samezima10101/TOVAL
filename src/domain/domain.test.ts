@@ -1,16 +1,13 @@
-import { localDateKey } from "./date";
+import { localDateKey } from "./common/date";
+import { ActiveTimer, APP_SCHEMA_VERSION, AppState } from "./common/types";
 import { cancelTimer, completeTimer } from "./completion";
+import { getLatestUnlockedEpisode, getLatestUnreadEpisode } from "./storyData";
 import {
   formatDuration,
   getTimerSnapshot,
   pauseTimer,
   resumeTimer,
 } from "./timer";
-import {
-  getLatestUnreadEpisode,
-  getLatestUnlockedEpisode,
-} from "./storyData";
-import { APP_SCHEMA_VERSION, AppState, ActiveTimer } from "./types";
 
 function stateWithTimer(timer: ActiveTimer): AppState {
   return {
@@ -84,10 +81,7 @@ describe("timer calculations", () => {
   });
 
   it("makes repeated pause and resume transitions idempotent", () => {
-    const running = resumeTimer(
-      { ...timer, runningSince: null },
-      1_000,
-    );
+    const running = resumeTimer({ ...timer, runningSince: null }, 1_000);
     expect(resumeTimer(running, 2_000)).toBe(running);
 
     const paused = pauseTimer(running, 2_250);
@@ -190,7 +184,9 @@ describe("completion rules", () => {
       }),
       finishedAt,
     ).state;
-    expect(completeTimer(firstState, finishedAt + 1).status).toBe("no-active-timer");
+    expect(completeTimer(firstState, finishedAt + 1).status).toBe(
+      "no-active-timer",
+    );
 
     const secondState = completeTimer(
       {
@@ -241,10 +237,15 @@ describe("completion rules", () => {
         runningSince: finishedAt,
       },
     };
-    const fourth = completeTimer(allStoriesState, finishedAt + 2 * 24 * 60 * 60 * 1000);
+    const fourth = completeTimer(
+      allStoriesState,
+      finishedAt + 2 * 24 * 60 * 60 * 1000,
+    );
     expect(fourth.status).toBe("completed");
     expect(fourth.unlockedEpisode).toBeNull();
-    expect(fourth.state.totalCompletions).toBe(allStoriesState.totalCompletions + 1);
+    expect(fourth.state.totalCompletions).toBe(
+      allStoriesState.totalCompletions + 1,
+    );
     expect(fourth.state.totalNt).toBeGreaterThan(allStoriesState.totalNt);
   });
 });

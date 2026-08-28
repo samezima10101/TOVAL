@@ -1,13 +1,17 @@
-import { Colors } from "@/src/constants/theme";
-import { MAX_PLANNED_SECONDS } from "@/src/domain/types";
 import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-const MAX_MINUTES = MAX_PLANNED_SECONDS / 60;
+import { Colors } from "@/src/constants/theme";
+import useTimerSetup from "@/src/hooks/useTimerSetup";
 
-function clampMinutes(value: number): number {
-  return Math.max(0, Math.min(MAX_MINUTES, Math.round(value / 5) * 5));
-}
+type Props = {
+  visible: boolean;
+  initialMinutes?: number;
+  hasActiveTimer: boolean;
+  onClose: () => void;
+  onStart: (plannedSeconds: number) => Promise<void>;
+  onResume: () => void;
+};
 
 export default function TimerSetupModal({
   visible,
@@ -16,50 +20,9 @@ export default function TimerSetupModal({
   onClose,
   onStart,
   onResume,
-}: {
-  visible: boolean;
-  initialMinutes?: number;
-  hasActiveTimer: boolean;
-  onClose: () => void;
-  onStart: (plannedSeconds: number) => Promise<void>;
-  onResume: () => void;
-}) {
-  const [totalMinutes, setTotalMinutes] = React.useState(() =>
-    clampMinutes(initialMinutes),
-  );
-  const [isStarting, setIsStarting] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  React.useEffect(() => {
-    if (visible) {
-      setTotalMinutes(clampMinutes(initialMinutes));
-      setError(null);
-    }
-  }, [initialMinutes, visible]);
-
-  const adjust = (amount: number) => {
-    setTotalMinutes((current) => clampMinutes(current + amount));
-  };
-
-  const handleStart = async () => {
-    setError(null);
-    setIsStarting(true);
-    try {
-      await onStart(totalMinutes * 60);
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "タイマーを開始できませんでした。",
-      );
-    } finally {
-      setIsStarting(false);
-    }
-  };
-
-  // UI表示用の時間と分を計算
-  const displayHours = Math.floor(totalMinutes / 60);
-  const displayMins = totalMinutes % 60;
+}: Props) {
+  const { isStarting, error, displayHours, displayMins, adjust, handleStart } =
+    useTimerSetup(initialMinutes, visible, onStart);
 
   return (
     <Modal
@@ -155,7 +118,7 @@ export default function TimerSetupModal({
                   styles.primaryAction,
                   isStarting && styles.disabledAction,
                 ]}
-                onPress={() => void handleStart()}
+                onPress={handleStart}
                 disabled={isStarting}
                 accessibilityRole="button"
                 accessibilityLabel="設定した時間でタイマーを開始"

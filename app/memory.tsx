@@ -10,7 +10,7 @@ import {
 
 import BackButton from "@/src/components/common/BackButton";
 import { Colors } from "@/src/constants/theme";
-import { formatLocalDate } from "@/src/domain/date";
+import { formatLocalDate } from "@/src/domain/common/date";
 import { STORY_EPISODES } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 

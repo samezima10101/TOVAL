@@ -1,4 +1,4 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,8 +7,9 @@ import BackButton from "@/src/components/common/BackButton";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
+import { EpisodeId } from "@/src/domain/common/types";
 import { getStoryEpisode, isEpisodeId } from "@/src/domain/storyData";
-import { EpisodeId } from "@/src/domain/types";
+import { useStoryReader } from "@/src/hooks/useStoryData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 function parseEpisodeId(
@@ -35,22 +36,10 @@ export default function StoryScreen() {
     state?.unlockedStories.some((story) => story.episodeId === episodeId),
   );
 
-  const [lineIndex, setLineIndex] = React.useState(0);
-  const [isProcessing, setIsProcessing] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const isProcessingRef = React.useRef(false);
-
-  React.useEffect(() => {
-    setLineIndex(0);
-  }, [episodeId]);
-
-  const handleClose = () => {
-    if (source === "memory") {
-      router.dismissTo("/memory");
-    } else {
-      router.replace("/");
-    }
-  };
+  const { line, isLastLine, isProcessing, error, handleNext, handleClose } =
+    useStoryReader(episode, source, (id) =>
+      isEpisodeId(id) ? markStoryRead(id) : Promise.resolve(),
+    );
 
   if (!episode || !isUnlocked) {
     return (
@@ -64,35 +53,7 @@ export default function StoryScreen() {
     );
   }
 
-  const line = episode.lines[lineIndex];
-  const isLastLine = lineIndex === episode.lines.length - 1;
-
-  const handleNext = async () => {
-    if (isProcessingRef.current) {
-      return;
-    }
-    if (!isLastLine) {
-      setLineIndex((index) => index + 1);
-      return;
-    }
-
-    setError(null);
-    isProcessingRef.current = true;
-    setIsProcessing(true);
-    try {
-      await markStoryRead(episode.id);
-      handleClose(); // 成功時も共通の戻る関数を使用
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "ストーリーを保存できませんでした。もう一度お試しください。",
-      );
-    } finally {
-      isProcessingRef.current = false;
-      setIsProcessing(false);
-    }
-  };
+  if (!line) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>

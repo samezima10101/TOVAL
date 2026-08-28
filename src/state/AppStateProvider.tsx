@@ -11,17 +11,17 @@ import React, {
 import { AppState as NativeAppState } from "react-native";
 
 import {
+  ActiveTimer,
+  AppState,
+  EpisodeId,
+  MAX_PLANNED_SECONDS,
+} from "@/src/domain/common/types";
+import {
   cancelTimer as cancelTimerState,
   completeTimer,
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
-import {
-  MAX_PLANNED_SECONDS,
-  AppState,
-  ActiveTimer,
-  EpisodeId,
-} from "@/src/domain/types";
 import {
   appStateRepository,
   AppStateRepository,
@@ -57,7 +57,9 @@ type AppStateContextValue = {
   finishTimer: (finishedAt?: number) => Promise<CompletionOutcome>;
 };
 
-const AppStateContext = createContext<AppStateContextValue | undefined>(undefined);
+const AppStateContext = createContext<AppStateContextValue | undefined>(
+  undefined,
+);
 
 type TimerEligibilityChange = {
   appIsActive?: boolean;
@@ -84,11 +86,7 @@ function makeSessionId(): string {
 }
 
 function assertPlannedSeconds(value: number): asserts value is number {
-  if (
-    !Number.isInteger(value) ||
-    value < 0 ||
-    value > MAX_PLANNED_SECONDS
-  ) {
+  if (!Number.isInteger(value) || value < 0 || value > MAX_PLANNED_SECONDS) {
     throw new RangeError("タイマーは0分から23時間55分まで設定できます。");
   }
 }
@@ -179,9 +177,12 @@ export function AppStateProvider({
       stateRef.current = loaded;
       setState(loaded);
       setStatus("ready");
-      void applyTimerEligibility({ changedAt: Date.now() }).catch(() => undefined);
+      void applyTimerEligibility({ changedAt: Date.now() }).catch(
+        () => undefined,
+      );
     } catch (error) {
-      const normalized = error instanceof Error ? error : new Error(String(error));
+      const normalized =
+        error instanceof Error ? error : new Error(String(error));
       setHydrationError(normalized);
       setStatus("error");
     }
@@ -192,12 +193,15 @@ export function AppStateProvider({
   }, [retryHydration]);
 
   useEffect(() => {
-    const subscription = NativeAppState.addEventListener("change", (nextState) => {
-      void applyTimerEligibility({
-        appIsActive: nextState === "active",
-        changedAt: Date.now(),
-      }).catch(() => undefined);
-    });
+    const subscription = NativeAppState.addEventListener(
+      "change",
+      (nextState) => {
+        void applyTimerEligibility({
+          appIsActive: nextState === "active",
+          changedAt: Date.now(),
+        }).catch(() => undefined);
+      },
+    );
 
     return () => subscription.remove();
   }, [applyTimerEligibility]);
@@ -330,7 +334,11 @@ export function AppStateProvider({
     ],
   );
 
-  return <AppStateContext.Provider value={value}>{children}</AppStateContext.Provider>;
+  return (
+    <AppStateContext.Provider value={value}>
+      {children}
+    </AppStateContext.Provider>
+  );
 }
 
 export function useAppState(): AppStateContextValue {
@@ -342,3 +350,4 @@ export function useAppState(): AppStateContextValue {
 }
 
 export { createInitialAppState };
+

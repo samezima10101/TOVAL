@@ -4,7 +4,7 @@ import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import { Colors } from "@/src/constants/theme";
-import { StoryEpisode } from "@/src/domain/types";
+import { StoryEpisode } from "@/src/domain/common/types";
 
 type HomeStoryCardProps = {
   latestUnlockedEpisode?: StoryEpisode;
