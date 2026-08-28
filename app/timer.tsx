@@ -1,17 +1,17 @@
 import { router, useFocusEffect } from "expo-router";
 import React from "react";
 import {
-    Alert,
-    ImageBackground,
-    AppState as NativeAppState,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    View,
+  Alert,
+  ImageBackground,
+  AppState as NativeAppState,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import PrimaryButton from "@/src/components/PrimaryButton";
+import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors } from "@/src/constants/theme";
 import { formatDuration, getTimerSnapshot } from "@/src/domain/timer";
 import { useAppState } from "@/src/state/AppStateProvider";

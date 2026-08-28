@@ -2,7 +2,7 @@ import { Stack } from "expo-router";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import PrimaryButton from "@/src/components/PrimaryButton";
+import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors } from "@/src/constants/theme";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 
