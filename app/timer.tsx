@@ -1,7 +1,5 @@
-import { router, useFocusEffect } from "expo-router";
 import React from "react";
 import {
-  Alert,
   ImageBackground,
   StyleSheet,
   Text,
@@ -12,97 +10,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors } from "@/src/constants/theme";
-import { formatDuration, getTimerSnapshot } from "@/src/domain/timer";
-import useTimerTick from "@/src/hooks/useTimerTick";
-import { useAppState } from "@/src/state/AppStateProvider";
+import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
-  const { state, cancelTimer, finishTimer, setTimerRouteFocused } =
-    useAppState();
-  const now = useTimerTick();
+  const {
+    activeTimer,
+    snapshot,
+    timerText,
+    isProcessing,
+    error,
+    handleCancel,
+    handleFinish,
+  } = useTimerLogic();
 
-  const [isProcessing, setIsProcessing] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const activeTimer = state?.activeTimer ?? null;
-
-  useFocusEffect(
-    React.useCallback(() => {
-      void setTimerRouteFocused(true).catch(() => undefined);
-      return () => {
-        void setTimerRouteFocused(false).catch(() => undefined);
-      };
-    }, [setTimerRouteFocused]),
-  );
-
-  React.useEffect(() => {
-    if (!activeTimer) {
-      router.replace("/");
-    }
-  }, [activeTimer]);
-
-  if (!activeTimer) {
+  if (!activeTimer || !snapshot) {
     return <View style={styles.emptyContainer} />;
   }
-
-  const snapshot = getTimerSnapshot(activeTimer, now);
-  const timerText = snapshot.isComplete
-    ? `+${formatDuration(snapshot.overtimeSeconds)}`
-    : formatDuration(snapshot.remainingSeconds);
-
-  const handleCancel = () => {
-    Alert.alert(
-      "タイマーをキャンセルしますか？",
-      "今回の集中時間は記録されず、NT・完了回数・ストーリーも変わりません。",
-      [
-        { text: "続ける", style: "cancel" },
-        {
-          text: "キャンセルする",
-          style: "destructive",
-          onPress: async () => {
-            setError(null);
-            setIsProcessing(true);
-            try {
-              await cancelTimer(Date.now());
-              router.replace("/");
-            } catch (cause) {
-              setError(
-                cause instanceof Error
-                  ? cause.message
-                  : "キャンセルできませんでした。",
-              );
-            } finally {
-              setIsProcessing(false);
-            }
-          },
-        },
-      ],
-    );
-  };
-
-  const handleFinish = async () => {
-    setError(null);
-    setIsProcessing(true);
-    try {
-      const outcome = await finishTimer(Date.now());
-      if (outcome.unlockedEpisode) {
-        router.replace({
-          pathname: "/story",
-          params: {
-            episode: String(outcome.unlockedEpisode),
-            source: "unlock",
-          },
-        });
-      } else {
-        router.replace("/");
-      }
-    } catch (cause) {
-      setError(
-        cause instanceof Error ? cause.message : "終了処理に失敗しました。",
-      );
-    } finally {
-      setIsProcessing(false);
-    }
-  };
 
   return (
     <ImageBackground

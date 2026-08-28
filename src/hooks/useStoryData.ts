@@ -4,7 +4,7 @@ import React from "react";
 // ※必要な型定義のパスは環境に合わせて調整してください
 import { StoryEpisode } from "@/src/domain/common/types";
 
-export function useStoryReader(
+export default function useStoryReader(
   episode: StoryEpisode | undefined,
   source: "memory" | "home" | "unlock",
   markStoryRead: (id: number) => Promise<void>,

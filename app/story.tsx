@@ -9,7 +9,7 @@ import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
 import { EpisodeId } from "@/src/domain/common/types";
 import { getStoryEpisode, isEpisodeId } from "@/src/domain/storyData";
-import { useStoryReader } from "@/src/hooks/useStoryData";
+import useStoryReader from "@/src/hooks/useStoryData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 function parseEpisodeId(
