@@ -4,6 +4,7 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 type LoginRecord = {
   storyTitle: string;
   totalTimerMinutes: number;
+  taskMemo: string;
 };
 type RecordModalProps = {
   visible: boolean;
@@ -69,6 +70,10 @@ export default function LogModal({
               <Text style={styles.recordText}>
                 2. タイマー合計時間：{"\n"}
                 {currentRecord.totalTimerMinutes}分
+              </Text>
+              <Text style={styles.recordText}>
+                3. タスクメモ：{"\n"}
+                {currentRecord.taskMemo}
               </Text>
             </View>
           ) : (

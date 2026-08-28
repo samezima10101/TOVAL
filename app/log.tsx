@@ -1,9 +1,9 @@
+import BackButton from "@/src/components/common/BackButton";
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
 import { Colors } from "@/src/constants/theme";
-import { router } from "expo-router";
 import { useState } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 export default function CalendarScreen() {
   const mockLoginData: Record<
@@ -36,14 +36,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        onPress={() => router.dismissTo("/")}
-        style={styles.backButton}
-        accessibilityRole="button"
-        accessibilityLabel="ホームへ戻る"
-      >
-        <Text style={styles.backText}>＜ ホーム</Text>
-      </TouchableOpacity>
+      <BackButton />
       <CustomCalendar
         selectedDate={selectedDate}
         loginData={mockLoginData}
@@ -64,15 +57,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: "#fff",
-  },
-  backButton: {
-    paddingRight: 10,
-    paddingVertical: 8,
-  },
-  backText: {
-    color: Colors.textSub,
-    fontSize: 15,
-    fontWeight: "700",
+    backgroundColor: Colors.background,
   },
 });

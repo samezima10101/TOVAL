@@ -5,6 +5,7 @@ import { Calendar, DateData } from "react-native-calendars";
 type LoginRecord = {
   storyTitle: string;
   totalTimerMinutes: number;
+  taskMemo: string;
 };
 
 type CustomCalendarProps = {
