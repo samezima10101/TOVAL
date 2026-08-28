@@ -1,5 +1,4 @@
-import { Stack, usePathname } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { Stack } from "expo-router";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
@@ -18,10 +17,7 @@ export default function RootLayout() {
 }
 
 function AppShell() {
-  const pathname = usePathname();
   const { state, status, hydrationError, retryHydration } = useAppState();
-  const immersive = pathname === "/timer" || pathname === "/story";
-
   if (status === "loading") {
     return <StatusMessage message="My-Juneを準備しています…" />;
   }
@@ -39,25 +35,12 @@ function AppShell() {
 
   return (
     <View style={styles.rootContainer}>
-      <StatusBar style={immersive ? "light" : "dark"} />
-      {!immersive ? (
-        <SafeAreaView edges={["top"]} style={styles.safeAreaTop}>
-          <View style={styles.globalHeader} accessibilityRole="header">
-            <Text style={styles.pointText}>{state.totalNt} NT</Text>
-            <View
-              style={styles.gaugeBackground}
-              accessibilityLabel={`${state.totalNt} NT`}
-            >
-              <View
-                style={[
-                  styles.gaugeFill,
-                  { width: `${Math.min(100, state.totalNt % 100)}%` },
-                ]}
-              />
-            </View>
-          </View>
-        </SafeAreaView>
-      ) : null}
+      <SafeAreaView edges={["top"]} style={styles.safeAreaTop}>
+        <View style={styles.globalHeader} accessibilityRole="header">
+          <Text style={styles.pointText}>{state.totalNt} NT</Text>
+        </View>
+      </SafeAreaView>
+
       <View style={styles.screenContainer}>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="index" options={{ title: "ホーム" }} />
@@ -68,19 +51,18 @@ function AppShell() {
           <Stack.Screen name="shop" options={{ title: "ショップ" }} />
         </Stack>
       </View>
-      {!immersive ? (
-        <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
-          <View style={styles.footer}>
-            <Image
-              source={require("@/assets/images/icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-              accessibilityLabel="My-Juneロゴ"
-            />
-            <Text style={styles.logoText}>My-June</Text>
-          </View>
-        </SafeAreaView>
-      ) : null}
+
+      <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
+        <View style={styles.footer}>
+          <Image
+            source={require("@/assets/images/icon.png")}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel="My-Juneロゴ"
+          />
+          <Text style={styles.logoText}>My-June</Text>
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -133,21 +115,9 @@ const styles = StyleSheet.create({
   },
   pointText: {
     color: Colors.text,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "700",
     marginRight: 14,
-  },
-  gaugeBackground: {
-    backgroundColor: Colors.border,
-    borderRadius: 5,
-    flex: 1,
-    height: 10,
-    overflow: "hidden",
-  },
-  gaugeFill: {
-    backgroundColor: Colors.accent,
-    borderRadius: 5,
-    height: "100%",
   },
   screenContainer: {
     backgroundColor: Colors.background,
@@ -161,7 +131,7 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     justifyContent: "center",
-    minHeight: 48,
+    minHeight: 60,
     paddingVertical: 6,
   },
   logo: {
