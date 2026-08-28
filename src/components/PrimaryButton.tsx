@@ -1,10 +1,10 @@
-import { Colors } from "@/constants/theme";
+import { Colors } from "@/src/constants/theme";
 import {
-  ActivityIndicator,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  ViewStyle,
+    ActivityIndicator,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    ViewStyle,
 } from "react-native";
 
 export default function PrimaryButton({
@@ -33,7 +33,11 @@ export default function PrimaryButton({
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: unavailable, busy: loading }}
     >
-      {loading ? <ActivityIndicator color={Colors.surface} /> : <Text style={styles.text}>{title}</Text>}
+      {loading ? (
+        <ActivityIndicator color={Colors.surface} />
+      ) : (
+        <Text style={styles.text}>{title}</Text>
+      )}
     </TouchableOpacity>
   );
 }

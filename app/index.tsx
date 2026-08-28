@@ -1,16 +1,22 @@
 import { router } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import HomeStoryCard from "@/components/home/HomeStoryCard";
-import PrimaryButton from "@/components/PrimaryButton";
-import TaskNameModal from "@/components/TaskNameModal";
-import TimerSetupModal from "@/components/TimerSetupModal";
-import { Colors } from "@/constants/theme";
+import HomeStoryCard from "@/src/components/home/HomeStoryCard";
+import PrimaryButton from "@/src/components/PrimaryButton";
+import TaskNameModal from "@/src/components/TaskNameModal";
+import TimerSetupModal from "@/src/components/TimerSetupModal";
+import { Colors } from "@/src/constants/theme";
 import { todayKey } from "@/src/domain/date";
 import {
-  getLatestUnreadEpisode,
   getLatestUnlockedEpisode,
+  getLatestUnreadEpisode,
 } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 

@@ -1,6 +1,6 @@
-import CustomCalendar from "@/components/log/CustomCalendar";
-import LogModal from "@/components/log/LogModal";
-import { Colors } from "@/constants/theme";
+import CustomCalendar from "@/src/components/log/CustomCalendar";
+import LogModal from "@/src/components/log/LogModal";
+import { Colors } from "@/src/constants/theme";
 import { router } from "expo-router";
 import { useState } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";

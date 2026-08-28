@@ -3,8 +3,8 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import StoryCharacters from "@/components/StoryCharacters";
-import { Colors } from "@/constants/theme";
+import StoryCharacters from "@/src/components/StoryCharacters";
+import { Colors } from "@/src/constants/theme";
 import {
   getStoryEpisode,
   isEpisodeId,
@@ -14,7 +14,9 @@ import {
 import { EpisodeId } from "@/src/domain/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 
-function parseEpisodeId(value: string | string[] | undefined): EpisodeId | null {
+function parseEpisodeId(
+  value: string | string[] | undefined,
+): EpisodeId | null {
   const raw = Array.isArray(value) ? value[0] : value;
   const parsed = raw ? Number(raw) : NaN;
   return isEpisodeId(parsed) ? parsed : null;
@@ -25,10 +27,15 @@ export default function StoryScreen() {
   const params = useLocalSearchParams<{ episode?: string; source?: string }>();
   const episodeId = parseEpisodeId(params.episode);
   const source =
-    params.source === "memory" ? "memory" : params.source === "home" ? "home" : "unlock";
+    params.source === "memory"
+      ? "memory"
+      : params.source === "home"
+        ? "home"
+        : "unlock";
   const episode = episodeId ? getStoryEpisode(episodeId) : undefined;
   const isUnlocked = Boolean(
-    episodeId && state?.unlockedStories.some((story) => story.episodeId === episodeId),
+    episodeId &&
+    state?.unlockedStories.some((story) => story.episodeId === episodeId),
   );
   const [lineIndex, setLineIndex] = React.useState(0);
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -48,7 +55,9 @@ export default function StoryScreen() {
         </Text>
         <TouchableOpacity
           onPress={() =>
-            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
+            source === "memory"
+              ? router.dismissTo("/memory")
+              : router.replace("/")
           }
           style={styles.homeButton}
           accessibilityRole="button"
@@ -101,7 +110,9 @@ export default function StoryScreen() {
         </Text>
         <TouchableOpacity
           onPress={() =>
-            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
+            source === "memory"
+              ? router.dismissTo("/memory")
+              : router.replace("/")
           }
           style={styles.closeButton}
           disabled={isProcessing}
@@ -127,14 +138,18 @@ export default function StoryScreen() {
         disabled={isProcessing}
         activeOpacity={0.9}
         accessibilityRole="button"
-        accessibilityLabel={isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"}
+        accessibilityLabel={
+          isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"
+        }
         accessibilityState={{ disabled: isProcessing }}
       >
         <Text style={styles.speakerName}>
           {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]]}
         </Text>
         <Text style={styles.messageText}>{line.text}</Text>
-        <Text style={styles.tapPrompt}>{isLastLine ? "Tap to close ▼" : "Tap to next ▼"}</Text>
+        <Text style={styles.tapPrompt}>
+          {isLastLine ? "Tap to close ▼" : "Tap to next ▼"}
+        </Text>
       </TouchableOpacity>
     </SafeAreaView>
   );

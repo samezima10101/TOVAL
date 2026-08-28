@@ -2,8 +2,8 @@ import { Stack } from "expo-router";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
-import PrimaryButton from "@/components/PrimaryButton";
-import { Colors } from "@/constants/theme";
+import PrimaryButton from "@/src/components/PrimaryButton";
+import { Colors } from "@/src/constants/theme";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 
 export default function RootLayout() {

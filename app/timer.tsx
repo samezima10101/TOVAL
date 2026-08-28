@@ -1,23 +1,24 @@
 import { router, useFocusEffect } from "expo-router";
 import React from "react";
 import {
-  Alert,
-  AppState as NativeAppState,
-  ImageBackground,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
+    Alert,
+    ImageBackground,
+    AppState as NativeAppState,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import PrimaryButton from "@/components/PrimaryButton";
-import { Colors } from "@/constants/theme";
+import PrimaryButton from "@/src/components/PrimaryButton";
+import { Colors } from "@/src/constants/theme";
 import { formatDuration, getTimerSnapshot } from "@/src/domain/timer";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function TimerScreen() {
-  const { state, cancelTimer, finishTimer, setTimerRouteFocused } = useAppState();
+  const { state, cancelTimer, finishTimer, setTimerRouteFocused } =
+    useAppState();
   const [now, setNow] = React.useState(Date.now);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
@@ -34,11 +35,14 @@ export default function TimerScreen() {
 
   React.useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
-    const subscription = NativeAppState.addEventListener("change", (nextState) => {
-      if (nextState === "active") {
-        setNow(Date.now());
-      }
-    });
+    const subscription = NativeAppState.addEventListener(
+      "change",
+      (nextState) => {
+        if (nextState === "active") {
+          setNow(Date.now());
+        }
+      },
+    );
 
     return () => {
       clearInterval(interval);
@@ -83,7 +87,9 @@ export default function TimerScreen() {
       await cancelTimer(Date.now());
       router.replace("/");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "キャンセルできませんでした。");
+      setError(
+        cause instanceof Error ? cause.message : "キャンセルできませんでした。",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -98,13 +104,18 @@ export default function TimerScreen() {
       if (outcome.unlockedEpisode) {
         router.replace({
           pathname: "/story",
-          params: { episode: String(outcome.unlockedEpisode), source: "unlock" },
+          params: {
+            episode: String(outcome.unlockedEpisode),
+            source: "unlock",
+          },
         });
       } else {
         router.replace("/");
       }
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "終了処理に失敗しました。");
+      setError(
+        cause instanceof Error ? cause.message : "終了処理に失敗しました。",
+      );
     } finally {
       setIsProcessing(false);
     }
@@ -142,14 +153,20 @@ export default function TimerScreen() {
             </Text>
             <Text
               style={styles.timerText}
-              accessibilityLabel={snapshot.isComplete ? `延長 ${timerText}` : `残り ${timerText}`}
+              accessibilityLabel={
+                snapshot.isComplete ? `延長 ${timerText}` : `残り ${timerText}`
+              }
             >
               {timerText}
             </Text>
             <Text style={styles.statusText}>
-              {snapshot.isComplete ? "予定時間を終えました" : "集中モード実行中…"}
+              {snapshot.isComplete
+                ? "予定時間を終えました"
+                : "集中モード実行中…"}
             </Text>
-            <Text style={styles.earnedText}>終了時に {snapshot.earnedNt} NT を獲得</Text>
+            <Text style={styles.earnedText}>
+              終了時に {snapshot.earnedNt} NT を獲得
+            </Text>
           </View>
 
           <View style={styles.footer}>
@@ -163,7 +180,9 @@ export default function TimerScreen() {
               accessibilityLabel="タイマーを終了して記録"
             />
             <Text style={styles.finishHint}>
-              {snapshot.isComplete ? "押した時刻までを集中時間として記録します" : "予定時間が終わると終了できます"}
+              {snapshot.isComplete
+                ? "押した時刻までを集中時間として記録します"
+                : "予定時間が終わると終了できます"}
             </Text>
           </View>
         </View>
