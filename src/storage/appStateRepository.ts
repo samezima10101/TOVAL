@@ -7,6 +7,7 @@ import {
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
+  StoryRouteProgress,
   UnlockedStory,
 } from "@/src/domain/common/types";
 
@@ -39,6 +40,7 @@ export function createInitialAppState(): AppState {
     totalCompletions: 0,
     lastCompletionDate: null,
     unlockedStories: [],
+    storyRouteProgress: {},
     activeTimer: null,
   };
 }
@@ -60,6 +62,45 @@ const isDateKey = (value: unknown): value is string => {
 
 const isEpisodeId = (value: unknown): value is EpisodeId =>
   value === 1 || value === 2 || value === 3;
+
+function parseStoryRouteProgress(
+  value: unknown,
+): Partial<Record<EpisodeId, StoryRouteProgress>> | undefined {
+  if (!isRecord(value)) {
+    return undefined;
+  }
+
+  const progress: Partial<Record<EpisodeId, StoryRouteProgress>> = {};
+  for (const [episodeKey, episodeProgress] of Object.entries(value)) {
+    const episodeId = Number(episodeKey);
+    if (!isEpisodeId(episodeId) || !isRecord(episodeProgress)) {
+      return undefined;
+    }
+
+    const { firstSelectedRouteId, extraUnlockedRouteIds } = episodeProgress;
+    if (
+      (firstSelectedRouteId !== undefined &&
+        (typeof firstSelectedRouteId !== "string" ||
+          firstSelectedRouteId.trim().length === 0)) ||
+      !Array.isArray(extraUnlockedRouteIds) ||
+      extraUnlockedRouteIds.some(
+        (routeId) => typeof routeId !== "string" || routeId.trim().length === 0,
+      ) ||
+      new Set(extraUnlockedRouteIds).size !== extraUnlockedRouteIds.length ||
+      (firstSelectedRouteId !== undefined &&
+        extraUnlockedRouteIds.includes(firstSelectedRouteId))
+    ) {
+      return undefined;
+    }
+
+    progress[episodeId] = {
+      ...(firstSelectedRouteId === undefined ? {} : { firstSelectedRouteId }),
+      extraUnlockedRouteIds: [...extraUnlockedRouteIds],
+    };
+  }
+
+  return progress;
+}
 
 function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
@@ -155,7 +196,8 @@ export function validateAppState(value: unknown): value is AppState {
     (value.lastCompletionDate !== null &&
       !isDateKey(value.lastCompletionDate)) ||
     !Array.isArray(value.unlockedStories) ||
-    value.unlockedStories.length > 3
+    value.unlockedStories.length > 3 ||
+    parseStoryRouteProgress(value.storyRouteProgress) === undefined
   ) {
     return false;
   }
@@ -174,7 +216,10 @@ export function validateAppState(value: unknown): value is AppState {
     ids.add(story.episodeId);
   }
 
-  return parseActiveTimer(value.activeTimer) !== undefined;
+  return (
+    parseStoryRouteProgress(value.storyRouteProgress) !== undefined &&
+    parseActiveTimer(value.activeTimer) !== undefined
+  );
 }
 
 function parseLegacyUnlockedStories(value: unknown): UnlockedStory[] {
@@ -209,6 +254,7 @@ function migrateLegacyState(value: Record<string, unknown>): AppState | null {
     value.schemaVersion !== 0 &&
     value.schemaVersion !== 1 &&
     value.schemaVersion !== 2 &&
+    value.schemaVersion !== 3 &&
     value.schemaVersion !== undefined
   ) {
     return null;
@@ -216,7 +262,7 @@ function migrateLegacyState(value: Record<string, unknown>): AppState | null {
 
   const initial = createInitialAppState();
   const activeTimer =
-    value.schemaVersion === 2
+    typeof value.schemaVersion === "number" && value.schemaVersion >= 2
       ? parseActiveTimer(value.activeTimer)
       : parseV1ActiveTimer(value.activeTimer);
   const migrated: AppState = {
@@ -232,6 +278,7 @@ function migrateLegacyState(value: Record<string, unknown>): AppState | null {
         ? value.lastCompletionDate
         : null,
     unlockedStories: parseLegacyUnlockedStories(value.unlockedStories),
+    storyRouteProgress: {},
     activeTimer: activeTimer ?? null,
   };
 

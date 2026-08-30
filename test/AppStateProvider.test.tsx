@@ -3,9 +3,14 @@ import React from "react";
 import { AppState as NativeAppState } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
-import { APP_SCHEMA_VERSION, AppState } from "@/src/domain/common/types";
+import {
+  APP_SCHEMA_VERSION,
+  AppState,
+  STORY_ROUTE_UNLOCK_COST_NT,
+} from "@/src/domain/common/types";
 import {
   AppStateProvider,
+  StoryRouteError,
   TimerNotReadyError,
   useAppState,
 } from "@/src/state/AppStateProvider";
@@ -42,6 +47,7 @@ function makeInitialState(
     totalCompletions: 0,
     lastCompletionDate: null,
     unlockedStories: [],
+    storyRouteProgress: {},
     activeTimer,
   };
 }
@@ -198,6 +204,77 @@ describe("AppStateProvider story read state", () => {
         repository.state.unlockedStories,
       );
       expect(repository.state.unlockedStories[1].isRead).toBe(false);
+    } finally {
+      await harness.unmount();
+    }
+  });
+});
+
+describe("AppStateProvider story route progress", () => {
+  it("selects one free initial route and unlocks another route with NT", async () => {
+    const repository = makeRepository();
+    repository.state = {
+      ...repository.state,
+      totalNt: STORY_ROUTE_UNLOCK_COST_NT,
+      unlockedStories: [
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+      ],
+    };
+    const harness = await renderProvider(repository);
+
+    try {
+      await act(async () => {
+        await harness.context.selectInitialStoryRoute(1, "episode-01-encourage");
+      });
+      expect(repository.state.storyRouteProgress).toEqual({
+        1: {
+          firstSelectedRouteId: "episode-01-encourage",
+          extraUnlockedRouteIds: [],
+        },
+      });
+      expect(repository.state.totalNt).toBe(STORY_ROUTE_UNLOCK_COST_NT);
+
+      await act(async () => {
+        await harness.context.unlockAdditionalStoryRoute(1, "episode-01-bow");
+      });
+      expect(repository.state.storyRouteProgress[1]).toEqual({
+        firstSelectedRouteId: "episode-01-encourage",
+        extraUnlockedRouteIds: ["episode-01-bow"],
+      });
+      expect(repository.state.totalNt).toBe(0);
+      expect(repository.savedStates).toHaveLength(2);
+    } finally {
+      await harness.unmount();
+    }
+  });
+
+  it("rejects route unlock before the initial choice and when NT is insufficient", async () => {
+    const repository = makeRepository();
+    repository.state = {
+      ...repository.state,
+      unlockedStories: [
+        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+      ],
+    };
+    const harness = await renderProvider(repository);
+
+    try {
+      await act(async () => {
+        await expect(
+          harness.context.unlockAdditionalStoryRoute(1, "episode-01-bow"),
+        ).rejects.toBeInstanceOf(StoryRouteError);
+      });
+      await act(async () => {
+        await harness.context.selectInitialStoryRoute(1, "episode-01-encourage");
+      });
+      await act(async () => {
+        await expect(
+          harness.context.unlockAdditionalStoryRoute(1, "episode-01-bow"),
+        ).rejects.toThrow("NTが不足しています");
+      });
+      expect(repository.state.storyRouteProgress[1]?.extraUnlockedRouteIds).toEqual(
+        [],
+      );
     } finally {
       await harness.unmount();
     }

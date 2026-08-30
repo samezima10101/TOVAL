@@ -8,6 +8,9 @@ import { cancelTimer, completeTimer } from "@/src/domain/completion";
 import {
   getLatestUnlockedEpisode,
   getLatestUnreadEpisode,
+  getPlayableStoryLines,
+  getStoryEpisode,
+  isStoryRouteUnlocked,
 } from "@/src/domain/storyData";
 import {
   formatDuration,
@@ -25,6 +28,7 @@ function stateWithTimer(timer: ActiveTimer): AppState {
     totalCompletions: 2,
     lastCompletionDate: null,
     unlockedStories: [],
+    storyRouteProgress: {},
     activeTimer: timer,
   };
 }
@@ -106,6 +110,45 @@ describe("timer calculations", () => {
     expect(formatDuration(3_599)).toBe("00:59:59");
     expect(formatDuration(3_600)).toBe("01:00:00");
     expect(formatDuration(86_101)).toBe("23:55:01");
+  });
+});
+
+describe("story routes", () => {
+  it("keeps the original third episode text without routes", () => {
+    const episode = getStoryEpisode(3)!;
+    expect(episode.routes).toBeUndefined();
+    expect(episode.commonBefore).toEqual([
+      expect.objectContaining({
+        id: "episode-03-01",
+        text: "・・・おかしい、\n同じ一日を繰り返してる。",
+      }),
+      expect.objectContaining({ id: "episode-03-02", text: "うん？どした？" }),
+      expect.objectContaining({ id: "episode-03-03", text: "・・・いえ？" }),
+    ]);
+  });
+
+  it("joins the selected first-episode route back into the common ending", () => {
+    const episode = getStoryEpisode(1)!;
+    expect(episode.routes).toHaveLength(2);
+    expect(
+      getPlayableStoryLines(episode, "episode-01-bow").map(
+        (item) => item.id,
+      ),
+    ).toEqual([
+      "episode-01-01",
+      "episode-01-02",
+      "episode-01-bow-01",
+      "episode-01-03",
+    ]);
+    expect(
+      isStoryRouteUnlocked(
+        {
+          firstSelectedRouteId: "episode-01-encourage",
+          extraUnlockedRouteIds: ["episode-01-bow"],
+        },
+        "episode-01-bow",
+      ),
+    ).toBe(true);
   });
 });
 

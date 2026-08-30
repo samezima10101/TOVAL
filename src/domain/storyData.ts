@@ -3,6 +3,9 @@ import {
   Speaker,
   StoryCharacter,
   StoryEpisode,
+  StoryLine,
+  StoryRoute,
+  StoryRouteProgress,
   UnlockedStory,
 } from "./common/types";
 
@@ -17,87 +20,104 @@ export const STORY_CHARACTER_NAMES: Record<StoryCharacter, string> = {
   alta: "アルタ",
 };
 
+const line = (
+  id: string,
+  speaker: Speaker,
+  text: string,
+  left: StoryLine["left"],
+  right: StoryLine["right"],
+): StoryLine => ({ id, speaker, text, left, right });
+
 const episodes: readonly StoryEpisode[] = [
   {
     id: 1,
     title: "初めてのタスク完了！",
-    lines: [
+    commonBefore: [
+      line(
+        "episode-01-01",
+        "sub",
+        "お疲れ様です。\n今日も無事に目標達成しましたね。",
+        "normal",
+        "talk",
+      ),
+      line(
+        "episode-01-02",
+        "boss",
+        "うん、おつかれさま～。\n明日もがんばってね。",
+        "talk",
+        "normal",
+      ),
+    ],
+    // Temporary branching sample; replace with final episode content later.
+    routes: [
       {
-        row: 1,
-        speaker: "sub",
-        text: "お疲れ様です。\n今日も無事に目標達成しましたね。",
-        left: "normal",
-        right: "talk",
+        id: "episode-01-encourage",
+        label: "ありがとうございます！",
+        lines: [
+          line(
+            "episode-01-encourage-01",
+            "sub",
+            "ありがとうございます！",
+            "normal",
+            "talk",
+          ),
+        ],
       },
       {
-        row: 2,
-        speaker: "boss",
-        text: "うん、おつかれさま～。\n明日もがんばってね。",
-        left: "talk",
-        right: "normal",
+        id: "episode-01-bow",
+        label: "はい、わかりました。",
+        lines: [
+          line(
+            "episode-01-bow-01",
+            "sub",
+            "はい、わかりました。",
+            "normal",
+            "talk",
+          ),
+        ],
       },
-      {
-        row: 3,
-        speaker: "sub",
-        text: "・・・では失礼します。",
-        left: "normal",
-        right: "talk",
-      },
+    ],
+    commonAfter: [
+      line("episode-01-03", "sub", "・・・では失礼します。", "normal", "talk"),
     ],
   },
   {
     id: 2,
     title: "上司からの労い",
-    lines: [
-      {
-        row: 1,
-        speaker: "sub",
-        text: "お疲れ様です。\n今日も無事に目標達成しましたね。",
-        left: "normal",
-        right: "talk",
-      },
-      {
-        row: 2,
-        speaker: "boss",
-        text: "うん、おつかれさま～。\n明日もがんばってね。",
-        left: "talk",
-        right: "normal",
-      },
-      {
-        row: 3,
-        speaker: "sub",
-        text: "・・・あれ？",
-        left: "normal",
-        right: "talk",
-      },
+    commonBefore: [
+      line(
+        "episode-02-01",
+        "sub",
+        "お疲れ様です。\n今日も無事に目標達成しましたね。",
+        "normal",
+        "talk",
+      ),
+      line(
+        "episode-02-02",
+        "boss",
+        "うん、おつかれさま～。\n明日もがんばってね。",
+        "talk",
+        "normal",
+      ),
+      line("episode-02-03", "sub", "・・・あれ？", "normal", "talk"),
     ],
+    commonAfter: [],
   },
   {
     id: 3,
     title: "部下の決意",
-    lines: [
-      {
-        row: 1,
-        speaker: "sub",
-        text: "・・・おかしい、\n同じ一日を繰り返してる。",
-        left: "normal",
-        right: "talk",
-      },
-      {
-        row: 2,
-        speaker: "boss",
-        text: "うん？どした？",
-        left: "talk",
-        right: "normal",
-      },
-      {
-        row: 3,
-        speaker: "sub",
-        text: "・・・いえ？",
-        left: "normal",
-        right: "talk",
-      },
+    commonBefore: [
+      line(
+        "episode-03-01",
+        "sub",
+        "・・・おかしい、\n同じ一日を繰り返してる。",
+        "normal",
+        "talk",
+      ),
+      line("episode-03-02", "boss", "うん？どした？", "talk", "normal"),
+      line("episode-03-03", "sub", "・・・いえ？", "normal", "talk"),
     ],
+    commonAfter: [],
   },
 ];
 
@@ -105,6 +125,34 @@ export const STORY_EPISODES: readonly StoryEpisode[] = episodes;
 
 export function getStoryEpisode(id: number): StoryEpisode | undefined {
   return episodes.find((episode) => episode.id === id);
+}
+
+export function getStoryRoute(
+  episode: StoryEpisode,
+  routeId: string | undefined,
+): StoryRoute | undefined {
+  return routeId
+    ? episode.routes?.find((route) => route.id === routeId)
+    : undefined;
+}
+
+/** Returns the complete playable sequence after a route has been selected. */
+export function getPlayableStoryLines(
+  episode: StoryEpisode,
+  routeId?: string,
+): readonly StoryLine[] {
+  const route = getStoryRoute(episode, routeId);
+  return [...episode.commonBefore, ...(route?.lines ?? []), ...episode.commonAfter];
+}
+
+export function isStoryRouteUnlocked(
+  progress: StoryRouteProgress | undefined,
+  routeId: string,
+): boolean {
+  return (
+    progress?.firstSelectedRouteId === routeId ||
+    progress?.extraUnlockedRouteIds.includes(routeId) === true
+  );
 }
 
 /** The most recently unlocked episode is shown in the home story card. */

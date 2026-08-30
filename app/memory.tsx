@@ -105,10 +105,7 @@ export default function MemoryScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.background,
-    flex: 1,
-  },
+  container: { backgroundColor: Colors.background, flex: 1 },
   header: {
     alignItems: "center",
     borderBottomColor: Colors.border,
@@ -118,18 +115,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 13,
   },
-  headerTitle: {
-    color: Colors.text,
-    fontSize: 19,
-    fontWeight: "800",
-  },
-  headerSpacer: {
-    width: 62,
-  },
-  scrollContainer: {
-    padding: 20,
-    paddingBottom: 34,
-  },
+  headerTitle: { color: Colors.text, fontSize: 19, fontWeight: "800" },
+  headerSpacer: { width: 62 },
+  scrollContainer: { padding: 20, paddingBottom: 34 },
   intro: {
     color: Colors.textSub,
     fontSize: 14,
@@ -159,19 +147,13 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     padding: 15,
   },
-  unlockedCard: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.primary,
-  },
+  unlockedCard: { backgroundColor: Colors.surface, borderColor: Colors.primary },
   lockedCard: {
     backgroundColor: "#EEF1F5",
     borderColor: Colors.border,
     opacity: 0.72,
   },
-  cardContent: {
-    flex: 1,
-    paddingRight: 12,
-  },
+  cardContent: { flex: 1, paddingRight: 12 },
   episodeNum: {
     color: Colors.primary,
     fontSize: 13,
@@ -184,14 +166,8 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     lineHeight: 24,
   },
-  lockedText: {
-    color: Colors.textSub,
-  },
-  unlockDate: {
-    color: Colors.textSub,
-    fontSize: 12,
-    marginTop: 7,
-  },
+  lockedText: { color: Colors.textSub },
+  unlockDate: { color: Colors.textSub, fontSize: 12, marginTop: 7 },
   playButton: {
     alignItems: "center",
     backgroundColor: Colors.primary,
@@ -200,12 +176,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     width: 64,
   },
-  lockedPlayButton: {
-    backgroundColor: Colors.border,
-  },
-  playButtonText: {
-    color: Colors.surface,
-    fontSize: 12,
-    fontWeight: "800",
-  },
+  lockedPlayButton: { backgroundColor: Colors.border },
+  playButtonText: { color: Colors.surface, fontSize: 12, fontWeight: "800" },
 });
