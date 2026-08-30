@@ -4,12 +4,12 @@ import { AppState as NativeAppState } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import { APP_SCHEMA_VERSION, AppState } from "@/src/domain/common/types";
-import { AppStateRepository } from "@/src/storage/appStateRepository";
 import {
   AppStateProvider,
   TimerNotReadyError,
   useAppState,
-} from "./AppStateProvider";
+} from "@/src/state/AppStateProvider";
+import { AppStateRepository } from "@/src/storage/appStateRepository";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 

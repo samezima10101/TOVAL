@@ -4,9 +4,9 @@ import TestRenderer, { act } from "react-test-renderer";
 
 import StoryScreen from "@/app/story";
 import {
-    APP_SCHEMA_VERSION,
-    AppState,
-    EpisodeId,
+  APP_SCHEMA_VERSION,
+  AppState,
+  EpisodeId,
 } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { router, useLocalSearchParams } from "expo-router";

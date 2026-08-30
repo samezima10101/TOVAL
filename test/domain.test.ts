@@ -1,13 +1,20 @@
-import { localDateKey } from "./common/date";
-import { ActiveTimer, APP_SCHEMA_VERSION, AppState } from "./common/types";
-import { cancelTimer, completeTimer } from "./completion";
-import { getLatestUnlockedEpisode, getLatestUnreadEpisode } from "./storyData";
+import { localDateKey } from "@/src/domain/common/date";
+import {
+  ActiveTimer,
+  APP_SCHEMA_VERSION,
+  AppState,
+} from "@/src/domain/common/types";
+import { cancelTimer, completeTimer } from "@/src/domain/completion";
+import {
+  getLatestUnlockedEpisode,
+  getLatestUnreadEpisode,
+} from "@/src/domain/storyData";
 import {
   formatDuration,
   getTimerSnapshot,
   pauseTimer,
   resumeTimer,
-} from "./timer";
+} from "@/src/domain/timer";
 
 function stateWithTimer(timer: ActiveTimer): AppState {
   return {
