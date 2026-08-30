@@ -4,7 +4,7 @@ import {
   createAppStateRepository,
   createInitialAppState,
   parsePersistedState,
-} from "./appStateRepository";
+} from "../src/storage/appStateRepository";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 
@@ -60,7 +60,9 @@ describe("app state repository", () => {
       ],
       activeTimer: null,
     });
-    expect(parsePersistedState(JSON.stringify({ schemaVersion: 99 }))).toBeNull();
+    expect(
+      parsePersistedState(JSON.stringify({ schemaVersion: 99 })),
+    ).toBeNull();
   });
 
   it("migrates a v1 in-flight timer as paused without preserving unknown elapsed time", () => {
@@ -176,7 +178,9 @@ describe("app state repository", () => {
   it("returns retryable errors instead of swallowing storage failures", async () => {
     const readStorage = new FakeStorage();
     readStorage.shouldFailRead = true;
-    await expect(createAppStateRepository(readStorage).load()).rejects.toMatchObject({
+    await expect(
+      createAppStateRepository(readStorage).load(),
+    ).rejects.toMatchObject({
       name: "AppStateStorageError",
       operation: "read",
     });
@@ -184,7 +188,10 @@ describe("app state repository", () => {
     const writeStorage = new FakeStorage();
     writeStorage.shouldFailWrite = true;
     await expect(
-      createAppStateRepository(writeStorage).save({ ...createInitialAppState(), taskName: "読書" }),
+      createAppStateRepository(writeStorage).save({
+        ...createInitialAppState(),
+        taskName: "読書",
+      }),
     ).rejects.toMatchObject({
       name: "AppStateStorageError",
       operation: "write",

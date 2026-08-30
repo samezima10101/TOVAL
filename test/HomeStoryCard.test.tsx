@@ -1,8 +1,8 @@
 import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
 import { Text, TouchableOpacity } from "react-native";
+import TestRenderer, { act } from "react-test-renderer";
 
-import HomeStoryCard from "./HomeStoryCard";
+import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import { getStoryEpisode } from "@/src/domain/storyData";
 
 jest.mock("@/components/StoryCharacters", () => () => null);

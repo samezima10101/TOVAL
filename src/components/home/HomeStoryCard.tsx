@@ -1,16 +1,10 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React from "react";
-import {
-  Image,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import StoryCharacters from "@/components/StoryCharacters";
-import { Colors } from "@/constants/theme";
-import { StoryEpisode } from "@/src/domain/types";
+import StoryCharacters from "@/src/components/story/StoryCharacters";
+import { Colors } from "@/src/constants/theme";
+import { StoryEpisode } from "@/src/domain/common/types";
 
 type HomeStoryCardProps = {
   latestUnlockedEpisode?: StoryEpisode;
@@ -72,7 +66,9 @@ export default function HomeStoryCard({
             : "キャラクターたちが、ここで待っています。"}
         </Text>
         {hasUnreadStory ? (
-          <Text style={styles.storyCardHint}>吹き出しをタップして会話を読む</Text>
+          <Text style={styles.storyCardHint}>
+            吹き出しをタップして会話を読む
+          </Text>
         ) : null}
       </View>
     </View>

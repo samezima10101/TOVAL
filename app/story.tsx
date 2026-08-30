@@ -1,20 +1,20 @@
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import StoryCharacters from "@/components/StoryCharacters";
-import { Colors } from "@/constants/theme";
-import {
-  getStoryEpisode,
-  isEpisodeId,
-  STORY_CHARACTER_BY_SPEAKER,
-  STORY_CHARACTER_NAMES,
-} from "@/src/domain/storyData";
-import { EpisodeId } from "@/src/domain/types";
+import BackButton from "@/src/components/common/BackButton";
+import StoryCharacters from "@/src/components/story/StoryCharacters";
+import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import { Colors } from "@/src/constants/theme";
+import { EpisodeId } from "@/src/domain/common/types";
+import { getStoryEpisode, isEpisodeId } from "@/src/domain/storyData";
+import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
-function parseEpisodeId(value: string | string[] | undefined): EpisodeId | null {
+function parseEpisodeId(
+  value: string | string[] | undefined,
+): EpisodeId | null {
   const raw = Array.isArray(value) ? value[0] : value;
   const parsed = raw ? Number(raw) : NaN;
   return isEpisodeId(parsed) ? parsed : null;
@@ -25,19 +25,21 @@ export default function StoryScreen() {
   const params = useLocalSearchParams<{ episode?: string; source?: string }>();
   const episodeId = parseEpisodeId(params.episode);
   const source =
-    params.source === "memory" ? "memory" : params.source === "home" ? "home" : "unlock";
+    params.source === "memory"
+      ? "memory"
+      : params.source === "home"
+        ? "home"
+        : "unlock";
   const episode = episodeId ? getStoryEpisode(episodeId) : undefined;
   const isUnlocked = Boolean(
-    episodeId && state?.unlockedStories.some((story) => story.episodeId === episodeId),
+    episodeId &&
+    state?.unlockedStories.some((story) => story.episodeId === episodeId),
   );
-  const [lineIndex, setLineIndex] = React.useState(0);
-  const [isProcessing, setIsProcessing] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const isProcessingRef = React.useRef(false);
 
-  React.useEffect(() => {
-    setLineIndex(0);
-  }, [episodeId]);
+  const { line, isLastLine, isProcessing, error, handleNext, handleClose } =
+    useStoryReader(episode, source, (id) =>
+      isEpisodeId(id) ? markStoryRead(id) : Promise.resolve(),
+    );
 
   if (!episode || !isUnlocked) {
     return (
@@ -46,63 +48,21 @@ export default function StoryScreen() {
         <Text style={styles.invalidDescription}>
           メモリーから解放済みのストーリーを選んでください。
         </Text>
-        <TouchableOpacity
-          onPress={() =>
-            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
-          }
-          style={styles.homeButton}
-          accessibilityRole="button"
-          accessibilityLabel="戻る"
-        >
-          <Text style={styles.homeButtonText}>戻る</Text>
-        </TouchableOpacity>
+        <BackButton label="戻る" onPress={handleClose} />
       </SafeAreaView>
     );
   }
 
-  const line = episode.lines[lineIndex];
-  const isLastLine = lineIndex === episode.lines.length - 1;
-  const handleNext = async () => {
-    if (isProcessingRef.current) {
-      return;
-    }
-    if (!isLastLine) {
-      setLineIndex((index) => index + 1);
-      return;
-    }
-
-    setError(null);
-    isProcessingRef.current = true;
-    setIsProcessing(true);
-    try {
-      await markStoryRead(episode.id);
-      if (source === "memory") {
-        router.dismissTo("/memory");
-      } else {
-        router.replace("/");
-      }
-    } catch (cause) {
-      setError(
-        cause instanceof Error
-          ? cause.message
-          : "ストーリーを保存できませんでした。もう一度お試しください。",
-      );
-    } finally {
-      isProcessingRef.current = false;
-      setIsProcessing(false);
-    }
-  };
+  if (!line) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
         <Text style={styles.episodeTitle} numberOfLines={2}>
-          Episode {String(episode.id).padStart(2, "0")}　{episode.title}
+          Episode {String(episode.id).padStart(2, "0")} {episode.title}
         </Text>
         <TouchableOpacity
-          onPress={() =>
-            source === "memory" ? router.dismissTo("/memory") : router.replace("/")
-          }
+          onPress={handleClose}
           style={styles.closeButton}
           disabled={isProcessing}
           accessibilityRole="button"
@@ -121,21 +81,13 @@ export default function StoryScreen() {
         activeSpeaker={line.speaker}
       />
 
-      <TouchableOpacity
-        style={[styles.messageBox, isProcessing && styles.messageBoxDisabled]}
-        onPress={() => void handleNext()}
-        disabled={isProcessing}
-        activeOpacity={0.9}
-        accessibilityRole="button"
-        accessibilityLabel={isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"}
-        accessibilityState={{ disabled: isProcessing }}
-      >
-        <Text style={styles.speakerName}>
-          {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]]}
-        </Text>
-        <Text style={styles.messageText}>{line.text}</Text>
-        <Text style={styles.tapPrompt}>{isLastLine ? "Tap to close ▼" : "Tap to next ▼"}</Text>
-      </TouchableOpacity>
+      <StoryMessageBox
+        speaker={line.speaker}
+        text={line.text}
+        isLastLine={isLastLine}
+        isProcessing={isProcessing}
+        onNext={handleNext}
+      />
     </SafeAreaView>
   );
 }
@@ -170,42 +122,6 @@ const styles = StyleSheet.create({
     color: Colors.textSub,
     fontSize: 13,
     fontWeight: "700",
-  },
-  messageBox: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderRadius: 16,
-    borderWidth: 2,
-    elevation: 4,
-    margin: 18,
-    minHeight: 190,
-    padding: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
-  messageBoxDisabled: {
-    opacity: 0.7,
-  },
-  speakerName: {
-    color: Colors.primary,
-    fontSize: 18,
-    fontWeight: "800",
-    marginBottom: 10,
-  },
-  messageText: {
-    color: Colors.text,
-    fontSize: 18,
-    lineHeight: 30,
-  },
-  tapPrompt: {
-    bottom: 14,
-    color: Colors.textSub,
-    fontSize: 13,
-    fontWeight: "700",
-    position: "absolute",
-    right: 18,
   },
   error: {
     backgroundColor: "#FFF1F0",

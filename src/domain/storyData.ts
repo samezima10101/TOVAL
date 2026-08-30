@@ -4,7 +4,7 @@ import {
   StoryCharacter,
   StoryEpisode,
   UnlockedStory,
-} from "./types";
+} from "./common/types";
 
 /** Character identity is kept with story content, not inferred by the UI. */
 export const STORY_CHARACTER_BY_SPEAKER: Record<Speaker, StoryCharacter> = {

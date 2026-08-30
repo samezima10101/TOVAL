@@ -1,4 +1,4 @@
-import { ActiveTimer } from "./types";
+import { ActiveTimer } from "./common/types";
 
 export type TimerSnapshot = {
   elapsedMs: number;
@@ -13,14 +13,20 @@ export type TimerSnapshot = {
  * Returns the elapsed concentration time without rounding milliseconds.
  * A timer with no running segment is intentionally frozen at accumulatedMs.
  */
-export function getTimerElapsedMs(timer: ActiveTimer, now = Date.now()): number {
+export function getTimerElapsedMs(
+  timer: ActiveTimer,
+  now = Date.now(),
+): number {
   const runningMs =
     timer.runningSince === null ? 0 : Math.max(0, now - timer.runningSince);
   return Math.max(0, timer.accumulatedMs + runningMs);
 }
 
 /** Starts a paused segment. Calling this for a running timer is a no-op. */
-export function resumeTimer(timer: ActiveTimer, resumedAt = Date.now()): ActiveTimer {
+export function resumeTimer(
+  timer: ActiveTimer,
+  resumedAt = Date.now(),
+): ActiveTimer {
   if (timer.runningSince !== null) {
     return timer;
   }
@@ -32,7 +38,10 @@ export function resumeTimer(timer: ActiveTimer, resumedAt = Date.now()): ActiveT
 }
 
 /** Closes the current segment. Calling this for a paused timer is a no-op. */
-export function pauseTimer(timer: ActiveTimer, pausedAt = Date.now()): ActiveTimer {
+export function pauseTimer(
+  timer: ActiveTimer,
+  pausedAt = Date.now(),
+): ActiveTimer {
   if (timer.runningSince === null) {
     return timer;
   }

@@ -1,9 +1,16 @@
 import { router } from "expo-router";
 import React from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-import { Colors } from "@/constants/theme";
-import { formatLocalDate } from "@/src/domain/date";
+import BackButton from "@/src/components/common/BackButton";
+import { Colors } from "@/src/constants/theme";
+import { formatLocalDate } from "@/src/domain/common/date";
 import { STORY_EPISODES } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -22,14 +29,7 @@ export default function MemoryScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => router.dismissTo("/")}
-          style={styles.backButton}
-          accessibilityRole="button"
-          accessibilityLabel="ホームへ戻る"
-        >
-          <Text style={styles.backText}>＜ ホーム</Text>
-        </TouchableOpacity>
+        <BackButton />
         <Text style={styles.headerTitle}>メモリー</Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -49,13 +49,23 @@ export default function MemoryScreen() {
           return (
             <View
               key={episode.id}
-              style={[styles.card, isUnlocked ? styles.unlockedCard : styles.lockedCard]}
+              style={[
+                styles.card,
+                isUnlocked ? styles.unlockedCard : styles.lockedCard,
+              ]}
             >
               <View style={styles.cardContent}>
-                <Text style={[styles.episodeNum, !isUnlocked && styles.lockedText]}>
+                <Text
+                  style={[styles.episodeNum, !isUnlocked && styles.lockedText]}
+                >
                   Episode {String(episode.id).padStart(2, "0")}
                 </Text>
-                <Text style={[styles.episodeTitle, !isUnlocked && styles.lockedText]}>
+                <Text
+                  style={[
+                    styles.episodeTitle,
+                    !isUnlocked && styles.lockedText,
+                  ]}
+                >
                   {isUnlocked ? episode.title : "未解放のストーリー"}
                 </Text>
                 <Text style={styles.unlockDate}>
@@ -65,7 +75,10 @@ export default function MemoryScreen() {
                 </Text>
               </View>
               <TouchableOpacity
-                style={[styles.playButton, !isUnlocked && styles.lockedPlayButton]}
+                style={[
+                  styles.playButton,
+                  !isUnlocked && styles.lockedPlayButton,
+                ]}
                 disabled={!isUnlocked}
                 onPress={() =>
                   router.push({
@@ -74,10 +87,14 @@ export default function MemoryScreen() {
                   })
                 }
                 accessibilityRole="button"
-                accessibilityLabel={isUnlocked ? `${episode.title}を再生` : "未解放"}
+                accessibilityLabel={
+                  isUnlocked ? `${episode.title}を再生` : "未解放"
+                }
                 accessibilityState={{ disabled: !isUnlocked }}
               >
-                <Text style={styles.playButtonText}>{isUnlocked ? "▶ 再生" : "🔒"}</Text>
+                <Text style={styles.playButtonText}>
+                  {isUnlocked ? "▶ 再生" : "🔒"}
+                </Text>
               </TouchableOpacity>
             </View>
           );
@@ -100,15 +117,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingHorizontal: 20,
     paddingVertical: 13,
-  },
-  backButton: {
-    paddingRight: 10,
-    paddingVertical: 8,
-  },
-  backText: {
-    color: Colors.textSub,
-    fontSize: 15,
-    fontWeight: "700",
   },
   headerTitle: {
     color: Colors.text,

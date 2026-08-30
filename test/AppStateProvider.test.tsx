@@ -1,15 +1,15 @@
 import mockAsyncStorage from "@react-native-async-storage/async-storage/jest/async-storage-mock";
 import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
 import { AppState as NativeAppState } from "react-native";
+import TestRenderer, { act } from "react-test-renderer";
 
-import { APP_SCHEMA_VERSION, AppState } from "@/src/domain/types";
-import { AppStateRepository } from "@/src/storage/appStateRepository";
+import { APP_SCHEMA_VERSION, AppState } from "@/src/domain/common/types";
 import {
   AppStateProvider,
   TimerNotReadyError,
   useAppState,
-} from "./AppStateProvider";
+} from "@/src/state/AppStateProvider";
+import { AppStateRepository } from "@/src/storage/appStateRepository";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 
@@ -31,7 +31,9 @@ type NativeAppStateFixture = {
   restore: () => void;
 };
 
-function makeInitialState(activeTimer: AppState["activeTimer"] = null): AppState {
+function makeInitialState(
+  activeTimer: AppState["activeTimer"] = null,
+): AppState {
   return {
     schemaVersion: APP_SCHEMA_VERSION,
     userName: "",
@@ -63,7 +65,9 @@ function makeRepository(): TestRepository {
   return repository;
 }
 
-async function renderProvider(repository: AppStateRepository): Promise<ProviderHarness> {
+async function renderProvider(
+  repository: AppStateRepository,
+): Promise<ProviderHarness> {
   let context!: AppStateContext;
   const Probe = () => {
     context = useAppState();
@@ -91,7 +95,9 @@ async function renderProvider(repository: AppStateRepository): Promise<ProviderH
   };
 }
 
-function mockNativeAppState(initialState?: string | null): NativeAppStateFixture {
+function mockNativeAppState(
+  initialState?: string | null,
+): NativeAppStateFixture {
   const nativeAppState = NativeAppState as unknown as {
     currentState: string | null;
   };
@@ -130,7 +136,9 @@ describe("AppStateProvider persistence ordering", () => {
     try {
       repository.failWrite = true;
       await act(async () => {
-        await expect(harness.context.startTimer(0)).rejects.toThrow("write failed");
+        await expect(harness.context.startTimer(0)).rejects.toThrow(
+          "write failed",
+        );
       });
       expect(harness.context.state?.activeTimer).toBeNull();
 
@@ -142,7 +150,9 @@ describe("AppStateProvider persistence ordering", () => {
 
       repository.failWrite = true;
       await act(async () => {
-        await expect(harness.context.finishTimer(Date.now())).rejects.toThrow("write failed");
+        await expect(harness.context.finishTimer(Date.now())).rejects.toThrow(
+          "write failed",
+        );
       });
       expect(harness.context.state?.activeTimer).not.toBeNull();
     } finally {
@@ -180,7 +190,9 @@ describe("AppStateProvider story read state", () => {
 
       repository.failWrite = true;
       await act(async () => {
-        await expect(harness.context.markStoryRead(2)).rejects.toThrow("write failed");
+        await expect(harness.context.markStoryRead(2)).rejects.toThrow(
+          "write failed",
+        );
       });
       expect(harness.context.state?.unlockedStories).toEqual(
         repository.state.unlockedStories,

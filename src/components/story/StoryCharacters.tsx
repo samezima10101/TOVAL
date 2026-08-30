@@ -9,13 +9,16 @@ import {
   ViewStyle,
 } from "react-native";
 
+import { Expression, Speaker, StoryCharacter } from "@/src/domain/common/types";
 import {
   STORY_CHARACTER_BY_SPEAKER,
   STORY_CHARACTER_NAMES,
 } from "@/src/domain/storyData";
-import { Expression, Speaker, StoryCharacter } from "@/src/domain/types";
 
-const faceAssets: Record<StoryCharacter, Record<Expression, ImageSourcePropType>> = {
+const faceAssets: Record<
+  StoryCharacter,
+  Record<Expression, ImageSourcePropType>
+> = {
   gem: {
     normal: require("@/assets/faces/G01-1.png"),
     talk: require("@/assets/faces/G01-2.png"),

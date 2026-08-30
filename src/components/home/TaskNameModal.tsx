@@ -1,16 +1,16 @@
 import React from "react";
 import {
-  KeyboardAvoidingView,
-  Modal,
-  Platform,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 
-import { Colors } from "@/constants/theme";
+import { Colors } from "@/src/constants/theme";
 
 export default function TaskNameModal({
   visible,
@@ -47,7 +47,9 @@ export default function TaskNameModal({
     try {
       await onSave(value);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "保存できませんでした。");
+      setError(
+        cause instanceof Error ? cause.message : "保存できませんでした。",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -68,7 +70,9 @@ export default function TaskNameModal({
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <View style={styles.card}>
-          <Text style={styles.title}>{required ? "タスクを設定" : "タスクを編集"}</Text>
+          <Text style={styles.title}>
+            {required ? "タスクを設定" : "タスクを編集"}
+          </Text>
           <Text style={styles.description}>
             集中するタスクを1件だけ登録できます。
           </Text>

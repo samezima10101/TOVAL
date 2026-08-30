@@ -1,11 +1,15 @@
 import React from "react";
-import TestRenderer, { act } from "react-test-renderer";
 import { Text, TouchableOpacity } from "react-native";
+import TestRenderer, { act } from "react-test-renderer";
 
-import { router, useLocalSearchParams } from "expo-router";
-import { APP_SCHEMA_VERSION, AppState, EpisodeId } from "@/src/domain/types";
-import { useAppState } from "@/src/state/AppStateProvider";
 import StoryScreen from "@/app/story";
+import {
+  APP_SCHEMA_VERSION,
+  AppState,
+  EpisodeId,
+} from "@/src/domain/common/types";
+import { useAppState } from "@/src/state/AppStateProvider";
+import { router, useLocalSearchParams } from "expo-router";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -22,7 +26,9 @@ jest.mock("@/src/state/AppStateProvider", () => ({
 
 type AppStateContext = ReturnType<typeof useAppState>;
 
-const mockedUseAppState = useAppState as jest.MockedFunction<typeof useAppState>;
+const mockedUseAppState = useAppState as jest.MockedFunction<
+  typeof useAppState
+>;
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<
   typeof useLocalSearchParams
 >;
@@ -35,12 +41,16 @@ function makeState(): AppState {
     totalNt: 0,
     totalCompletions: 1,
     lastCompletionDate: "2025-01-01",
-    unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-01", isRead: false }],
+    unlockedStories: [
+      { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+    ],
     activeTimer: null,
   };
 }
 
-function makeContext(markStoryRead: (episodeId: EpisodeId) => Promise<void>): AppStateContext {
+function makeContext(
+  markStoryRead: (episodeId: EpisodeId) => Promise<void>,
+): AppStateContext {
   return {
     state: makeState(),
     status: "ready",
@@ -75,7 +85,10 @@ async function advanceToFinalLine(renderer: TestRenderer.ReactTestRenderer) {
 describe("StoryScreen read completion", () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedUseLocalSearchParams.mockReturnValue({ episode: "1", source: "home" });
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: "1",
+      source: "home",
+    });
   });
 
   it("marks the episode read only after the final line and navigates once", async () => {
@@ -124,10 +137,13 @@ describe("StoryScreen read completion", () => {
     expect(router.replace).not.toHaveBeenCalled();
     expect(
       renderer.root.findAll(
-        (node) => node.type === Text && node.props.children === "保存できませんでした",
+        (node) =>
+          node.type === Text && node.props.children === "保存できませんでした",
       ),
     ).toHaveLength(1);
-    expect(getMessageButton(renderer).props.accessibilityState).toEqual({ disabled: false });
+    expect(getMessageButton(renderer).props.accessibilityState).toEqual({
+      disabled: false,
+    });
     await act(async () => {
       renderer.unmount();
     });
