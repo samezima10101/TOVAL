@@ -15,8 +15,18 @@ import {
   useAppState,
 } from "@/src/state/AppStateProvider";
 import { AppStateRepository } from "@/src/storage/appStateRepository";
+import {
+  branchingEpisodeId,
+  primaryRoute,
+  secondaryRoute,
+} from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
+jest.mock("@/src/domain/storyData", () => {
+  const actual = jest.requireActual("@/src/domain/storyData");
+  const { getFixtureStoryEpisode: getEpisode } = require("./fixtures/story");
+  return { ...actual, getStoryEpisode: getEpisode };
+});
 
 type TestRepository = AppStateRepository & {
   state: AppState;
@@ -217,29 +227,35 @@ describe("AppStateProvider story route progress", () => {
       ...repository.state,
       totalNt: STORY_ROUTE_UNLOCK_COST_NT,
       unlockedStories: [
-        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+        { episodeId: branchingEpisodeId, unlockedDate: "2025-01-01", isRead: false },
       ],
     };
     const harness = await renderProvider(repository);
 
     try {
       await act(async () => {
-        await harness.context.selectInitialStoryRoute(1, "episode-01-encourage");
+        await harness.context.selectInitialStoryRoute(
+          branchingEpisodeId,
+          primaryRoute.id,
+        );
       });
       expect(repository.state.storyRouteProgress).toEqual({
-        1: {
-          firstSelectedRouteId: "episode-01-encourage",
+        [branchingEpisodeId]: {
+          firstSelectedRouteId: primaryRoute.id,
           extraUnlockedRouteIds: [],
         },
       });
       expect(repository.state.totalNt).toBe(STORY_ROUTE_UNLOCK_COST_NT);
 
       await act(async () => {
-        await harness.context.unlockAdditionalStoryRoute(1, "episode-01-bow");
+        await harness.context.unlockAdditionalStoryRoute(
+          branchingEpisodeId,
+          secondaryRoute.id,
+        );
       });
-      expect(repository.state.storyRouteProgress[1]).toEqual({
-        firstSelectedRouteId: "episode-01-encourage",
-        extraUnlockedRouteIds: ["episode-01-bow"],
+      expect(repository.state.storyRouteProgress[branchingEpisodeId]).toEqual({
+        firstSelectedRouteId: primaryRoute.id,
+        extraUnlockedRouteIds: [secondaryRoute.id],
       });
       expect(repository.state.totalNt).toBe(0);
       expect(repository.savedStates).toHaveLength(2);
@@ -253,7 +269,7 @@ describe("AppStateProvider story route progress", () => {
     repository.state = {
       ...repository.state,
       unlockedStories: [
-        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+        { episodeId: branchingEpisodeId, unlockedDate: "2025-01-01", isRead: false },
       ],
     };
     const harness = await renderProvider(repository);
@@ -261,18 +277,29 @@ describe("AppStateProvider story route progress", () => {
     try {
       await act(async () => {
         await expect(
-          harness.context.unlockAdditionalStoryRoute(1, "episode-01-bow"),
+          harness.context.unlockAdditionalStoryRoute(
+            branchingEpisodeId,
+            secondaryRoute.id,
+          ),
         ).rejects.toBeInstanceOf(StoryRouteError);
       });
       await act(async () => {
-        await harness.context.selectInitialStoryRoute(1, "episode-01-encourage");
+        await harness.context.selectInitialStoryRoute(
+          branchingEpisodeId,
+          primaryRoute.id,
+        );
       });
       await act(async () => {
         await expect(
-          harness.context.unlockAdditionalStoryRoute(1, "episode-01-bow"),
+          harness.context.unlockAdditionalStoryRoute(
+            branchingEpisodeId,
+            secondaryRoute.id,
+          ),
         ).rejects.toThrow("NTが不足しています");
       });
-      expect(repository.state.storyRouteProgress[1]?.extraUnlockedRouteIds).toEqual(
+      expect(
+        repository.state.storyRouteProgress[branchingEpisodeId]?.extraUnlockedRouteIds,
+      ).toEqual(
         [],
       );
     } finally {

@@ -10,6 +10,13 @@ import {
 } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { router, useLocalSearchParams } from "expo-router";
+import {
+  branchingEpisodeId,
+  branchingStory,
+  linearStory,
+  primaryRoute,
+  secondaryRoute,
+} from "./fixtures/story";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -28,6 +35,11 @@ jest.mock("@/src/components/story/StoryCharacters", () => {
 jest.mock("@/src/state/AppStateProvider", () => ({
   useAppState: jest.fn(),
 }));
+jest.mock("@/src/domain/storyData", () => {
+  const actual = jest.requireActual("@/src/domain/storyData");
+  const { getFixtureStoryEpisode: getEpisode } = require("./fixtures/story");
+  return { ...actual, getStoryEpisode: getEpisode };
+});
 
 type AppStateContext = ReturnType<typeof useAppState>;
 
@@ -37,6 +49,9 @@ const mockedUseAppState = useAppState as jest.MockedFunction<
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<
   typeof useLocalSearchParams
 >;
+const branchingEpisodeParam = String(branchingEpisodeId);
+const linearEpisodeParam = String(linearStory.id);
+const lockedSecondaryChoiceLabel = `${secondaryRoute.label}、鍵付き、60 NTで解放`;
 
 function makeState(): AppState {
   return {
@@ -47,7 +62,11 @@ function makeState(): AppState {
     totalCompletions: 1,
     lastCompletionDate: "2025-01-01",
     unlockedStories: [
-      { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+      {
+        episodeId: branchingEpisodeId,
+        unlockedDate: "2025-01-01",
+        isRead: false,
+      },
     ],
     storyRouteProgress: {},
     activeTimer: null,
@@ -87,30 +106,44 @@ function makeContext(
 }
 
 function getMessageButton(renderer: TestRenderer.ReactTestRenderer) {
-  return renderer.root.findAllByType(TouchableOpacity)[1];
+  return renderer.root.find(
+    (node) =>
+      node.type === TouchableOpacity &&
+      (node.props.accessibilityLabel === "次のセリフへ進む" ||
+        node.props.accessibilityLabel === "ストーリーを読み終える"),
+  );
 }
 
-async function advanceToFinalLine(renderer: TestRenderer.ReactTestRenderer) {
-  await act(async () => {
-    getMessageButton(renderer).props.onPress();
-  });
-  await act(async () => {
-    getMessageButton(renderer).props.onPress();
-  });
+async function advanceLines(
+  renderer: TestRenderer.ReactTestRenderer,
+  count: number,
+) {
+  for (let index = 0; index < count; index += 1) {
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+    });
+  }
+}
+
+async function advanceToFinalLine(
+  renderer: TestRenderer.ReactTestRenderer,
+  lineCount: number,
+) {
+  await advanceLines(renderer, lineCount - 1);
 }
 
 describe("StoryScreen read completion", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "home",
     });
   });
 
   it("marks the episode read only after the final line and navigates once", async () => {
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "2",
+      episode: linearEpisodeParam,
       source: "home",
     });
     const markStoryRead = jest.fn(async (_episodeId: EpisodeId) => undefined);
@@ -118,7 +151,11 @@ describe("StoryScreen read completion", () => {
       makeContext(markStoryRead, {
         ...makeState(),
         unlockedStories: [
-          { episodeId: 2, unlockedDate: "2025-01-01", isRead: false },
+          {
+            episodeId: linearStory.id,
+            unlockedDate: "2025-01-01",
+            isRead: false,
+          },
         ],
       }),
     );
@@ -127,7 +164,10 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await advanceToFinalLine(renderer);
+    await advanceToFinalLine(
+      renderer,
+      linearStory.commonBefore.length + linearStory.commonAfter.length,
+    );
 
     await act(async () => {
       getMessageButton(renderer).props.onPress();
@@ -136,7 +176,7 @@ describe("StoryScreen read completion", () => {
     });
 
     expect(markStoryRead).toHaveBeenCalledTimes(1);
-    expect(markStoryRead).toHaveBeenCalledWith(2);
+    expect(markStoryRead).toHaveBeenCalledWith(linearStory.id);
     expect(router.replace).toHaveBeenCalledWith("/");
     expect(router.dismissTo).not.toHaveBeenCalled();
     await act(async () => {
@@ -149,7 +189,7 @@ describe("StoryScreen read completion", () => {
       async (_episodeId: EpisodeId, _routeId: string) => undefined,
     );
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "home",
     });
     mockedUseAppState.mockReturnValue(
@@ -158,7 +198,11 @@ describe("StoryScreen read completion", () => {
         {
           ...makeState(),
           unlockedStories: [
-            { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+            {
+              episodeId: branchingEpisodeId,
+              unlockedDate: "2025-01-01",
+              isRead: false,
+            },
           ],
         },
         selectInitialStoryRoute,
@@ -169,15 +213,12 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-      getMessageButton(renderer).props.onPress();
-    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
 
     const choice = renderer.root.find(
       (node) =>
         node.type === TouchableOpacity &&
-        node.props.accessibilityLabel === "ありがとうございます！",
+        node.props.accessibilityLabel === primaryRoute.label,
     );
     await act(async () => {
       choice.props.onPress();
@@ -191,14 +232,14 @@ describe("StoryScreen read completion", () => {
       ).length,
     ).toBeGreaterThan(0);
     expect(selectInitialStoryRoute).toHaveBeenCalledWith(
-      1,
-      "episode-01-encourage",
+      branchingEpisodeId,
+      primaryRoute.id,
     );
     expect(
       renderer.root.findAll(
         (node) =>
           node.type === Text &&
-          node.props.children === "ありがとうございます！\n明日も頑張ります！",
+          node.props.children === primaryRoute.lines[0].text,
       ),
     ).toHaveLength(1);
 
@@ -209,22 +250,19 @@ describe("StoryScreen read completion", () => {
       renderer.root.findAll(
         (node) =>
           node.type === Text &&
-          node.props.children ===
-            "いい返事だね～。\nでも、頑張りすぎはだめだよ？",
+          node.props.children === primaryRoute.lines[1].text,
       ),
     ).toHaveLength(1);
 
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-    });
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-    });
+    await advanceLines(
+      renderer,
+      primaryRoute.lines.length + branchingStory.commonAfter.length - 2,
+    );
     expect(
       renderer.root.findAll(
         (node) =>
           node.type === Text &&
-          node.props.children === "・・・では失礼します。",
+          node.props.children === branchingStory.commonAfter[0].text,
       ),
     ).toHaveLength(1);
     await act(async () => {
@@ -237,7 +275,7 @@ describe("StoryScreen read completion", () => {
       async (_episodeId: EpisodeId, _routeId: string) => undefined,
     );
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "home",
     });
     mockedUseAppState.mockReturnValue(
@@ -246,11 +284,15 @@ describe("StoryScreen read completion", () => {
         {
           ...makeState(),
           unlockedStories: [
-            { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+            {
+              episodeId: branchingEpisodeId,
+              unlockedDate: "2025-01-01",
+              isRead: false,
+            },
           ],
           storyRouteProgress: {
-            1: {
-              firstSelectedRouteId: "episode-01-encourage",
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
               extraUnlockedRouteIds: [],
             },
           },
@@ -263,22 +305,19 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-      getMessageButton(renderer).props.onPress();
-    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
 
     expect(selectInitialStoryRoute).not.toHaveBeenCalled();
     expect(
       renderer.root.findAll(
         (node) =>
           node.type === Text &&
-          node.props.children === "ありがとうございます！\n明日も頑張ります！",
+          node.props.children === primaryRoute.lines[0].text,
       ),
     ).toHaveLength(1);
     expect(
       renderer.root.findAll(
-        (node) => node.props.accessibilityLabel === "ありがとうございます！",
+        (node) => node.props.accessibilityLabel === primaryRoute.label,
       ),
     ).toHaveLength(0);
     await act(async () => {
@@ -291,7 +330,7 @@ describe("StoryScreen read completion", () => {
       async (_episodeId: EpisodeId, _routeId: string) => undefined,
     );
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "memory",
     });
     mockedUseAppState.mockReturnValue(
@@ -301,8 +340,8 @@ describe("StoryScreen read completion", () => {
           ...makeState(),
           totalNt: 120,
           storyRouteProgress: {
-            1: {
-              firstSelectedRouteId: "episode-01-encourage",
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
               extraUnlockedRouteIds: [],
             },
           },
@@ -316,17 +355,13 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-      getMessageButton(renderer).props.onPress();
-    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
 
     const lockedChoice = () =>
       renderer.root.find(
         (node) =>
           node.type === TouchableOpacity &&
-          node.props.accessibilityLabel ===
-            "はい、わかりました。、鍵付き、60 NTで解放",
+          node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
       );
     await act(async () => lockedChoice().props.onPress());
 
@@ -372,8 +407,8 @@ describe("StoryScreen read completion", () => {
     });
 
     expect(unlockAdditionalStoryRoute).toHaveBeenCalledWith(
-      1,
-      "episode-01-bow",
+      branchingEpisodeId,
+      secondaryRoute.id,
     );
     expect(
       renderer.root.findAll(
@@ -386,7 +421,7 @@ describe("StoryScreen read completion", () => {
 
   it("explains insufficient NT inline", async () => {
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "memory",
     });
     mockedUseAppState.mockReturnValue(
@@ -396,8 +431,8 @@ describe("StoryScreen read completion", () => {
           ...makeState(),
           totalNt: 0,
           storyRouteProgress: {
-            1: {
-              firstSelectedRouteId: "episode-01-encourage",
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
               extraUnlockedRouteIds: [],
             },
           },
@@ -409,15 +444,11 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-      getMessageButton(renderer).props.onPress();
-    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
     const lockedChoice = renderer.root.find(
       (node) =>
         node.type === TouchableOpacity &&
-        node.props.accessibilityLabel ===
-          "はい、わかりました。、鍵付き、60 NTで解放",
+        node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
     );
     await act(async () => lockedChoice.props.onPress());
 
@@ -450,7 +481,7 @@ describe("StoryScreen read completion", () => {
       .mockRejectedValueOnce(new Error("解放を保存できませんでした"))
       .mockResolvedValueOnce(undefined);
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "memory",
     });
     mockedUseAppState.mockReturnValue(
@@ -460,8 +491,8 @@ describe("StoryScreen read completion", () => {
           ...makeState(),
           totalNt: 120,
           storyRouteProgress: {
-            1: {
-              firstSelectedRouteId: "episode-01-encourage",
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
               extraUnlockedRouteIds: [],
             },
           },
@@ -475,15 +506,11 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-      getMessageButton(renderer).props.onPress();
-    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
     const lockedChoice = renderer.root.find(
       (node) =>
         node.type === TouchableOpacity &&
-        node.props.accessibilityLabel ===
-          "はい、わかりました。、鍵付き、60 NTで解放",
+        node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
     );
     await act(async () => lockedChoice.props.onPress());
     const confirm = () =>
@@ -514,8 +541,7 @@ describe("StoryScreen read completion", () => {
       renderer.root.findAll(
         (node) =>
           node.type === TouchableOpacity &&
-          node.props.accessibilityLabel ===
-            "はい、わかりました。、鍵付き、60 NTで解放",
+          node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
       ),
     ).toHaveLength(1);
     await act(async () => renderer.unmount());
@@ -523,7 +549,7 @@ describe("StoryScreen read completion", () => {
 
   it("keeps the story open and reports a persistence failure", async () => {
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "2",
+      episode: linearEpisodeParam,
       source: "home",
     });
     const markStoryRead = jest.fn(async (_episodeId: EpisodeId) => {
@@ -533,7 +559,11 @@ describe("StoryScreen read completion", () => {
       makeContext(markStoryRead, {
         ...makeState(),
         unlockedStories: [
-          { episodeId: 2, unlockedDate: "2025-01-01", isRead: false },
+          {
+            episodeId: linearStory.id,
+            unlockedDate: "2025-01-01",
+            isRead: false,
+          },
         ],
       }),
     );
@@ -542,7 +572,10 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
-    await advanceToFinalLine(renderer);
+    await advanceToFinalLine(
+      renderer,
+      linearStory.commonBefore.length + linearStory.commonAfter.length,
+    );
 
     await act(async () => {
       getMessageButton(renderer).props.onPress();

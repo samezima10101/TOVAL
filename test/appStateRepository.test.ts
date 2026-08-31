@@ -5,6 +5,11 @@ import {
   createInitialAppState,
   parsePersistedState,
 } from "../src/storage/appStateRepository";
+import {
+  branchingEpisodeId,
+  primaryRoute,
+  secondaryRoute,
+} from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 
@@ -145,18 +150,18 @@ describe("app state repository", () => {
       JSON.stringify({
         ...createInitialAppState(),
         storyRouteProgress: {
-          1: {
-            firstSelectedRouteId: "episode-01-encourage",
-            extraUnlockedRouteIds: ["episode-01-bow"],
+          [branchingEpisodeId]: {
+            firstSelectedRouteId: primaryRoute.id,
+            extraUnlockedRouteIds: [secondaryRoute.id],
           },
         },
       }),
     );
 
     expect(state?.storyRouteProgress).toEqual({
-      1: {
-        firstSelectedRouteId: "episode-01-encourage",
-        extraUnlockedRouteIds: ["episode-01-bow"],
+      [branchingEpisodeId]: {
+        firstSelectedRouteId: primaryRoute.id,
+        extraUnlockedRouteIds: [secondaryRoute.id],
       },
     });
   });

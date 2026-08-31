@@ -3,12 +3,12 @@ import { Text, TouchableOpacity } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
-import { getStoryEpisode } from "@/src/domain/storyData";
+import { linearStory } from "./fixtures/story";
 
 jest.mock("@/src/components/story/StoryCharacters", () => () => null);
 jest.mock("@expo/vector-icons/Ionicons", () => () => null);
 
-const episode = getStoryEpisode(1)!;
+const episode = linearStory;
 
 function getTextChildren(renderer: TestRenderer.ReactTestRenderer): string[] {
   return renderer.root
