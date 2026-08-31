@@ -48,7 +48,6 @@ const episodes: readonly StoryEpisode[] = [
         "normal",
       ),
     ],
-    // Temporary branching sample; replace with final episode content later.
     routes: [
       {
         id: "episode-01-encourage",
@@ -57,7 +56,21 @@ const episodes: readonly StoryEpisode[] = [
           line(
             "episode-01-encourage-01",
             "sub",
-            "ありがとうございます！",
+            "ありがとうございます！\n明日も頑張ります！",
+            "normal",
+            "talk",
+          ),
+          line(
+            "episode-01-encourage-02",
+            "boss",
+            "いい返事だね～。\nでも、頑張りすぎはだめだよ？",
+            "talk",
+            "normal",
+          ),
+          line(
+            "episode-01-encourage-03",
+            "sub",
+            "はい！\nしっかり休んで、また明日に備えます。",
             "normal",
             "talk",
           ),
@@ -71,6 +84,20 @@ const episodes: readonly StoryEpisode[] = [
             "episode-01-bow-01",
             "sub",
             "はい、わかりました。",
+            "normal",
+            "talk",
+          ),
+          line(
+            "episode-01-bow-02",
+            "boss",
+            "あれ、ちょっと疲れてる？\n今日はもうゆっくり休みなね～。",
+            "talk",
+            "normal",
+          ),
+          line(
+            "episode-01-bow-03",
+            "sub",
+            "……お気遣いありがとうございます。\nお言葉に甘えます。",
             "normal",
             "talk",
           ),

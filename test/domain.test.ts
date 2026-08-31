@@ -138,6 +138,8 @@ describe("story routes", () => {
       "episode-01-01",
       "episode-01-02",
       "episode-01-bow-01",
+      "episode-01-bow-02",
+      "episode-01-bow-03",
       "episode-01-03",
     ]);
     expect(

@@ -198,10 +198,25 @@ describe("StoryScreen read completion", () => {
       renderer.root.findAll(
         (node) =>
           node.type === Text &&
-          node.props.children === "ありがとうございます！",
+          node.props.children === "ありがとうございます！\n明日も頑張ります！",
       ),
     ).toHaveLength(1);
 
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+    });
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children ===
+            "いい返事だね～。\nでも、頑張りすぎはだめだよ？",
+      ),
+    ).toHaveLength(1);
+
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+    });
     await act(async () => {
       getMessageButton(renderer).props.onPress();
     });
@@ -258,7 +273,7 @@ describe("StoryScreen read completion", () => {
       renderer.root.findAll(
         (node) =>
           node.type === Text &&
-          node.props.children === "ありがとうございます！",
+          node.props.children === "ありがとうございます！\n明日も頑張ります！",
       ),
     ).toHaveLength(1);
     expect(
