@@ -109,11 +109,18 @@ function getMessageButton(renderer: TestRenderer.ReactTestRenderer) {
   );
 }
 
+async function finishTyping(renderer: TestRenderer.ReactTestRenderer) {
+  await act(async () => {
+    jest.runAllTimers();
+  });
+}
+
 async function advanceLines(
   renderer: TestRenderer.ReactTestRenderer,
   count: number,
 ) {
   for (let index = 0; index < count; index += 1) {
+    await finishTyping(renderer);
     await act(async () => {
       getMessageButton(renderer).props.onPress();
     });
@@ -129,11 +136,16 @@ async function advanceToFinalLine(
 
 describe("StoryScreen read completion", () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mockedUseLocalSearchParams.mockReturnValue({
       episode: branchingEpisodeParam,
       source: "home",
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("marks the episode read only after the final line and navigates once", async () => {
@@ -163,6 +175,7 @@ describe("StoryScreen read completion", () => {
       renderer,
       linearStory.commonBefore.length + linearStory.commonAfter.length,
     );
+    await finishTyping(renderer);
 
     await act(async () => {
       getMessageButton(renderer).props.onPress();
@@ -218,6 +231,7 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       choice.props.onPress();
     });
+    await finishTyping(renderer);
 
     expect(
       renderer.root.findAll(
@@ -241,6 +255,7 @@ describe("StoryScreen read completion", () => {
     await act(async () => {
       getMessageButton(renderer).props.onPress();
     });
+    await finishTyping(renderer);
     expect(
       renderer.root.findAll(
         (node) =>
@@ -253,6 +268,7 @@ describe("StoryScreen read completion", () => {
       renderer,
       primaryRoute.lines.length + branchingStory.commonAfter.length - 2,
     );
+    await finishTyping(renderer);
     expect(
       renderer.root.findAll(
         (node) =>
@@ -301,6 +317,7 @@ describe("StoryScreen read completion", () => {
       renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
+    await finishTyping(renderer);
 
     expect(selectInitialStoryRoute).not.toHaveBeenCalled();
     expect(
@@ -571,6 +588,7 @@ describe("StoryScreen read completion", () => {
       renderer,
       linearStory.commonBefore.length + linearStory.commonAfter.length,
     );
+    await finishTyping(renderer);
 
     await act(async () => {
       getMessageButton(renderer).props.onPress();

@@ -86,6 +86,8 @@ export default function StoryScreen({
 
   const {
     line,
+    visibleText,
+    isTyping,
     isLastLine,
     isWaitingForChoice,
     isProcessing,
@@ -199,7 +201,9 @@ export default function StoryScreen({
       {line ? (
         <StoryMessageBox
           speaker={line.speaker}
-          text={line.text}
+          text={visibleText}
+          fullText={line.text}
+          isTyping={isTyping}
           isLastLine={isLastLine}
           isProcessing={isProcessing}
           onNext={handleNext}
