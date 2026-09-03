@@ -42,7 +42,7 @@ const branchingRoutes: readonly [StoryRoute, StoryRoute] = [
 ];
 
 export const branchingStory: StoryEpisode = {
-  id: 1,
+  id: 101,
   title: "Branching fixture story",
   commonBefore: [
     makeLine("opening-1", "sub"),
@@ -53,7 +53,7 @@ export const branchingStory: StoryEpisode = {
 };
 
 export const linearStory: StoryEpisode = {
-  id: 2,
+  id: 202,
   title: "Linear fixture story",
   commonBefore: [makeLine("linear-1", "sub")],
   commonAfter: [makeLine("linear-2", "boss")],

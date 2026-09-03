@@ -10,6 +10,7 @@ import {
   StoryRouteProgress,
   UnlockedStory,
 } from "@/src/domain/common/types";
+import { STORY_CATALOG, StoryCatalog } from "@/src/domain/storyData";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
 
@@ -60,11 +61,15 @@ const isDateKey = (value: unknown): value is string => {
   }
 };
 
-const isEpisodeId = (value: unknown): value is EpisodeId =>
-  value === 1 || value === 2 || value === 3;
+const isEpisodeId = (
+  value: unknown,
+  catalog: StoryCatalog,
+): value is EpisodeId =>
+  typeof value === "number" && catalog.episodes.some((episode) => episode.id === value);
 
 function parseStoryRouteProgress(
   value: unknown,
+  catalog: StoryCatalog,
 ): Partial<Record<EpisodeId, StoryRouteProgress>> | undefined {
   if (!isRecord(value)) {
     return undefined;
@@ -73,7 +78,7 @@ function parseStoryRouteProgress(
   const progress: Partial<Record<EpisodeId, StoryRouteProgress>> = {};
   for (const [episodeKey, episodeProgress] of Object.entries(value)) {
     const episodeId = Number(episodeKey);
-    if (!isEpisodeId(episodeId) || !isRecord(episodeProgress)) {
+    if (!isEpisodeId(episodeId, catalog) || !isRecord(episodeProgress)) {
       return undefined;
     }
 
@@ -179,7 +184,10 @@ function parseV1ActiveTimer(value: unknown): ActiveTimer | null | undefined {
   };
 }
 
-export function validateAppState(value: unknown): value is AppState {
+export function validateAppState(
+  value: unknown,
+  catalog: StoryCatalog = STORY_CATALOG,
+): value is AppState {
   if (!isRecord(value) || value.schemaVersion !== APP_SCHEMA_VERSION) {
     return false;
   }
@@ -196,8 +204,8 @@ export function validateAppState(value: unknown): value is AppState {
     (value.lastCompletionDate !== null &&
       !isDateKey(value.lastCompletionDate)) ||
     !Array.isArray(value.unlockedStories) ||
-    value.unlockedStories.length > 3 ||
-    parseStoryRouteProgress(value.storyRouteProgress) === undefined
+    value.unlockedStories.length > catalog.episodes.length ||
+    parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined
   ) {
     return false;
   }
@@ -206,7 +214,7 @@ export function validateAppState(value: unknown): value is AppState {
   for (const story of value.unlockedStories) {
     if (
       !isRecord(story) ||
-      !isEpisodeId(story.episodeId) ||
+      !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
       typeof story.isRead !== "boolean" ||
       ids.has(story.episodeId)
@@ -217,13 +225,16 @@ export function validateAppState(value: unknown): value is AppState {
   }
 
   return (
-    parseStoryRouteProgress(value.storyRouteProgress) !== undefined &&
+    parseStoryRouteProgress(value.storyRouteProgress, catalog) !== undefined &&
     parseActiveTimer(value.activeTimer) !== undefined
   );
 }
 
-function parseLegacyUnlockedStories(value: unknown): UnlockedStory[] {
-  if (!Array.isArray(value) || value.length > 3) {
+function parseLegacyUnlockedStories(
+  value: unknown,
+  catalog: StoryCatalog,
+): UnlockedStory[] {
+  if (!Array.isArray(value) || value.length > catalog.episodes.length) {
     return [];
   }
 
@@ -232,7 +243,7 @@ function parseLegacyUnlockedStories(value: unknown): UnlockedStory[] {
   for (const story of value) {
     if (
       !isRecord(story) ||
-      !isEpisodeId(story.episodeId) ||
+      !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
       ids.has(story.episodeId)
     ) {
@@ -249,7 +260,10 @@ function parseLegacyUnlockedStories(value: unknown): UnlockedStory[] {
   return stories;
 }
 
-function migrateLegacyState(value: Record<string, unknown>): AppState | null {
+function migrateLegacyState(
+  value: Record<string, unknown>,
+  catalog: StoryCatalog,
+): AppState | null {
   if (
     value.schemaVersion !== 0 &&
     value.schemaVersion !== 1 &&
@@ -277,7 +291,7 @@ function migrateLegacyState(value: Record<string, unknown>): AppState | null {
       value.lastCompletionDate === null || isDateKey(value.lastCompletionDate)
         ? value.lastCompletionDate
         : null,
-    unlockedStories: parseLegacyUnlockedStories(value.unlockedStories),
+    unlockedStories: parseLegacyUnlockedStories(value.unlockedStories, catalog),
     storyRouteProgress: {},
     activeTimer: activeTimer ?? null,
   };
@@ -285,7 +299,10 @@ function migrateLegacyState(value: Record<string, unknown>): AppState | null {
   return migrated;
 }
 
-export function parsePersistedState(raw: string): AppState | null {
+export function parsePersistedState(
+  raw: string,
+  catalog: StoryCatalog = STORY_CATALOG,
+): AppState | null {
   let value: unknown;
   try {
     value = JSON.parse(raw);
@@ -293,10 +310,10 @@ export function parsePersistedState(raw: string): AppState | null {
     return null;
   }
 
-  if (validateAppState(value)) {
+  if (validateAppState(value, catalog)) {
     return value;
   }
-  return isRecord(value) ? migrateLegacyState(value) : null;
+  return isRecord(value) ? migrateLegacyState(value, catalog) : null;
 }
 
 export type AppStateRepository = {
@@ -306,6 +323,7 @@ export type AppStateRepository = {
 
 export function createAppStateRepository(
   storage: StorageLike = AsyncStorage,
+  catalog: StoryCatalog = STORY_CATALOG,
 ): AppStateRepository {
   return {
     async load() {
@@ -324,11 +342,11 @@ export function createAppStateRepository(
         return createInitialAppState();
       }
 
-      return parsePersistedState(raw) ?? createInitialAppState();
+      return parsePersistedState(raw, catalog) ?? createInitialAppState();
     },
 
     async save(state) {
-      if (!validateAppState(state)) {
+      if (!validateAppState(state, catalog)) {
         throw new AppStateStorageError(
           "write",
           "保存するアプリ状態が不正です。",

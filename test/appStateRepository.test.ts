@@ -9,6 +9,7 @@ import {
   branchingEpisodeId,
   primaryRoute,
   secondaryRoute,
+  storyCatalog,
 } from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
@@ -156,6 +157,7 @@ describe("app state repository", () => {
           },
         },
       }),
+      storyCatalog,
     );
 
     expect(state?.storyRouteProgress).toEqual({

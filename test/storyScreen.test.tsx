@@ -16,6 +16,7 @@ import {
   linearStory,
   primaryRoute,
   secondaryRoute,
+  storyCatalog,
 } from "./fixtures/story";
 
 jest.mock("expo-router", () => ({
@@ -35,12 +36,6 @@ jest.mock("@/src/components/story/StoryCharacters", () => {
 jest.mock("@/src/state/AppStateProvider", () => ({
   useAppState: jest.fn(),
 }));
-jest.mock("@/src/domain/storyData", () => {
-  const actual = jest.requireActual("@/src/domain/storyData");
-  const { getFixtureStoryEpisode: getEpisode } = require("./fixtures/story");
-  return { ...actual, getStoryEpisode: getEpisode };
-});
-
 type AppStateContext = ReturnType<typeof useAppState>;
 
 const mockedUseAppState = useAppState as jest.MockedFunction<
@@ -162,7 +157,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceToFinalLine(
       renderer,
@@ -211,7 +206,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
 
@@ -303,7 +298,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
 
@@ -353,7 +348,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
 
@@ -442,7 +437,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
     const lockedChoice = renderer.root.find(
@@ -504,7 +499,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
     const lockedChoice = renderer.root.find(
@@ -570,7 +565,7 @@ describe("StoryScreen read completion", () => {
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceToFinalLine(
       renderer,

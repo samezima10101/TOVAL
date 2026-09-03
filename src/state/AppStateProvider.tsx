@@ -23,7 +23,12 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
-import { getStoryEpisode, getStoryRoute } from "@/src/domain/storyData";
+import {
+  STORY_CATALOG,
+  StoryCatalog,
+  getStoryEpisode,
+  getStoryRoute,
+} from "@/src/domain/storyData";
 import {
   appStateRepository,
   AppStateRepository,
@@ -105,9 +110,11 @@ function assertPlannedSeconds(value: number): asserts value is number {
 export function AppStateProvider({
   children,
   repository = appStateRepository,
+  catalog = STORY_CATALOG,
 }: {
   children: ReactNode;
   repository?: AppStateRepository;
+  catalog?: StoryCatalog;
 }) {
   const [state, setState] = useState<AppState | null>(null);
   const [status, setStatus] = useState<HydrationStatus>("loading");
@@ -262,7 +269,7 @@ export function AppStateProvider({
         if (!current.unlockedStories.some((story) => story.episodeId === episodeId)) {
           throw new StoryRouteError("このストーリーはまだ解放されていません。");
         }
-        const episode = getStoryEpisode(episodeId);
+        const episode = getStoryEpisode(episodeId, catalog);
         const route = episode && getStoryRoute(episode, routeId);
         if (!episode?.routes?.length || !route) {
           throw new StoryRouteError("選択肢が見つかりません。");
@@ -288,7 +295,7 @@ export function AppStateProvider({
         await repository.save(nextState);
         commitState(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [catalog, commitState, enqueue, repository, requireState],
   );
 
   const unlockAdditionalStoryRoute = useCallback(
@@ -298,7 +305,7 @@ export function AppStateProvider({
         if (!current.unlockedStories.some((story) => story.episodeId === episodeId)) {
           throw new StoryRouteError("このストーリーはまだ解放されていません。");
         }
-        const episode = getStoryEpisode(episodeId);
+        const episode = getStoryEpisode(episodeId, catalog);
         const route = episode && getStoryRoute(episode, routeId);
         if (!episode?.routes?.length || !route) {
           throw new StoryRouteError("選択肢が見つかりません。");
@@ -336,7 +343,7 @@ export function AppStateProvider({
         await repository.save(nextState);
         commitState(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [catalog, commitState, enqueue, repository, requireState],
   );
 
   const startTimer = useCallback(
@@ -387,7 +394,7 @@ export function AppStateProvider({
     (finishedAt = Date.now()) =>
       enqueue(async () => {
         const current = requireState();
-        const outcome = completeTimer(current, finishedAt);
+        const outcome = completeTimer(current, finishedAt, catalog);
         if (outcome.status === "no-active-timer") {
           throw new NoActiveTimerError();
         }
@@ -399,7 +406,7 @@ export function AppStateProvider({
         commitState(outcome.state);
         return outcome;
       }),
-    [commitState, enqueue, repository, requireState],
+    [catalog, commitState, enqueue, repository, requireState],
   );
 
   const value = useMemo<AppStateContextValue>(

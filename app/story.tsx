@@ -11,6 +11,8 @@ import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmat
 import { Colors } from "@/src/constants/theme";
 import { EpisodeId } from "@/src/domain/common/types";
 import {
+  STORY_CATALOG,
+  StoryCatalog,
   getStoryEpisode,
   getStoryRoute,
   isEpisodeId,
@@ -21,10 +23,11 @@ import { useAppState } from "@/src/state/AppStateProvider";
 
 function parseEpisodeId(
   value: string | string[] | undefined,
+  catalog: StoryCatalog,
 ): EpisodeId | null {
   const raw = Array.isArray(value) ? value[0] : value;
   const parsed = raw ? Number(raw) : NaN;
-  return isEpisodeId(parsed) ? parsed : null;
+  return isEpisodeId(parsed, catalog) ? parsed : null;
 }
 
 function parseRouteId(
@@ -33,7 +36,11 @@ function parseRouteId(
   return Array.isArray(value) ? value[0] : value;
 }
 
-export default function StoryScreen() {
+export default function StoryScreen({
+  catalog = STORY_CATALOG,
+}: {
+  catalog?: StoryCatalog;
+}) {
   const {
     state,
     markStoryRead,
@@ -50,7 +57,7 @@ export default function StoryScreen() {
     source?: string;
     route?: string;
   }>();
-  const episodeId = parseEpisodeId(params.episode);
+  const episodeId = parseEpisodeId(params.episode, catalog);
   const source =
     params.source === "memory"
       ? "memory"
@@ -58,7 +65,7 @@ export default function StoryScreen() {
         ? "home"
         : "unlock";
   const routeId = parseRouteId(params.route);
-  const episode = episodeId ? getStoryEpisode(episodeId) : undefined;
+  const episode = episodeId ? getStoryEpisode(episodeId, catalog) : undefined;
   const progress = episodeId ? state?.storyRouteProgress[episodeId] : undefined;
   const savedInitialRouteId =
     episodeId && source !== "memory"
@@ -89,7 +96,8 @@ export default function StoryScreen() {
   } = useStoryReader(
     episode,
     source,
-    (id) => (isEpisodeId(id) ? markStoryRead(id) : Promise.resolve()),
+    (id) =>
+      isEpisodeId(id, catalog) ? markStoryRead(id) : Promise.resolve(),
     initialRouteId,
     episodeId && !progress?.firstSelectedRouteId
       ? (selectedRouteId) => selectInitialStoryRoute(episodeId, selectedRouteId)

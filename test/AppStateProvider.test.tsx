@@ -19,15 +19,10 @@ import {
   branchingEpisodeId,
   primaryRoute,
   secondaryRoute,
+  storyCatalog,
 } from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
-jest.mock("@/src/domain/storyData", () => {
-  const actual = jest.requireActual("@/src/domain/storyData");
-  const { getFixtureStoryEpisode: getEpisode } = require("./fixtures/story");
-  return { ...actual, getStoryEpisode: getEpisode };
-});
-
 type TestRepository = AppStateRepository & {
   state: AppState;
   failWrite: boolean;
@@ -93,7 +88,7 @@ async function renderProvider(
 
   await act(async () => {
     renderer = TestRenderer.create(
-      <AppStateProvider repository={repository}>
+      <AppStateProvider repository={repository} catalog={storyCatalog}>
         <Probe />
       </AppStateProvider>,
     );
@@ -375,6 +370,14 @@ describe("AppStateProvider timer lifecycle", () => {
         outcome = await harness.context.finishTimer(10_250);
       });
       expect(outcome.earnedNt).toBe(3);
+      expect(outcome.unlockedEpisode).toBe(branchingEpisodeId);
+      expect(repository.state.unlockedStories).toEqual([
+        {
+          episodeId: branchingEpisodeId,
+          unlockedDate: "1970-01-01",
+          isRead: false,
+        },
+      ]);
       expect(repository.state.activeTimer).toBeNull();
     } finally {
       await harness.unmount();

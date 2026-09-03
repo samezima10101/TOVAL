@@ -3,7 +3,7 @@ export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
 
-export type EpisodeId = 1 | 2 | 3;
+export type EpisodeId = number;
 export type Speaker = "boss" | "sub";
 export type StoryCharacter = "gem" | "alta";
 export type Expression = "normal" | "talk" | "doubt";
