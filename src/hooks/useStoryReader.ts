@@ -21,6 +21,7 @@ export default function useStoryReader(
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [visibleCharacterCount, setVisibleCharacterCount] = React.useState(0);
+  const [typedLineId, setTypedLineId] = React.useState<string | undefined>();
   const isProcessingRef = React.useRef(false);
   const cancelTypewriterRef = React.useRef<(() => void) | null>(null);
 
@@ -61,6 +62,7 @@ export default function useStoryReader(
   React.useEffect(() => {
     cancelTypewriterRef.current?.();
     cancelTypewriterRef.current = null;
+    setTypedLineId(lineId);
     setVisibleCharacterCount(0);
 
     const characters = Array.from(lineText);
@@ -105,8 +107,10 @@ export default function useStoryReader(
   }, [lineId, lineText]);
 
   const lineCharacters = Array.from(lineText);
-  const isTyping = Boolean(line && visibleCharacterCount < lineCharacters.length);
-  const visibleText = lineCharacters.slice(0, visibleCharacterCount).join("");
+  const renderedCharacterCount =
+    typedLineId === lineId ? visibleCharacterCount : 0;
+  const isTyping = Boolean(line && renderedCharacterCount < lineCharacters.length);
+  const visibleText = lineCharacters.slice(0, renderedCharacterCount).join("");
 
   const handleSelectRoute = async (routeId: string) => {
     if (

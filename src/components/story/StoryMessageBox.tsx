@@ -35,7 +35,11 @@ export default function StoryMessageBox({
       activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={
-        isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"
+        isTyping
+          ? "セリフを全文表示"
+          : isLastLine
+            ? "ストーリーを読み終える"
+            : "次のセリフへ進む"
       }
       accessibilityHint={`現在のセリフ: ${fullText}`}
       accessibilityState={{ disabled: isProcessing }}
@@ -43,9 +47,7 @@ export default function StoryMessageBox({
       <Text style={styles.speakerName}>
         {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[speaker]]}
       </Text>
-      <Text style={styles.messageText} accessibilityLabel={fullText}>
-        {text}
-      </Text>
+      <Text style={styles.messageText}>{text}</Text>
       <Text style={styles.tapPrompt}>
         {isTyping
           ? "Tap to show all ▼"
