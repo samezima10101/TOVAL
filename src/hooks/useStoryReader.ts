@@ -3,7 +3,7 @@ import React from "react";
 
 import { StoryEpisode } from "@/src/domain/common/types";
 
-export const STORY_CHARACTER_INTERVAL_MS = 30;
+export const STORY_CHARACTER_INTERVAL_MS = 45;
 
 export default function useStoryReader(
   episode: StoryEpisode | undefined,
