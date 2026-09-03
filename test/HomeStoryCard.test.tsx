@@ -5,7 +5,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import { getStoryEpisode } from "@/src/domain/storyData";
 
-jest.mock("@/components/StoryCharacters", () => () => null);
+jest.mock("@/src/components/story/StoryCharacters", () => () => null);
 jest.mock("@expo/vector-icons/Ionicons", () => () => null);
 
 const episode = getStoryEpisode(1)!;

@@ -19,7 +19,7 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
 }));
 
-jest.mock("@/components/StoryCharacters", () => () => null);
+jest.mock("@/src/components/story/StoryCharacters", () => () => null);
 jest.mock("@/src/state/AppStateProvider", () => ({
   useAppState: jest.fn(),
 }));
@@ -73,22 +73,36 @@ function getMessageButton(renderer: TestRenderer.ReactTestRenderer) {
   return renderer.root.findAllByType(TouchableOpacity)[1];
 }
 
+async function finishTyping() {
+  await act(async () => {
+    jest.runAllTimers();
+  });
+}
+
 async function advanceToFinalLine(renderer: TestRenderer.ReactTestRenderer) {
-  await act(async () => {
-    getMessageButton(renderer).props.onPress();
-  });
-  await act(async () => {
-    getMessageButton(renderer).props.onPress();
-  });
+  for (let index = 0; index < 2; index += 1) {
+    await finishTyping();
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+    });
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+    });
+  }
 }
 
 describe("StoryScreen read completion", () => {
   beforeEach(() => {
+    jest.useFakeTimers();
     jest.clearAllMocks();
     mockedUseLocalSearchParams.mockReturnValue({
       episode: "1",
       source: "home",
     });
+  });
+
+  afterEach(() => {
+    jest.useRealTimers();
   });
 
   it("marks the episode read only after the final line and navigates once", async () => {
@@ -100,9 +114,9 @@ describe("StoryScreen read completion", () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
     await advanceToFinalLine(renderer);
+    await finishTyping();
 
     await act(async () => {
-      getMessageButton(renderer).props.onPress();
       getMessageButton(renderer).props.onPress();
       await Promise.resolve();
     });
@@ -127,6 +141,7 @@ describe("StoryScreen read completion", () => {
       renderer = TestRenderer.create(<StoryScreen />);
     });
     await advanceToFinalLine(renderer);
+    await finishTyping();
 
     await act(async () => {
       getMessageButton(renderer).props.onPress();

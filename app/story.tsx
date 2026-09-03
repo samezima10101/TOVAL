@@ -36,8 +36,16 @@ export default function StoryScreen() {
     state?.unlockedStories.some((story) => story.episodeId === episodeId),
   );
 
-  const { line, isLastLine, isProcessing, error, handleNext, handleClose } =
-    useStoryReader(episode, source, (id) =>
+  const {
+    line,
+    visibleText,
+    isTyping,
+    isLastLine,
+    isProcessing,
+    error,
+    handleNext,
+    handleClose,
+  } = useStoryReader(episode, source, (id) =>
       isEpisodeId(id) ? markStoryRead(id) : Promise.resolve(),
     );
 
@@ -83,7 +91,9 @@ export default function StoryScreen() {
 
       <StoryMessageBox
         speaker={line.speaker}
-        text={line.text}
+        text={visibleText}
+        fullText={line.text}
+        isTyping={isTyping}
         isLastLine={isLastLine}
         isProcessing={isProcessing}
         onNext={handleNext}

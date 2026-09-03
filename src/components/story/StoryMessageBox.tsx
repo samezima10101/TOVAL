@@ -11,6 +11,8 @@ import {
 type Props = {
   speaker: Speaker;
   text: string;
+  fullText: string;
+  isTyping: boolean;
   isLastLine: boolean;
   isProcessing: boolean;
   onNext: () => void;
@@ -19,6 +21,8 @@ type Props = {
 export default function StoryMessageBox({
   speaker,
   text,
+  fullText,
+  isTyping,
   isLastLine,
   isProcessing,
   onNext,
@@ -31,8 +35,13 @@ export default function StoryMessageBox({
       activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={
-        isLastLine ? "ストーリーを読み終える" : "次のセリフへ進む"
+        isTyping
+          ? "セリフを全文表示"
+          : isLastLine
+            ? "ストーリーを読み終える"
+            : "次のセリフへ進む"
       }
+      accessibilityHint={`現在のセリフ: ${fullText}`}
       accessibilityState={{ disabled: isProcessing }}
     >
       <Text style={styles.speakerName}>
@@ -40,7 +49,11 @@ export default function StoryMessageBox({
       </Text>
       <Text style={styles.messageText}>{text}</Text>
       <Text style={styles.tapPrompt}>
-        {isLastLine ? "Tap to close ▼" : "Tap to next ▼"}
+        {isTyping
+          ? "Tap to show all ▼"
+          : isLastLine
+            ? "Tap to close ▼"
+            : "Tap to next ▼"}
       </Text>
     </TouchableOpacity>
   );
