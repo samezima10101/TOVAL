@@ -21,9 +21,5 @@ export default function useTimerBgm(isTimerRunning: boolean) {
     } else {
       player.pause();
     }
-
-    return () => {
-      player.pause();
-    };
   }, [isTimerRunning, player]);
 }
