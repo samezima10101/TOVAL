@@ -15,6 +15,7 @@ import {
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
+  STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
 import {
   cancelTimer as cancelTimerState,
@@ -22,6 +23,12 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
+import {
+  STORY_CATALOG,
+  StoryCatalog,
+  getStoryEpisode,
+  getStoryRoute,
+} from "@/src/domain/storyData";
 import {
   appStateRepository,
   AppStateRepository,
@@ -44,6 +51,13 @@ export class NoActiveTimerError extends Error {
   }
 }
 
+export class StoryRouteError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "StoryRouteError";
+  }
+}
+
 type AppStateContextValue = {
   state: AppState | null;
   status: HydrationStatus;
@@ -51,6 +65,8 @@ type AppStateContextValue = {
   retryHydration: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
   markStoryRead: (episodeId: EpisodeId) => Promise<void>;
+  selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
+  unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
@@ -94,9 +110,11 @@ function assertPlannedSeconds(value: number): asserts value is number {
 export function AppStateProvider({
   children,
   repository = appStateRepository,
+  catalog = STORY_CATALOG,
 }: {
   children: ReactNode;
   repository?: AppStateRepository;
+  catalog?: StoryCatalog;
 }) {
   const [state, setState] = useState<AppState | null>(null);
   const [status, setStatus] = useState<HydrationStatus>("loading");
@@ -244,6 +262,90 @@ export function AppStateProvider({
     [commitState, enqueue, repository, requireState],
   );
 
+  const selectInitialStoryRoute = useCallback(
+    (episodeId: EpisodeId, routeId: string) =>
+      enqueue(async () => {
+        const current = requireState();
+        if (!current.unlockedStories.some((story) => story.episodeId === episodeId)) {
+          throw new StoryRouteError("このストーリーはまだ解放されていません。");
+        }
+        const episode = getStoryEpisode(episodeId, catalog);
+        const route = episode && getStoryRoute(episode, routeId);
+        if (!episode?.routes?.length || !route) {
+          throw new StoryRouteError("選択肢が見つかりません。");
+        }
+        const progress = current.storyRouteProgress[episodeId];
+        if (progress?.firstSelectedRouteId) {
+          throw new StoryRouteError("初回の選択肢はすでに選択されています。");
+        }
+        if (progress?.extraUnlockedRouteIds.includes(routeId)) {
+          throw new StoryRouteError("この選択肢はすでに解放されています。");
+        }
+
+        const nextState = {
+          ...current,
+          storyRouteProgress: {
+            ...current.storyRouteProgress,
+            [episodeId]: {
+              firstSelectedRouteId: routeId,
+              extraUnlockedRouteIds: [...(progress?.extraUnlockedRouteIds ?? [])],
+            },
+          },
+        };
+        await repository.save(nextState);
+        commitState(nextState);
+      }),
+    [catalog, commitState, enqueue, repository, requireState],
+  );
+
+  const unlockAdditionalStoryRoute = useCallback(
+    (episodeId: EpisodeId, routeId: string) =>
+      enqueue(async () => {
+        const current = requireState();
+        if (!current.unlockedStories.some((story) => story.episodeId === episodeId)) {
+          throw new StoryRouteError("このストーリーはまだ解放されていません。");
+        }
+        const episode = getStoryEpisode(episodeId, catalog);
+        const route = episode && getStoryRoute(episode, routeId);
+        if (!episode?.routes?.length || !route) {
+          throw new StoryRouteError("選択肢が見つかりません。");
+        }
+        const progress = current.storyRouteProgress[episodeId];
+        if (!progress?.firstSelectedRouteId) {
+          throw new StoryRouteError("初回の選択肢を選んでから解放してください。");
+        }
+        if (progress.firstSelectedRouteId === routeId) {
+          throw new StoryRouteError("この選択肢はすでに解放されています。");
+        }
+        if (progress.extraUnlockedRouteIds.includes(routeId)) {
+          throw new StoryRouteError("この選択肢はすでに解放されています。");
+        }
+        if (current.totalNt < STORY_ROUTE_UNLOCK_COST_NT) {
+          throw new StoryRouteError(
+            `NTが不足しています（必要: ${STORY_ROUTE_UNLOCK_COST_NT} NT）。`,
+          );
+        }
+
+        const nextState = {
+          ...current,
+          totalNt: current.totalNt - STORY_ROUTE_UNLOCK_COST_NT,
+          storyRouteProgress: {
+            ...current.storyRouteProgress,
+            [episodeId]: {
+              firstSelectedRouteId: progress.firstSelectedRouteId,
+              extraUnlockedRouteIds: [
+                ...progress.extraUnlockedRouteIds,
+                routeId,
+              ],
+            },
+          },
+        };
+        await repository.save(nextState);
+        commitState(nextState);
+      }),
+    [catalog, commitState, enqueue, repository, requireState],
+  );
+
   const startTimer = useCallback(
     (plannedSeconds: number) =>
       enqueue(async () => {
@@ -292,7 +394,7 @@ export function AppStateProvider({
     (finishedAt = Date.now()) =>
       enqueue(async () => {
         const current = requireState();
-        const outcome = completeTimer(current, finishedAt);
+        const outcome = completeTimer(current, finishedAt, catalog);
         if (outcome.status === "no-active-timer") {
           throw new NoActiveTimerError();
         }
@@ -304,7 +406,7 @@ export function AppStateProvider({
         commitState(outcome.state);
         return outcome;
       }),
-    [commitState, enqueue, repository, requireState],
+    [catalog, commitState, enqueue, repository, requireState],
   );
 
   const value = useMemo<AppStateContextValue>(
@@ -315,6 +417,8 @@ export function AppStateProvider({
       retryHydration,
       setTaskName,
       markStoryRead,
+      selectInitialStoryRoute,
+      unlockAdditionalStoryRoute,
       startTimer,
       setTimerRouteFocused,
       cancelTimer,
@@ -326,6 +430,8 @@ export function AppStateProvider({
       hydrationError,
       markStoryRead,
       retryHydration,
+      selectInitialStoryRoute,
+      unlockAdditionalStoryRoute,
       setTaskName,
       setTimerRouteFocused,
       startTimer,

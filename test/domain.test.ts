@@ -8,7 +8,17 @@ import { cancelTimer, completeTimer } from "@/src/domain/completion";
 import {
   getLatestUnlockedEpisode,
   getLatestUnreadEpisode,
+  getPlayableStoryLines,
+  isStoryRouteUnlocked,
 } from "@/src/domain/storyData";
+import {
+  branchingEpisodeId,
+  branchingStory,
+  linearStory,
+  primaryRoute,
+  secondaryRoute,
+  storyCatalog,
+} from "./fixtures/story";
 import {
   formatDuration,
   getTimerSnapshot,
@@ -25,6 +35,7 @@ function stateWithTimer(timer: ActiveTimer): AppState {
     totalCompletions: 2,
     lastCompletionDate: null,
     unlockedStories: [],
+    storyRouteProgress: {},
     activeTimer: timer,
   };
 }
@@ -109,35 +120,90 @@ describe("timer calculations", () => {
   });
 });
 
+describe("story routes", () => {
+  it("plays a linear story without routes", () => {
+    expect(linearStory.routes).toBeUndefined();
+    expect(getPlayableStoryLines(linearStory)).toEqual([
+      ...linearStory.commonBefore,
+      ...linearStory.commonAfter,
+    ]);
+  });
+
+  it("joins a selected route back into the common ending", () => {
+    expect(getPlayableStoryLines(branchingStory, secondaryRoute.id)).toEqual([
+      ...branchingStory.commonBefore,
+      ...secondaryRoute.lines,
+      ...branchingStory.commonAfter,
+    ]);
+    expect(
+      isStoryRouteUnlocked(
+        {
+          firstSelectedRouteId: primaryRoute.id,
+          extraUnlockedRouteIds: [secondaryRoute.id],
+        },
+        secondaryRoute.id,
+      ),
+    ).toBe(true);
+  });
+});
+
 describe("home story talk entry", () => {
-  it("has no entry without an unlocked story and targets the latest unlock", () => {
-    expect(getLatestUnlockedEpisode([])).toBeUndefined();
+  it("has no entry without an unlocked story and targets the newest relevant story", () => {
+    expect(getLatestUnlockedEpisode([], storyCatalog)).toBeUndefined();
+
+    const latestEpisode =
+      storyCatalog.episodes[storyCatalog.episodes.length - 1];
+    const unlockedStories = storyCatalog.episodes.map((episode, index) => ({
+      episodeId: episode.id,
+      unlockedDate: `2025-01-${String(index + 1).padStart(2, "0")}`,
+      isRead: true,
+    }));
     expect(
-      getLatestUnlockedEpisode([
-        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
-        { episodeId: 2, unlockedDate: "2025-01-02", isRead: false },
-      ]),
-    ).toMatchObject({ id: 2, title: "上司からの労い" });
+      getLatestUnlockedEpisode(
+        [
+          ...unlockedStories,
+          {
+            episodeId: latestEpisode.id,
+            unlockedDate: "2025-02-01",
+            isRead: false,
+          },
+        ],
+        storyCatalog,
+      ),
+    ).toBe(latestEpisode);
+
+    const unreadEpisode =
+      storyCatalog.episodes[Math.max(storyCatalog.episodes.length - 2, 0)];
     expect(
-      getLatestUnreadEpisode([
-        { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
-        { episodeId: 2, unlockedDate: "2025-01-02", isRead: true },
-        { episodeId: 3, unlockedDate: "2025-01-03", isRead: false },
-      ]),
-    ).toMatchObject({ id: 3, title: "部下の決意" });
+      getLatestUnreadEpisode(
+        storyCatalog.episodes.map((episode) => ({
+          episodeId: episode.id,
+          unlockedDate: "2025-01-01",
+          isRead: episode.id !== unreadEpisode.id,
+        })),
+        storyCatalog,
+      ),
+    ).toBe(unreadEpisode);
     expect(
-      getLatestUnreadEpisode([
-        { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
-      ]),
+      getLatestUnreadEpisode(
+        storyCatalog.episodes.map((episode) => ({
+          episodeId: episode.id,
+          unlockedDate: "2025-01-01",
+          isRead: true,
+        })),
+        storyCatalog,
+      ),
     ).toBeUndefined();
   });
 });
 
 describe("completion rules", () => {
   const finishedAt = new Date(2025, 0, 2, 12, 0, 0, 123).getTime();
+  const completeFixtureTimer = (state: AppState, finishedAt: number) =>
+    completeTimer(state, finishedAt, storyCatalog);
 
   it("rewards actual whole seconds and unlocks one story", () => {
-    const outcome = completeTimer(
+    const outcome = completeFixtureTimer(
       stateWithTimer({
         sessionId: "session",
         plannedSeconds: 60,
@@ -150,9 +216,13 @@ describe("completion rules", () => {
 
     expect(outcome.status).toBe("completed");
     expect(outcome.earnedNt).toBe(61);
-    expect(outcome.unlockedEpisode).toBe(1);
+    expect(outcome.unlockedEpisode).toBe(branchingEpisodeId);
     expect(outcome.state.unlockedStories).toEqual([
-      { episodeId: 1, unlockedDate: localDateKey(finishedAt), isRead: false },
+      {
+        episodeId: branchingEpisodeId,
+        unlockedDate: localDateKey(finishedAt),
+        isRead: false,
+      },
     ]);
     expect(outcome.state.activeTimer).toBeNull();
     expect(outcome.state.totalNt).toBe(68);
@@ -168,7 +238,7 @@ describe("completion rules", () => {
       accumulatedMs: 0,
       runningSince: finishedAt,
     });
-    const early = completeTimer(state, finishedAt + 59_999);
+    const early = completeFixtureTimer(state, finishedAt + 59_999);
     expect(early.status).toBe("not-ready");
     expect(early.state).toBe(state);
 
@@ -181,7 +251,7 @@ describe("completion rules", () => {
   });
 
   it("prevents duplicate completion and unlocks at most once per local day", () => {
-    const firstState = completeTimer(
+    const firstState = completeFixtureTimer(
       stateWithTimer({
         sessionId: "first",
         plannedSeconds: 0,
@@ -191,11 +261,11 @@ describe("completion rules", () => {
       }),
       finishedAt,
     ).state;
-    expect(completeTimer(firstState, finishedAt + 1).status).toBe(
+    expect(completeFixtureTimer(firstState, finishedAt + 1).status).toBe(
       "no-active-timer",
     );
 
-    const secondState = completeTimer(
+    const secondState = completeFixtureTimer(
       {
         ...firstState,
         activeTimer: {
@@ -216,6 +286,8 @@ describe("completion rules", () => {
   it("unlocks on the next date and continues rewards after all stories", () => {
     const dayOne = localDateKey(finishedAt);
     const dayTwo = localDateKey(finishedAt + 24 * 60 * 60 * 1000);
+    const finalEpisode =
+      storyCatalog.episodes[storyCatalog.episodes.length - 1];
     const state: AppState = {
       ...stateWithTimer({
         sessionId: "session",
@@ -225,14 +297,20 @@ describe("completion rules", () => {
         runningSince: finishedAt,
       }),
       lastCompletionDate: dayOne,
-      unlockedStories: [
-        { episodeId: 1, unlockedDate: dayOne, isRead: true },
-        { episodeId: 2, unlockedDate: dayOne, isRead: true },
-      ],
+      unlockedStories: storyCatalog.episodes
+        .slice(0, -1)
+        .map((episode) => ({
+          episodeId: episode.id,
+          unlockedDate: dayOne,
+          isRead: true,
+        })),
     };
-    const third = completeTimer(state, finishedAt + 24 * 60 * 60 * 1000);
+    const third = completeFixtureTimer(
+      state,
+      finishedAt + 24 * 60 * 60 * 1000,
+    );
     expect(third.state.lastCompletionDate).toBe(dayTwo);
-    expect(third.unlockedEpisode).toBe(3);
+    expect(third.unlockedEpisode).toBe(finalEpisode.id);
 
     const allStoriesState: AppState = {
       ...third.state,
@@ -244,7 +322,7 @@ describe("completion rules", () => {
         runningSince: finishedAt,
       },
     };
-    const fourth = completeTimer(
+    const fourth = completeFixtureTimer(
       allStoriesState,
       finishedAt + 2 * 24 * 60 * 60 * 1000,
     );
