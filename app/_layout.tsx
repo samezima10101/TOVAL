@@ -1,9 +1,11 @@
-import { Stack } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import { getScreenBgm } from "@/src/constants/bgm";
 import { Colors } from "@/src/constants/theme";
+import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 
 export default function RootLayout() {
@@ -17,7 +19,10 @@ export default function RootLayout() {
 }
 
 function AppShell() {
+  const pathname = usePathname();
   const { state, status, hydrationError, retryHydration } = useAppState();
+  useScreenBgm(status === "ready" && state ? getScreenBgm(pathname) : null);
+
   if (status === "loading") {
     return <StatusMessage message="My-Juneを準備しています…" />;
   }

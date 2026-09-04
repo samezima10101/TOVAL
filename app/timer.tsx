@@ -10,7 +10,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors } from "@/src/constants/theme";
-import useTimerBgm from "@/src/hooks/useTimerBgm";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
@@ -23,7 +22,6 @@ export default function TimerScreen() {
     handleCancel,
     handleFinish,
   } = useTimerLogic();
-  useTimerBgm(Boolean(activeTimer && activeTimer.runningSince !== null));
 
   if (!activeTimer || !snapshot) {
     return <View style={styles.emptyContainer} />;
