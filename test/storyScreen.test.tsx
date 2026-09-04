@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, TouchableOpacity } from "react-native";
+import { Text, TouchableOpacity, View } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import StoryScreen from "@/app/story";
@@ -10,6 +10,14 @@ import {
 } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { router, useLocalSearchParams } from "expo-router";
+import {
+  branchingEpisodeId,
+  branchingStory,
+  linearStory,
+  primaryRoute,
+  secondaryRoute,
+  storyCatalog,
+} from "./fixtures/story";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -19,11 +27,15 @@ jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
 }));
 
-jest.mock("@/src/components/story/StoryCharacters", () => () => null);
+jest.mock("@/src/components/story/StoryCharacters", () => {
+  const ReactModule = require("react");
+  const { View } = require("react-native");
+  return () =>
+    ReactModule.createElement(View, { accessibilityLabel: "キャラクター表示" });
+});
 jest.mock("@/src/state/AppStateProvider", () => ({
   useAppState: jest.fn(),
 }));
-
 type AppStateContext = ReturnType<typeof useAppState>;
 
 const mockedUseAppState = useAppState as jest.MockedFunction<
@@ -32,6 +44,9 @@ const mockedUseAppState = useAppState as jest.MockedFunction<
 const mockedUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<
   typeof useLocalSearchParams
 >;
+const branchingEpisodeParam = String(branchingEpisodeId);
+const linearEpisodeParam = String(linearStory.id);
+const lockedSecondaryChoiceLabel = `${secondaryRoute.label}、鍵付き、60 NTで解放`;
 
 function makeState(): AppState {
   return {
@@ -42,22 +57,38 @@ function makeState(): AppState {
     totalCompletions: 1,
     lastCompletionDate: "2025-01-01",
     unlockedStories: [
-      { episodeId: 1, unlockedDate: "2025-01-01", isRead: false },
+      {
+        episodeId: branchingEpisodeId,
+        unlockedDate: "2025-01-01",
+        isRead: false,
+      },
     ],
+    storyRouteProgress: {},
     activeTimer: null,
   };
 }
 
 function makeContext(
   markStoryRead: (episodeId: EpisodeId) => Promise<void>,
+  state: AppState = makeState(),
+  selectInitialStoryRoute: (
+    episodeId: EpisodeId,
+    routeId: string,
+  ) => Promise<void> = async () => undefined,
+  unlockAdditionalStoryRoute: (
+    episodeId: EpisodeId,
+    routeId: string,
+  ) => Promise<void> = async () => undefined,
 ): AppStateContext {
   return {
-    state: makeState(),
+    state,
     status: "ready",
     hydrationError: null,
     retryHydration: async () => undefined,
     setTaskName: async () => undefined,
     markStoryRead,
+    selectInitialStoryRoute,
+    unlockAdditionalStoryRoute,
     startTimer: async () => {
       throw new Error("not used");
     },
@@ -70,25 +101,37 @@ function makeContext(
 }
 
 function getMessageButton(renderer: TestRenderer.ReactTestRenderer) {
-  return renderer.root.findAllByType(TouchableOpacity)[1];
+  return renderer.root.find(
+    (node) =>
+      node.type === TouchableOpacity &&
+      (node.props.accessibilityLabel === "次のセリフへ進む" ||
+        node.props.accessibilityLabel === "ストーリーを読み終える"),
+  );
 }
 
-async function finishTyping() {
+async function finishTyping(renderer: TestRenderer.ReactTestRenderer) {
   await act(async () => {
     jest.runAllTimers();
   });
 }
 
-async function advanceToFinalLine(renderer: TestRenderer.ReactTestRenderer) {
-  for (let index = 0; index < 2; index += 1) {
-    await finishTyping();
-    await act(async () => {
-      getMessageButton(renderer).props.onPress();
-    });
+async function advanceLines(
+  renderer: TestRenderer.ReactTestRenderer,
+  count: number,
+) {
+  for (let index = 0; index < count; index += 1) {
+    await finishTyping(renderer);
     await act(async () => {
       getMessageButton(renderer).props.onPress();
     });
   }
+}
+
+async function advanceToFinalLine(
+  renderer: TestRenderer.ReactTestRenderer,
+  lineCount: number,
+) {
+  await advanceLines(renderer, lineCount - 1);
 }
 
 describe("StoryScreen read completion", () => {
@@ -96,7 +139,7 @@ describe("StoryScreen read completion", () => {
     jest.useFakeTimers();
     jest.clearAllMocks();
     mockedUseLocalSearchParams.mockReturnValue({
-      episode: "1",
+      episode: branchingEpisodeParam,
       source: "home",
     });
   });
@@ -106,23 +149,42 @@ describe("StoryScreen read completion", () => {
   });
 
   it("marks the episode read only after the final line and navigates once", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: linearEpisodeParam,
+      source: "home",
+    });
     const markStoryRead = jest.fn(async (_episodeId: EpisodeId) => undefined);
-    mockedUseAppState.mockReturnValue(makeContext(markStoryRead));
+    mockedUseAppState.mockReturnValue(
+      makeContext(markStoryRead, {
+        ...makeState(),
+        unlockedStories: [
+          {
+            episodeId: linearStory.id,
+            unlockedDate: "2025-01-01",
+            isRead: false,
+          },
+        ],
+      }),
+    );
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
-    await advanceToFinalLine(renderer);
-    await finishTyping();
+    await advanceToFinalLine(
+      renderer,
+      linearStory.commonBefore.length + linearStory.commonAfter.length,
+    );
+    await finishTyping(renderer);
 
     await act(async () => {
+      getMessageButton(renderer).props.onPress();
       getMessageButton(renderer).props.onPress();
       await Promise.resolve();
     });
 
     expect(markStoryRead).toHaveBeenCalledTimes(1);
-    expect(markStoryRead).toHaveBeenCalledWith(1);
+    expect(markStoryRead).toHaveBeenCalledWith(linearStory.id);
     expect(router.replace).toHaveBeenCalledWith("/");
     expect(router.dismissTo).not.toHaveBeenCalled();
     await act(async () => {
@@ -130,18 +192,403 @@ describe("StoryScreen read completion", () => {
     });
   });
 
-  it("keeps the story open and reports a persistence failure", async () => {
-    const markStoryRead = jest.fn(async (_episodeId: EpisodeId) => {
-      throw new Error("保存できませんでした");
+  it("shows choices after the common opening and continues on the selected route", async () => {
+    const selectInitialStoryRoute = jest.fn(
+      async (_episodeId: EpisodeId, _routeId: string) => undefined,
+    );
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: branchingEpisodeParam,
+      source: "home",
     });
-    mockedUseAppState.mockReturnValue(makeContext(markStoryRead));
+    mockedUseAppState.mockReturnValue(
+      makeContext(
+        jest.fn(async (_episodeId: EpisodeId) => undefined),
+        {
+          ...makeState(),
+          unlockedStories: [
+            {
+              episodeId: branchingEpisodeId,
+              unlockedDate: "2025-01-01",
+              isRead: false,
+            },
+          ],
+        },
+        selectInitialStoryRoute,
+      ),
+    );
     let renderer!: TestRenderer.ReactTestRenderer;
 
     await act(async () => {
-      renderer = TestRenderer.create(<StoryScreen />);
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
-    await advanceToFinalLine(renderer);
-    await finishTyping();
+    await advanceLines(renderer, branchingStory.commonBefore.length);
+
+    const choice = renderer.root.find(
+      (node) =>
+        node.type === TouchableOpacity &&
+        node.props.accessibilityLabel === primaryRoute.label,
+    );
+    await act(async () => {
+      choice.props.onPress();
+    });
+    await finishTyping(renderer);
+
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === View &&
+          node.props.accessibilityLabel === "キャラクター表示",
+      ).length,
+    ).toBeGreaterThan(0);
+    expect(selectInitialStoryRoute).toHaveBeenCalledWith(
+      branchingEpisodeId,
+      primaryRoute.id,
+    );
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === primaryRoute.lines[0].text,
+      ),
+    ).toHaveLength(1);
+
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+    });
+    await finishTyping(renderer);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === primaryRoute.lines[1].text,
+      ),
+    ).toHaveLength(1);
+
+    await advanceLines(
+      renderer,
+      primaryRoute.lines.length + branchingStory.commonAfter.length - 2,
+    );
+    await finishTyping(renderer);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === branchingStory.commonAfter[0].text,
+      ),
+    ).toHaveLength(1);
+    await act(async () => {
+      renderer.unmount();
+    });
+  });
+
+  it("resumes the saved initial route from the home entry", async () => {
+    const selectInitialStoryRoute = jest.fn(
+      async (_episodeId: EpisodeId, _routeId: string) => undefined,
+    );
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: branchingEpisodeParam,
+      source: "home",
+    });
+    mockedUseAppState.mockReturnValue(
+      makeContext(
+        jest.fn(async (_episodeId: EpisodeId) => undefined),
+        {
+          ...makeState(),
+          unlockedStories: [
+            {
+              episodeId: branchingEpisodeId,
+              unlockedDate: "2025-01-01",
+              isRead: false,
+            },
+          ],
+          storyRouteProgress: {
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
+              extraUnlockedRouteIds: [],
+            },
+          },
+        },
+        selectInitialStoryRoute,
+      ),
+    );
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
+    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
+    await finishTyping(renderer);
+
+    expect(selectInitialStoryRoute).not.toHaveBeenCalled();
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === primaryRoute.lines[0].text,
+      ),
+    ).toHaveLength(1);
+    expect(
+      renderer.root.findAll(
+        (node) => node.props.accessibilityLabel === primaryRoute.label,
+      ),
+    ).toHaveLength(0);
+    await act(async () => {
+      renderer.unmount();
+    });
+  });
+
+  it("shows inline unlock confirmation, supports back, and does not auto-play after purchase", async () => {
+    const unlockAdditionalStoryRoute = jest.fn(
+      async (_episodeId: EpisodeId, _routeId: string) => undefined,
+    );
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: branchingEpisodeParam,
+      source: "memory",
+    });
+    mockedUseAppState.mockReturnValue(
+      makeContext(
+        jest.fn(async () => undefined),
+        {
+          ...makeState(),
+          totalNt: 120,
+          storyRouteProgress: {
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
+              extraUnlockedRouteIds: [],
+            },
+          },
+        },
+        async () => undefined,
+        unlockAdditionalStoryRoute,
+      ),
+    );
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
+    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
+
+    const lockedChoice = () =>
+      renderer.root.find(
+        (node) =>
+          node.type === TouchableOpacity &&
+          node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
+      );
+    await act(async () => lockedChoice().props.onPress());
+
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === View &&
+          node.props.accessibilityLabel === "キャラクター表示",
+      ),
+    ).toHaveLength(1);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === "選択肢を解放しますか？",
+      ),
+    ).toHaveLength(1);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === TouchableOpacity &&
+          node.props.accessibilityLabel === "60 NTで解放する",
+      ),
+    ).toHaveLength(1);
+
+    const back = renderer.root.find(
+      (node) =>
+        node.type === TouchableOpacity &&
+        node.props.accessibilityLabel === "戻る",
+    );
+    await act(async () => back.props.onPress());
+    expect(lockedChoice()).toBeDefined();
+
+    await act(async () => lockedChoice().props.onPress());
+    const confirm = renderer.root.find(
+      (node) =>
+        node.type === TouchableOpacity &&
+        node.props.accessibilityLabel === "60 NTで解放する",
+    );
+    await act(async () => {
+      confirm.props.onPress();
+      await Promise.resolve();
+    });
+
+    expect(unlockAdditionalStoryRoute).toHaveBeenCalledWith(
+      branchingEpisodeId,
+      secondaryRoute.id,
+    );
+    expect(
+      renderer.root.findAll(
+        (node) => node.props.accessibilityLabel === "次のセリフへ進む",
+      ),
+    ).toHaveLength(0);
+    expect(lockedChoice()).toBeDefined();
+    await act(async () => renderer.unmount());
+  });
+
+  it("explains insufficient NT inline", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: branchingEpisodeParam,
+      source: "memory",
+    });
+    mockedUseAppState.mockReturnValue(
+      makeContext(
+        jest.fn(async () => undefined),
+        {
+          ...makeState(),
+          totalNt: 0,
+          storyRouteProgress: {
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
+              extraUnlockedRouteIds: [],
+            },
+          },
+        },
+      ),
+    );
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
+    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
+    const lockedChoice = renderer.root.find(
+      (node) =>
+        node.type === TouchableOpacity &&
+        node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
+    );
+    await act(async () => lockedChoice.props.onPress());
+
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text && node.props.children === "NTが不足しています",
+      ),
+    ).toHaveLength(1);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === TouchableOpacity &&
+          node.props.accessibilityLabel === "選択肢に戻る",
+      ),
+    ).toHaveLength(1);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === TouchableOpacity &&
+          node.props.accessibilityLabel === "60 NTで解放する",
+      ),
+    ).toHaveLength(0);
+    await act(async () => renderer.unmount());
+  });
+
+  it("reports an unlock persistence failure inline and allows retry", async () => {
+    const unlockAdditionalStoryRoute = jest
+      .fn()
+      .mockRejectedValueOnce(new Error("解放を保存できませんでした"))
+      .mockResolvedValueOnce(undefined);
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: branchingEpisodeParam,
+      source: "memory",
+    });
+    mockedUseAppState.mockReturnValue(
+      makeContext(
+        jest.fn(async () => undefined),
+        {
+          ...makeState(),
+          totalNt: 120,
+          storyRouteProgress: {
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
+              extraUnlockedRouteIds: [],
+            },
+          },
+        },
+        async () => undefined,
+        unlockAdditionalStoryRoute,
+      ),
+    );
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
+    });
+    await advanceLines(renderer, branchingStory.commonBefore.length);
+    const lockedChoice = renderer.root.find(
+      (node) =>
+        node.type === TouchableOpacity &&
+        node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
+    );
+    await act(async () => lockedChoice.props.onPress());
+    const confirm = () =>
+      renderer.root.find(
+        (node) =>
+          node.type === TouchableOpacity &&
+          node.props.accessibilityLabel === "60 NTで解放する",
+      );
+
+    await act(async () => {
+      confirm().props.onPress();
+      await Promise.resolve();
+    });
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === "解放を保存できませんでした",
+      ),
+    ).toHaveLength(1);
+
+    await act(async () => {
+      confirm().props.onPress();
+      await Promise.resolve();
+    });
+    expect(unlockAdditionalStoryRoute).toHaveBeenCalledTimes(2);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === TouchableOpacity &&
+          node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
+      ),
+    ).toHaveLength(1);
+    await act(async () => renderer.unmount());
+  });
+
+  it("keeps the story open and reports a persistence failure", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({
+      episode: linearEpisodeParam,
+      source: "home",
+    });
+    const markStoryRead = jest.fn(async (_episodeId: EpisodeId) => {
+      throw new Error("保存できませんでした");
+    });
+    mockedUseAppState.mockReturnValue(
+      makeContext(markStoryRead, {
+        ...makeState(),
+        unlockedStories: [
+          {
+            episodeId: linearStory.id,
+            unlockedDate: "2025-01-01",
+            isRead: false,
+          },
+        ],
+      }),
+    );
+    let renderer!: TestRenderer.ReactTestRenderer;
+
+    await act(async () => {
+      renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
+    });
+    await advanceToFinalLine(
+      renderer,
+      linearStory.commonBefore.length + linearStory.commonAfter.length,
+    );
+    await finishTyping(renderer);
 
     await act(async () => {
       getMessageButton(renderer).props.onPress();

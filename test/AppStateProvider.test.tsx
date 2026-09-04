@@ -3,16 +3,26 @@ import React from "react";
 import { AppState as NativeAppState } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
-import { APP_SCHEMA_VERSION, AppState } from "@/src/domain/common/types";
+import {
+  APP_SCHEMA_VERSION,
+  AppState,
+  STORY_ROUTE_UNLOCK_COST_NT,
+} from "@/src/domain/common/types";
 import {
   AppStateProvider,
+  StoryRouteError,
   TimerNotReadyError,
   useAppState,
 } from "@/src/state/AppStateProvider";
 import { AppStateRepository } from "@/src/storage/appStateRepository";
+import {
+  branchingEpisodeId,
+  primaryRoute,
+  secondaryRoute,
+  storyCatalog,
+} from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
-
 type TestRepository = AppStateRepository & {
   state: AppState;
   failWrite: boolean;
@@ -42,6 +52,7 @@ function makeInitialState(
     totalCompletions: 0,
     lastCompletionDate: null,
     unlockedStories: [],
+    storyRouteProgress: {},
     activeTimer,
   };
 }
@@ -77,7 +88,7 @@ async function renderProvider(
 
   await act(async () => {
     renderer = TestRenderer.create(
-      <AppStateProvider repository={repository}>
+      <AppStateProvider repository={repository} catalog={storyCatalog}>
         <Probe />
       </AppStateProvider>,
     );
@@ -204,6 +215,94 @@ describe("AppStateProvider story read state", () => {
   });
 });
 
+describe("AppStateProvider story route progress", () => {
+  it("selects one free initial route and unlocks another route with NT", async () => {
+    const repository = makeRepository();
+    repository.state = {
+      ...repository.state,
+      totalNt: STORY_ROUTE_UNLOCK_COST_NT,
+      unlockedStories: [
+        { episodeId: branchingEpisodeId, unlockedDate: "2025-01-01", isRead: false },
+      ],
+    };
+    const harness = await renderProvider(repository);
+
+    try {
+      await act(async () => {
+        await harness.context.selectInitialStoryRoute(
+          branchingEpisodeId,
+          primaryRoute.id,
+        );
+      });
+      expect(repository.state.storyRouteProgress).toEqual({
+        [branchingEpisodeId]: {
+          firstSelectedRouteId: primaryRoute.id,
+          extraUnlockedRouteIds: [],
+        },
+      });
+      expect(repository.state.totalNt).toBe(STORY_ROUTE_UNLOCK_COST_NT);
+
+      await act(async () => {
+        await harness.context.unlockAdditionalStoryRoute(
+          branchingEpisodeId,
+          secondaryRoute.id,
+        );
+      });
+      expect(repository.state.storyRouteProgress[branchingEpisodeId]).toEqual({
+        firstSelectedRouteId: primaryRoute.id,
+        extraUnlockedRouteIds: [secondaryRoute.id],
+      });
+      expect(repository.state.totalNt).toBe(0);
+      expect(repository.savedStates).toHaveLength(2);
+    } finally {
+      await harness.unmount();
+    }
+  });
+
+  it("rejects route unlock before the initial choice and when NT is insufficient", async () => {
+    const repository = makeRepository();
+    repository.state = {
+      ...repository.state,
+      unlockedStories: [
+        { episodeId: branchingEpisodeId, unlockedDate: "2025-01-01", isRead: false },
+      ],
+    };
+    const harness = await renderProvider(repository);
+
+    try {
+      await act(async () => {
+        await expect(
+          harness.context.unlockAdditionalStoryRoute(
+            branchingEpisodeId,
+            secondaryRoute.id,
+          ),
+        ).rejects.toBeInstanceOf(StoryRouteError);
+      });
+      await act(async () => {
+        await harness.context.selectInitialStoryRoute(
+          branchingEpisodeId,
+          primaryRoute.id,
+        );
+      });
+      await act(async () => {
+        await expect(
+          harness.context.unlockAdditionalStoryRoute(
+            branchingEpisodeId,
+            secondaryRoute.id,
+          ),
+        ).rejects.toThrow("NTが不足しています");
+      });
+      expect(
+        repository.state.storyRouteProgress[branchingEpisodeId]?.extraUnlockedRouteIds,
+      ).toEqual(
+        [],
+      );
+    } finally {
+      await harness.unmount();
+    }
+  });
+});
+
 describe("AppStateProvider timer lifecycle", () => {
   it("counts only eligible route time and ignores repeated transitions and inactive gaps", async () => {
     const repository = makeRepository();
@@ -271,6 +370,14 @@ describe("AppStateProvider timer lifecycle", () => {
         outcome = await harness.context.finishTimer(10_250);
       });
       expect(outcome.earnedNt).toBe(3);
+      expect(outcome.unlockedEpisode).toBe(branchingEpisodeId);
+      expect(repository.state.unlockedStories).toEqual([
+        {
+          episodeId: branchingEpisodeId,
+          unlockedDate: "1970-01-01",
+          isRead: false,
+        },
+      ]);
       expect(repository.state.activeTimer).toBeNull();
     } finally {
       await harness.unmount();

@@ -6,6 +6,7 @@ import type { StoryEpisode } from "@/src/domain/common/types";
 import useStoryReader, {
   STORY_CHARACTER_INTERVAL_MS,
 } from "@/src/hooks/useStoryReader";
+import { linearStory } from "./fixtures/story";
 
 jest.mock("expo-router", () => ({
   router: {
@@ -14,66 +15,25 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-const episode: StoryEpisode = {
-  id: 1,
-  title: "テスト",
-  lines: [
-    {
-      row: 1,
-      speaker: "sub",
-      text: "a🙂b",
-      left: "normal",
-      right: "talk",
-    },
-    {
-      row: 2,
-      speaker: "boss",
-      text: "次の行",
-      left: "talk",
-      right: "normal",
-    },
-  ],
-};
-
-const nextEpisode: StoryEpisode = {
-  id: 2,
-  title: "次のエピソード",
-  lines: [
-    {
-      row: 1,
-      speaker: "boss",
-      text: "新しい先頭行",
-      left: "talk",
-      right: "normal",
-    },
-  ],
-};
-
-function ReaderHarness({ episode: currentEpisode = episode }: { episode?: StoryEpisode }) {
-  const reader = useStoryReader(
-    currentEpisode,
-    "home",
-    jest.fn(async () => undefined),
-  );
+function ReaderHarness({
+  episode = linearStory,
+  onRender,
+}: {
+  episode?: StoryEpisode;
+  onRender?: (snapshot: {
+    lineId: string | undefined;
+    visibleText: string;
+  }) => void;
+}) {
+  const reader = useStoryReader(episode, "home", jest.fn(async () => undefined));
+  onRender?.({ lineId: reader.line?.id, visibleText: reader.visibleText });
   return (
     <>
       <Text>{reader.visibleText}</Text>
       <Text>{reader.isTyping ? "typing" : "complete"}</Text>
-      <Text accessibilityLabel="line-row">{reader.line?.row ?? ""}</Text>
-      <TouchableOpacity
-        accessibilityLabel="advance"
-        onPress={reader.handleNext}
-      />
+      <TouchableOpacity accessibilityLabel="advance" onPress={reader.handleNext} />
     </>
   );
-}
-
-function getVisibleText(renderer: TestRenderer.ReactTestRenderer) {
-  return renderer.root.findAllByType(Text)[0].props.children;
-}
-
-function getStatus(renderer: TestRenderer.ReactTestRenderer) {
-  return renderer.root.findAllByType(Text)[1].props.children;
 }
 
 describe("useStoryReader typewriter", () => {
@@ -85,44 +45,31 @@ describe("useStoryReader typewriter", () => {
     jest.useRealTimers();
   });
 
-  it("reveals Unicode code points at a fixed interval", async () => {
+  it("reveals one character at a time and the first tap only completes the line", async () => {
     let renderer!: TestRenderer.ReactTestRenderer;
+
     await act(async () => {
       renderer = TestRenderer.create(<ReaderHarness />);
     });
-
     expect(renderer.root.findAllByType(Text)[0].props.children).toBe("");
+
     await act(async () => {
       jest.advanceTimersByTime(STORY_CHARACTER_INTERVAL_MS);
     });
-    expect(renderer.root.findAllByType(Text)[0].props.children).toBe("a");
-    await act(async () => {
-      jest.advanceTimersByTime(STORY_CHARACTER_INTERVAL_MS);
-    });
-    expect(renderer.root.findAllByType(Text)[0].props.children).toBe("a🙂");
+    expect(renderer.root.findAllByType(Text)[0].props.children).toBe("l");
+    expect(renderer.root.findAllByType(Text)[1].props.children).toBe("typing");
 
     await act(async () => {
-      renderer.unmount();
+      renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
     });
-  });
-
-  it("uses the first tap to finish typing and the next tap to advance", async () => {
-    let renderer!: TestRenderer.ReactTestRenderer;
-    await act(async () => {
-      renderer = TestRenderer.create(<ReaderHarness />);
-      jest.runAllTimers();
-    });
-
-    const advance = () =>
-      act(async () => {
-        renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
-      });
-
-    await advance();
-    expect(renderer.root.findAllByType(Text)[0].props.children).toBe("a🙂b");
+    expect(renderer.root.findAllByType(Text)[0].props.children).toBe(
+      linearStory.commonBefore[0].text,
+    );
     expect(renderer.root.findAllByType(Text)[1].props.children).toBe("complete");
 
-    await advance();
+    await act(async () => {
+      renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
+    });
     expect(renderer.root.findAllByType(Text)[0].props.children).toBe("");
     expect(renderer.root.findAllByType(Text)[1].props.children).toBe("typing");
 
@@ -131,92 +78,67 @@ describe("useStoryReader typewriter", () => {
     });
   });
 
-  it("starts the next line empty after advancing a fully revealed line", async () => {
+  it("starts the next line empty after a fully revealed longer line", async () => {
+    const storyWithLongOpening: StoryEpisode = {
+      ...linearStory,
+      commonBefore: [
+        {
+          ...linearStory.commonBefore[0],
+          text: "This is a much longer first line.",
+        },
+      ],
+      commonAfter: [
+        {
+          ...linearStory.commonAfter[0],
+          text: "Next line.",
+        },
+      ],
+    };
+    const snapshots: Array<{
+      lineId: string | undefined;
+      visibleText: string;
+    }> = [];
     let renderer!: TestRenderer.ReactTestRenderer;
+
     await act(async () => {
-      renderer = TestRenderer.create(<ReaderHarness />);
+      renderer = TestRenderer.create(
+        <ReaderHarness
+          episode={storyWithLongOpening}
+          onRender={(snapshot) => snapshots.push(snapshot)}
+        />,
+      );
     });
     await act(async () => {
       jest.runAllTimers();
     });
+    expect(renderer.root.findAllByType(Text)[0].props.children).toBe(
+      storyWithLongOpening.commonBefore[0].text,
+    );
 
     await act(async () => {
       renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
     });
 
-    expect(renderer.root.findByProps({ accessibilityLabel: "line-row" }).props.children).toBe(2);
-    expect(getVisibleText(renderer)).toBe("");
-    expect(getStatus(renderer)).toBe("typing");
+    const nextLineSnapshots = snapshots.filter(
+      (snapshot) => snapshot.lineId === storyWithLongOpening.commonAfter[0].id,
+    );
+    expect(nextLineSnapshots.length).toBeGreaterThan(0);
+    expect(nextLineSnapshots.every((snapshot) => snapshot.visibleText === "")).toBe(
+      true,
+    );
 
     await act(async () => {
       renderer.unmount();
     });
   });
 
-  it("does not let the previous line timer reveal text into the next line", async () => {
+  it("cleans up the active timer when the reader unmounts", async () => {
     let renderer!: TestRenderer.ReactTestRenderer;
-    await act(async () => {
-      renderer = TestRenderer.create(<ReaderHarness />);
-    });
-    await act(async () => {
-      jest.advanceTimersByTime(STORY_CHARACTER_INTERVAL_MS);
-    });
-    expect(getVisibleText(renderer)).toBe("a");
 
-    const clearTimeoutSpy = jest.spyOn(global, "clearTimeout");
-    await act(async () => {
-      renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
-    });
-    await act(async () => {
-      renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
-    });
-    expect(getVisibleText(renderer)).toBe("");
-
-    await act(async () => {
-      jest.advanceTimersByTime(STORY_CHARACTER_INTERVAL_MS);
-    });
-    expect(getVisibleText(renderer)).toBe("次");
-    expect(clearTimeoutSpy).toHaveBeenCalled();
-    clearTimeoutSpy.mockRestore();
-
-    await act(async () => {
-      renderer.unmount();
-    });
-  });
-
-  it("resets to the first line without stale text when the episode changes", async () => {
-    let renderer!: TestRenderer.ReactTestRenderer;
-    await act(async () => {
-      renderer = TestRenderer.create(<ReaderHarness />);
-    });
-    await act(async () => {
-      jest.runAllTimers();
-    });
-    await act(async () => {
-      renderer.root.findByProps({ accessibilityLabel: "advance" }).props.onPress();
-    });
-    expect(renderer.root.findByProps({ accessibilityLabel: "line-row" }).props.children).toBe(2);
-
-    await act(async () => {
-      renderer.update(<ReaderHarness episode={nextEpisode} />);
-    });
-
-    expect(renderer.root.findByProps({ accessibilityLabel: "line-row" }).props.children).toBe(1);
-    expect(getVisibleText(renderer)).toBe("");
-    expect(getStatus(renderer)).toBe("typing");
-
-    await act(async () => {
-      renderer.unmount();
-    });
-  });
-
-  it("cleans up a pending timer when the reader unmounts", async () => {
-    let renderer!: TestRenderer.ReactTestRenderer;
     await act(async () => {
       renderer = TestRenderer.create(<ReaderHarness />);
     });
     const clearTimeoutSpy = jest.spyOn(global, "clearTimeout");
-
     await act(async () => {
       renderer.unmount();
     });

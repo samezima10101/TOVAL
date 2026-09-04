@@ -1,10 +1,6 @@
 import { localDateKey } from "./common/date";
-import {
-  AppState,
-  EpisodeId,
-  STORY_COUNT,
-  UnlockedStory,
-} from "./common/types";
+import { AppState, EpisodeId, UnlockedStory } from "./common/types";
+import { STORY_CATALOG, StoryCatalog } from "./storyData";
 import { getTimerSnapshot } from "./timer";
 
 export type CompletionStatus = "completed" | "not-ready" | "no-active-timer";
@@ -37,6 +33,7 @@ export function isFirstCompletionOnDate(
 function nextUnlockedStory(
   state: AppState,
   dateKey: string,
+  catalog: StoryCatalog,
 ): { unlockedEpisode: EpisodeId | null; unlockedStories: UnlockedStory[] } {
   if (!isFirstCompletionOnDate(state, dateKey)) {
     return {
@@ -48,17 +45,21 @@ function nextUnlockedStory(
   const unlockedIds = new Set(
     state.unlockedStories.map((story) => story.episodeId),
   );
-  for (let id = 1; id <= STORY_COUNT; id += 1) {
-    if (!unlockedIds.has(id as EpisodeId)) {
-      const unlockedEpisode = id as EpisodeId;
-      return {
-        unlockedEpisode,
-        unlockedStories: [
-          ...state.unlockedStories.map((story) => ({ ...story })),
-          { episodeId: unlockedEpisode, unlockedDate: dateKey, isRead: false },
-        ],
-      };
-    }
+  const nextEpisode = catalog.episodes.find(
+    (episode) => !unlockedIds.has(episode.id),
+  );
+  if (nextEpisode) {
+    return {
+      unlockedEpisode: nextEpisode.id,
+      unlockedStories: [
+        ...state.unlockedStories.map((story) => ({ ...story })),
+        {
+          episodeId: nextEpisode.id,
+          unlockedDate: dateKey,
+          isRead: false,
+        },
+      ],
+    };
   }
 
   return {
@@ -70,6 +71,7 @@ function nextUnlockedStory(
 export function completeTimer(
   state: AppState,
   finishedAt = Date.now(),
+  catalog: StoryCatalog = STORY_CATALOG,
 ): CompletionOutcome {
   if (!state.activeTimer) {
     return {
@@ -91,7 +93,7 @@ export function completeTimer(
   }
 
   const completionDate = localDateKey(finishedAt);
-  const unlock = nextUnlockedStory(state, completionDate);
+  const unlock = nextUnlockedStory(state, completionDate, catalog);
   const nextState: AppState = {
     ...cloneState(state),
     totalNt: state.totalNt + snapshot.earnedNt,

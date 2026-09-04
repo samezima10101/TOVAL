@@ -5,6 +5,12 @@ import {
   createInitialAppState,
   parsePersistedState,
 } from "../src/storage/appStateRepository";
+import {
+  branchingEpisodeId,
+  primaryRoute,
+  secondaryRoute,
+  storyCatalog,
+} from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
 
@@ -51,7 +57,7 @@ describe("app state repository", () => {
       }),
     );
     expect(legacy).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       taskName: "旧タスク",
       totalNt: 12,
       totalCompletions: 1,
@@ -85,7 +91,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       userName: "ユーザー",
       totalNt: 12,
       totalCompletions: 1,
@@ -126,7 +132,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 3,
+      schemaVersion: 4,
       totalNt: 24,
       unlockedStories: [
         { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
@@ -136,6 +142,28 @@ describe("app state repository", () => {
         sessionId: "v2-session",
         accumulatedMs: 1_250,
         runningSince: null,
+      },
+    });
+  });
+
+  it("accepts and preserves schema v4 route progress", () => {
+    const state = parsePersistedState(
+      JSON.stringify({
+        ...createInitialAppState(),
+        storyRouteProgress: {
+          [branchingEpisodeId]: {
+            firstSelectedRouteId: primaryRoute.id,
+            extraUnlockedRouteIds: [secondaryRoute.id],
+          },
+        },
+      }),
+      storyCatalog,
+    );
+
+    expect(state?.storyRouteProgress).toEqual({
+      [branchingEpisodeId]: {
+        firstSelectedRouteId: primaryRoute.id,
+        extraUnlockedRouteIds: [secondaryRoute.id],
       },
     });
   });

@@ -1,24 +1,38 @@
-export const APP_SCHEMA_VERSION = 3;
+export const APP_SCHEMA_VERSION = 4;
+export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
 
-export type EpisodeId = 1 | 2 | 3;
+export type EpisodeId = number;
 export type Speaker = "boss" | "sub";
 export type StoryCharacter = "gem" | "alta";
 export type Expression = "normal" | "talk" | "doubt";
 
 export type StoryLine = {
-  row: number;
+  id: string;
   speaker: Speaker;
   text: string;
   left: Expression;
   right: Expression;
 };
 
+export type StoryRoute = {
+  id: string;
+  label: string;
+  lines: readonly StoryLine[];
+};
+
 export type StoryEpisode = {
   id: EpisodeId;
   title: string;
-  lines: readonly StoryLine[];
+  commonBefore: readonly StoryLine[];
+  routes?: readonly StoryRoute[];
+  commonAfter: readonly StoryLine[];
+};
+
+export type StoryRouteProgress = {
+  firstSelectedRouteId?: string;
+  extraUnlockedRouteIds: string[];
 };
 
 export type UnlockedStory = {
@@ -43,5 +57,6 @@ export type AppState = {
   totalCompletions: number;
   lastCompletionDate: string | null;
   unlockedStories: UnlockedStory[];
+  storyRouteProgress: Partial<Record<EpisodeId, StoryRouteProgress>>;
   activeTimer: ActiveTimer | null;
 };
