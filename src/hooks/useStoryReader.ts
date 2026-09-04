@@ -6,7 +6,7 @@ import { getPlayableStoryLines, getStoryRoute } from "@/src/domain/storyData";
 
 type SelectRoute = (routeId: string) => Promise<void>;
 
-export const STORY_CHARACTER_INTERVAL_MS = 30;
+export const STORY_CHARACTER_INTERVAL_MS = 53;
 
 export default function useStoryReader(
   episode: StoryEpisode | undefined,
