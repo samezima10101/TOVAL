@@ -252,6 +252,40 @@ describe("StoryScreen read completion", () => {
       ),
     ).toHaveLength(1);
 
+    mockedUseAppState.mockReturnValue(
+      makeContext(
+        jest.fn(async (_episodeId: EpisodeId) => undefined),
+        {
+          ...makeState(),
+          unlockedStories: [
+            {
+              episodeId: branchingEpisodeId,
+              unlockedDate: "2025-01-01",
+              isRead: false,
+            },
+          ],
+          storyRouteProgress: {
+            [branchingEpisodeId]: {
+              firstSelectedRouteId: primaryRoute.id,
+              extraUnlockedRouteIds: [],
+            },
+          },
+        },
+        selectInitialStoryRoute,
+      ),
+    );
+    await act(async () => {
+      renderer.update(<StoryScreen catalog={storyCatalog} />);
+    });
+    await finishTyping(renderer);
+    expect(
+      renderer.root.findAll(
+        (node) =>
+          node.type === Text &&
+          node.props.children === primaryRoute.lines[0].text,
+      ),
+    ).toHaveLength(1);
+
     await act(async () => {
       getMessageButton(renderer).props.onPress();
     });
