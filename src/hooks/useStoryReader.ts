@@ -18,6 +18,7 @@ export default function useStoryReader(
   const [lineIndex, setLineIndex] = React.useState(0);
   const [selectedRouteId, setSelectedRouteId] =
     React.useState(initialRouteId);
+  const selectedRouteIdRef = React.useRef(initialRouteId);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [visibleCharacterCount, setVisibleCharacterCount] = React.useState(0);
@@ -26,7 +27,14 @@ export default function useStoryReader(
   const cancelTypewriterRef = React.useRef<(() => void) | null>(null);
 
   React.useEffect(() => {
+    if (
+      initialRouteId !== undefined &&
+      selectedRouteIdRef.current === initialRouteId
+    ) {
+      return;
+    }
     setLineIndex(0);
+    selectedRouteIdRef.current = initialRouteId;
     setSelectedRouteId(initialRouteId);
     setError(null);
   }, [episode?.id, initialRouteId]);
@@ -125,6 +133,7 @@ export default function useStoryReader(
 
     setError(null);
     isProcessingRef.current = true;
+    selectedRouteIdRef.current = routeId;
     setIsProcessing(true);
     try {
       if (selectInitialRoute) {
@@ -133,6 +142,7 @@ export default function useStoryReader(
       setSelectedRouteId(routeId);
       setLineIndex(episode.commonBefore.length);
     } catch (cause) {
+      selectedRouteIdRef.current = undefined;
       setError(
         cause instanceof Error
           ? cause.message
