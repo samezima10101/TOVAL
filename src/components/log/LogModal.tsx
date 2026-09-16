@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import React from "react";
 import {
   Modal,
   ScrollView,
@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 
+import { shiftLocalDateKey } from "@/src/domain/common/date";
 import { DiaryLog } from "@/src/domain/common/types";
 
 type RecordModalProps = {
@@ -25,11 +26,7 @@ export default function LogModal({
   onClose,
   onChangeDate,
 }: RecordModalProps) {
-  const recordedDates = useMemo(() => Object.keys(logsByDate).sort(), [logsByDate]);
   const currentLogs = selectedDate ? logsByDate[selectedDate] ?? [] : [];
-  const currentIndex = selectedDate ? recordedDates.indexOf(selectedDate) : -1;
-  const hasPrev = currentIndex > 0;
-  const hasNext = currentIndex >= 0 && currentIndex < recordedDates.length - 1;
 
   return (
     <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
@@ -58,21 +55,25 @@ export default function LogModal({
 
           <View style={styles.actions}>
             <TouchableOpacity
-              onPress={() => hasPrev && onChangeDate(recordedDates[currentIndex - 1])}
-              disabled={!hasPrev}
+              onPress={() => selectedDate && onChangeDate(shiftLocalDateKey(selectedDate, -1))}
+              disabled={!selectedDate}
+              accessibilityRole="button"
+              accessibilityLabel="前の日"
               style={styles.arrowButton}
             >
-              <Text style={[styles.arrowText, !hasPrev && styles.disabledText]}>← 前</Text>
+              <Text style={[styles.arrowText, !selectedDate && styles.disabledText]}>← 前の日</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
               <Text style={styles.closeText}>閉じる</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              onPress={() => hasNext && onChangeDate(recordedDates[currentIndex + 1])}
-              disabled={!hasNext}
+              onPress={() => selectedDate && onChangeDate(shiftLocalDateKey(selectedDate, 1))}
+              disabled={!selectedDate}
+              accessibilityRole="button"
+              accessibilityLabel="次の日"
               style={styles.arrowButton}
             >
-              <Text style={[styles.arrowText, !hasNext && styles.disabledText]}>次 →</Text>
+              <Text style={[styles.arrowText, !selectedDate && styles.disabledText]}>次の日 →</Text>
             </TouchableOpacity>
           </View>
         </View>

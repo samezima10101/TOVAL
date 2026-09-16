@@ -1,4 +1,4 @@
-import { localDateKey } from "@/src/domain/common/date";
+import { localDateKey, shiftLocalDateKey } from "@/src/domain/common/date";
 import {
   ActiveTimer,
   APP_SCHEMA_VERSION,
@@ -40,6 +40,13 @@ function stateWithTimer(timer: ActiveTimer): AppState {
     activeTimer: timer,
   };
 }
+
+describe("local dates", () => {
+  it("moves across month boundaries", () => {
+    expect(shiftLocalDateKey("2025-03-01", -1)).toBe("2025-02-28");
+    expect(shiftLocalDateKey("2025-12-31", 1)).toBe("2026-01-01");
+  });
+});
 
 describe("timer calculations", () => {
   const timer: ActiveTimer = {
