@@ -70,7 +70,7 @@ type AppStateContextValue = {
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
-  finishTimer: (finishedAt?: number) => Promise<CompletionOutcome>;
+  finishTimer: (finishedAt?: number, diary?: string) => Promise<CompletionOutcome>;
 };
 
 const AppStateContext = createContext<AppStateContextValue | undefined>(
@@ -391,10 +391,10 @@ export function AppStateProvider({
   );
 
   const finishTimer = useCallback(
-    (finishedAt = Date.now()) =>
+    (finishedAt = Date.now(), diary = "") =>
       enqueue(async () => {
         const current = requireState();
-        const outcome = completeTimer(current, finishedAt, catalog);
+        const outcome = completeTimer(current, finishedAt, catalog, diary);
         if (outcome.status === "no-active-timer") {
           throw new NoActiveTimerError();
         }

@@ -69,11 +69,11 @@ export default function useTimerLogic() {
     );
   };
 
-  const handleFinish = async () => {
+  const handleFinish = async (diary = "") => {
     setError(null);
     setIsProcessing(true);
     try {
-      const outcome = await finishTimer(Date.now());
+      const outcome = await finishTimer(Date.now(), diary);
       if (outcome.unlockedEpisode) {
         router.replace({
           pathname: "/story",

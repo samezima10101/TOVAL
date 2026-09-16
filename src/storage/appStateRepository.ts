@@ -5,6 +5,7 @@ import {
   APP_SCHEMA_VERSION,
   ActiveTimer,
   AppState,
+  DiaryLog,
   EpisodeId,
   MAX_PLANNED_SECONDS,
   StoryRouteProgress,
@@ -42,6 +43,7 @@ export function createInitialAppState(): AppState {
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    diaryLogs: [],
     activeTimer: null,
   };
 }
@@ -109,6 +111,40 @@ function parseStoryRouteProgress(
 
 function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function parseDiaryLogs(
+  value: unknown,
+  catalog: StoryCatalog,
+): DiaryLog[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const ids = new Set<string>();
+  const logs: DiaryLog[] = [];
+  for (const log of value) {
+    if (
+      !isRecord(log) ||
+      typeof log.id !== "string" ||
+      log.id.trim().length === 0 ||
+      ids.has(log.id) ||
+      !isNonNegativeSafeInteger(log.completedAt) ||
+      !isNonNegativeSafeInteger(log.totalTimerSeconds) ||
+      typeof log.diary !== "string" ||
+      (log.unlockedEpisodeId !== null &&
+        !isEpisodeId(log.unlockedEpisodeId, catalog))
+    ) {
+      return undefined;
+    }
+    ids.add(log.id);
+    logs.push({
+      id: log.id,
+      completedAt: log.completedAt,
+      totalTimerSeconds: log.totalTimerSeconds,
+      diary: log.diary,
+      unlockedEpisodeId: log.unlockedEpisodeId,
+    });
+  }
+  return logs;
 }
 
 function parseActiveTimer(
@@ -205,7 +241,8 @@ export function validateAppState(
       !isDateKey(value.lastCompletionDate)) ||
     !Array.isArray(value.unlockedStories) ||
     value.unlockedStories.length > catalog.episodes.length ||
-    parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined
+    parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined ||
+    parseDiaryLogs(value.diaryLogs, catalog) === undefined
   ) {
     return false;
   }
@@ -226,6 +263,7 @@ export function validateAppState(
 
   return (
     parseStoryRouteProgress(value.storyRouteProgress, catalog) !== undefined &&
+    parseDiaryLogs(value.diaryLogs, catalog) !== undefined &&
     parseActiveTimer(value.activeTimer) !== undefined
   );
 }
@@ -269,6 +307,7 @@ function migrateLegacyState(
     value.schemaVersion !== 1 &&
     value.schemaVersion !== 2 &&
     value.schemaVersion !== 3 &&
+    value.schemaVersion !== 4 &&
     value.schemaVersion !== undefined
   ) {
     return null;
@@ -292,7 +331,11 @@ function migrateLegacyState(
         ? value.lastCompletionDate
         : null,
     unlockedStories: parseLegacyUnlockedStories(value.unlockedStories, catalog),
-    storyRouteProgress: {},
+    storyRouteProgress:
+      value.schemaVersion === 4
+        ? (parseStoryRouteProgress(value.storyRouteProgress, catalog) ?? {})
+        : {},
+    diaryLogs: [],
     activeTimer: activeTimer ?? null,
   };
 

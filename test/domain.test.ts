@@ -36,6 +36,7 @@ function stateWithTimer(timer: ActiveTimer): AppState {
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    diaryLogs: [],
     activeTimer: timer,
   };
 }
@@ -199,8 +200,11 @@ describe("home story talk entry", () => {
 
 describe("completion rules", () => {
   const finishedAt = new Date(2025, 0, 2, 12, 0, 0, 123).getTime();
-  const completeFixtureTimer = (state: AppState, finishedAt: number) =>
-    completeTimer(state, finishedAt, storyCatalog);
+  const completeFixtureTimer = (
+    state: AppState,
+    finishedAt: number,
+    diary = "",
+  ) => completeTimer(state, finishedAt, storyCatalog, diary);
 
   it("rewards actual whole seconds and unlocks one story", () => {
     const outcome = completeFixtureTimer(
@@ -212,6 +216,7 @@ describe("completion rules", () => {
         runningSince: finishedAt - 61_234,
       }),
       finishedAt,
+      "  集中できた  ",
     );
 
     expect(outcome.status).toBe("completed");
@@ -228,6 +233,15 @@ describe("completion rules", () => {
     expect(outcome.state.totalNt).toBe(68);
     expect(outcome.state.totalCompletions).toBe(3);
     expect(outcome.state.lastCompletionDate).toBe(localDateKey(finishedAt));
+    expect(outcome.state.diaryLogs).toEqual([
+      {
+        id: "session",
+        completedAt: finishedAt,
+        totalTimerSeconds: 61,
+        diary: "集中できた",
+        unlockedEpisodeId: branchingEpisodeId,
+      },
+    ]);
   });
 
   it("does not reward cancellation or an early finish", () => {

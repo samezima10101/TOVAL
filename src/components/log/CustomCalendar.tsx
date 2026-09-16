@@ -3,21 +3,15 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 import { Calendar, DateData } from "react-native-calendars";
 
-type LoginRecord = {
-  storyTitle: string;
-  totalTimerMinutes: number;
-  taskMemo: string;
-};
-
 type CustomCalendarProps = {
   selectedDate: string | null;
-  loginData: Record<string, LoginRecord>;
+  recordedDates: ReadonlySet<string>;
   onDayPress: (dayString: string) => void;
 };
 
 export default function CustomCalendar({
   selectedDate,
-  loginData,
+  recordedDates,
   onDayPress,
 }: CustomCalendarProps) {
   return (
@@ -27,11 +21,13 @@ export default function CustomCalendar({
         if (!date) return null;
 
         const isSelected = selectedDate === date.dateString;
-        const hasLogin = !!loginData[date.dateString];
+        const hasRecord = recordedDates.has(date.dateString);
 
         return (
           <TouchableOpacity
             onPress={() => onDayPress(date.dateString)}
+            accessibilityRole="button"
+            accessibilityLabel={`${date.dateString}${hasRecord ? "、日記あり" : ""}`}
             style={[
               styles.dayContainer,
               isSelected && styles.selectedDayContainer,
@@ -46,8 +42,7 @@ export default function CustomCalendar({
             >
               {date.day}
             </Text>
-            {/* ログインした日には☆を表示 */}
-            <Text style={styles.starText}>{hasLogin ? "☆" : " "}</Text>
+            <Text style={styles.starText}>{hasRecord ? "☆" : " "}</Text>
           </TouchableOpacity>
         );
       }}
@@ -58,29 +53,14 @@ export default function CustomCalendar({
 const styles = StyleSheet.create({
   dayContainer: {
     alignItems: "center",
+    borderRadius: 8,
+    height: 50,
     justifyContent: "center",
     width: 40,
-    height: 50,
-    borderRadius: 8,
   },
-  selectedDayContainer: {
-    backgroundColor: "#00adf5",
-  },
-  dayText: {
-    fontSize: 16,
-    color: "#2d4150",
-  },
-  disabledDayText: {
-    color: "#d9e1e8",
-  },
-  selectedDayText: {
-    color: "#ffffff",
-    fontWeight: "bold",
-  },
-  starText: {
-    fontSize: 12,
-    color: "#ffa500",
-    marginTop: 2,
-    minHeight: 16,
-  },
+  selectedDayContainer: { backgroundColor: "#00adf5" },
+  dayText: { color: "#2d4150", fontSize: 16 },
+  disabledDayText: { color: "#d9e1e8" },
+  selectedDayText: { color: "#ffffff", fontWeight: "bold" },
+  starText: { color: "#ffa500", fontSize: 12, minHeight: 16 },
 });

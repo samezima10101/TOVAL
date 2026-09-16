@@ -64,6 +64,7 @@ function makeState(): AppState {
       },
     ],
     storyRouteProgress: {},
+    diaryLogs: [],
     activeTimer: null,
   };
 }

@@ -57,7 +57,7 @@ describe("app state repository", () => {
       }),
     );
     expect(legacy).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       taskName: "旧タスク",
       totalNt: 12,
       totalCompletions: 1,
@@ -91,7 +91,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       userName: "ユーザー",
       totalNt: 12,
       totalCompletions: 1,
@@ -132,7 +132,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: 5,
       totalNt: 24,
       unlockedStories: [
         { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
@@ -146,10 +146,11 @@ describe("app state repository", () => {
     });
   });
 
-  it("accepts and preserves schema v4 route progress", () => {
+  it("migrates schema v4 route progress and starts with empty diary logs", () => {
     const state = parsePersistedState(
       JSON.stringify({
         ...createInitialAppState(),
+        schemaVersion: 4,
         storyRouteProgress: {
           [branchingEpisodeId]: {
             firstSelectedRouteId: primaryRoute.id,
@@ -160,6 +161,7 @@ describe("app state repository", () => {
       storyCatalog,
     );
 
+    expect(state?.diaryLogs).toEqual([]);
     expect(state?.storyRouteProgress).toEqual({
       [branchingEpisodeId]: {
         firstSelectedRouteId: primaryRoute.id,

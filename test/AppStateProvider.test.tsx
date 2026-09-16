@@ -53,6 +53,7 @@ function makeInitialState(
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    diaryLogs: [],
     activeTimer,
   };
 }

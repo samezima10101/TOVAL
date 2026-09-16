@@ -9,10 +9,12 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import DiaryModal from "@/src/components/timer/DiaryModal";
 import { Colors } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
+  const [isDiaryOpen, setIsDiaryOpen] = React.useState(false);
   const {
     activeTimer,
     snapshot,
@@ -79,7 +81,7 @@ export default function TimerScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <PrimaryButton
               title="終了して記録"
-              onPress={() => void handleFinish()}
+              onPress={() => setIsDiaryOpen(true)}
               disabled={!snapshot.isComplete || isProcessing}
               loading={isProcessing}
               style={styles.finishButton}
@@ -93,6 +95,12 @@ export default function TimerScreen() {
           </View>
         </View>
       </SafeAreaView>
+      <DiaryModal
+        visible={isDiaryOpen}
+        saving={isProcessing}
+        onClose={() => setIsDiaryOpen(false)}
+        onSave={handleFinish}
+      />
     </ImageBackground>
   );
 }
