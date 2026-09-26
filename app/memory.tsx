@@ -1,14 +1,9 @@
 import { router } from "expo-router";
 import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 
-import BackButton from "@/src/components/common/BackButton";
+import StoryListCard from "@/src/components/common/StoryListCard";
+import StoryListHeader from "@/src/components/common/StoryListHeader";
 import { Colors } from "@/src/constants/theme";
 import { formatLocalDate } from "@/src/domain/common/date";
 import { STORY_EPISODES } from "@/src/domain/storyData";
@@ -28,11 +23,7 @@ export default function MemoryScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <BackButton />
-        <Text style={styles.headerTitle}>メモリー</Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <StoryListHeader title="メモリー" />
 
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.intro}>
@@ -47,56 +38,26 @@ export default function MemoryScreen() {
           const unlockedDate = unlocked.get(episode.id);
           const isUnlocked = Boolean(unlockedDate);
           return (
-            <View
+            <StoryListCard
               key={episode.id}
-              style={[
-                styles.card,
-                isUnlocked ? styles.unlockedCard : styles.lockedCard,
-              ]}
-            >
-              <View style={styles.cardContent}>
-                <Text
-                  style={[styles.episodeNum, !isUnlocked && styles.lockedText]}
-                >
-                  Episode {String(episode.id).padStart(2, "0")}
-                </Text>
-                <Text
-                  style={[
-                    styles.episodeTitle,
-                    !isUnlocked && styles.lockedText,
-                  ]}
-                >
-                  {isUnlocked ? episode.title : "未解放のストーリー"}
-                </Text>
-                <Text style={styles.unlockDate}>
-                  {isUnlocked && unlockedDate
-                    ? `解放日: ${formatLocalDate(unlockedDate)}`
-                    : "タスク完了で解放"}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={[
-                  styles.playButton,
-                  !isUnlocked && styles.lockedPlayButton,
-                ]}
-                disabled={!isUnlocked}
-                onPress={() =>
-                  router.push({
-                    pathname: "/story",
-                    params: { episode: String(episode.id), source: "memory" },
-                  })
-                }
-                accessibilityRole="button"
-                accessibilityLabel={
-                  isUnlocked ? `${episode.title}を再生` : "未解放"
-                }
-                accessibilityState={{ disabled: !isUnlocked }}
-              >
-                <Text style={styles.playButtonText}>
-                  {isUnlocked ? "▶ 再生" : "🔒"}
-                </Text>
-              </TouchableOpacity>
-            </View>
+              label={`Episode ${String(episode.id).padStart(2, "0")}`}
+              title={isUnlocked ? episode.title : "未解放のストーリー"}
+              detail={
+                isUnlocked && unlockedDate
+                  ? `解放日: ${formatLocalDate(unlockedDate)}`
+                  : "タスク完了で解放"
+              }
+              isUnlocked={isUnlocked}
+              action={isUnlocked ? "▶ 再生" : "🔒"}
+              actionLabel={isUnlocked ? `${episode.title}を再生` : "未解放"}
+              disabled={!isUnlocked}
+              onPress={() =>
+                router.push({
+                  pathname: "/story",
+                  params: { episode: String(episode.id), source: "memory" },
+                })
+              }
+            />
           );
         })}
       </ScrollView>
@@ -106,17 +67,6 @@ export default function MemoryScreen() {
 
 const styles = StyleSheet.create({
   container: { backgroundColor: Colors.background, flex: 1 },
-  header: {
-    alignItems: "center",
-    borderBottomColor: Colors.border,
-    borderBottomWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 13,
-  },
-  headerTitle: { color: Colors.text, fontSize: 19, fontWeight: "800" },
-  headerSpacer: { width: 62 },
   scrollContainer: { padding: 20, paddingBottom: 34 },
   intro: {
     color: Colors.textSub,
@@ -138,44 +88,4 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     textAlign: "center",
   },
-  card: {
-    alignItems: "center",
-    borderRadius: 14,
-    borderWidth: 2,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 14,
-    padding: 15,
-  },
-  unlockedCard: { backgroundColor: Colors.surface, borderColor: Colors.primary },
-  lockedCard: {
-    backgroundColor: "#EEF1F5",
-    borderColor: Colors.border,
-    opacity: 0.72,
-  },
-  cardContent: { flex: 1, paddingRight: 12 },
-  episodeNum: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "800",
-    marginBottom: 5,
-  },
-  episodeTitle: {
-    color: Colors.text,
-    fontSize: 17,
-    fontWeight: "800",
-    lineHeight: 24,
-  },
-  lockedText: { color: Colors.textSub },
-  unlockDate: { color: Colors.textSub, fontSize: 12, marginTop: 7 },
-  playButton: {
-    alignItems: "center",
-    backgroundColor: Colors.primary,
-    borderRadius: 32,
-    height: 64,
-    justifyContent: "center",
-    width: 64,
-  },
-  lockedPlayButton: { backgroundColor: Colors.border },
-  playButtonText: { color: Colors.surface, fontSize: 12, fontWeight: "800" },
 });

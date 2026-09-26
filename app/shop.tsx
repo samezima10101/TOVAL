@@ -1,9 +1,9 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
 import { router } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
-import BackButton from "@/src/components/common/BackButton";
+import StoryListCard from "@/src/components/common/StoryListCard";
+import StoryListHeader from "@/src/components/common/StoryListHeader";
 import { Colors } from "@/src/constants/theme";
 import { SIDE_STORY_COST_NT } from "@/src/domain/common/types";
 import { SIDE_STORY } from "@/src/domain/sideStory";
@@ -28,7 +28,10 @@ export default function ShopScreen() {
             setIsPurchasing(true);
             void unlockSideStory()
               .catch((error: unknown) => {
-                Alert.alert("解放できませんでした", error instanceof Error ? error.message : "もう一度お試しください。");
+                Alert.alert(
+                  "解放できませんでした",
+                  error instanceof Error ? error.message : "もう一度お試しください。",
+                );
               })
               .finally(() => setIsPurchasing(false));
           },
@@ -38,58 +41,34 @@ export default function ShopScreen() {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
-      <View style={styles.header}>
-        <BackButton />
-        <Text style={styles.headerTitle}>ショップ</Text>
-        <View style={styles.headerSpacer} />
-      </View>
-      <Text style={styles.sectionTitle}>サイドストーリー</Text>
-      <View style={styles.card}>
-        <View style={styles.artwork}>
-          <Ionicons name="rainy-outline" size={44} color="#D8E9FF" />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.itemTitle}>{SIDE_STORY.title}</Text>
-          <Text style={styles.description}>雨宿りをするジェムとアルタの、短い会話。</Text>
-          <TouchableOpacity
-            onPress={isUnlocked ? () => router.push("/side-story") : confirmPurchase}
-            disabled={isPurchasing || (!isUnlocked && !canPurchase)}
-            accessibilityRole="button"
-            accessibilityLabel={isUnlocked ? `${SIDE_STORY.title}を読む` : `${SIDE_STORY.title}を${SIDE_STORY_COST_NT} NTで解放`}
-            accessibilityState={{ disabled: isPurchasing || (!isUnlocked && !canPurchase) }}
-            style={[styles.button, !isUnlocked && !canPurchase && styles.disabledButton]}
-          >
-            <Text style={[styles.buttonText, !isUnlocked && !canPurchase && styles.disabledButtonText]}>
-              {isUnlocked ? "読む" : `${SIDE_STORY_COST_NT} NTで解放`}
-            </Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </ScrollView>
+    <View style={styles.container}>
+      <StoryListHeader title="ショップ" />
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.intro}>
+          サイドストーリーは解放後、いつでも読み返せます。
+        </Text>
+        <StoryListCard
+          label="Side Story"
+          title={SIDE_STORY.title}
+          detail={isUnlocked ? "解放済み" : `${SIDE_STORY_COST_NT} NTで解放`}
+          isUnlocked={isUnlocked}
+          action={isUnlocked ? "▶ 再生" : "解放"}
+          actionLabel={isUnlocked ? `${SIDE_STORY.title}を再生` : `${SIDE_STORY.title}を${SIDE_STORY_COST_NT} NTで解放`}
+          disabled={isPurchasing || (!isUnlocked && !canPurchase)}
+          onPress={isUnlocked ? () => router.push("/side-story") : confirmPurchase}
+        />
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  content: { paddingBottom: 32 },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 13,
+  container: { backgroundColor: Colors.background, flex: 1 },
+  scrollContainer: { padding: 20, paddingBottom: 34 },
+  intro: {
+    color: Colors.textSub,
+    fontSize: 14,
+    lineHeight: 22,
+    marginBottom: 16,
   },
-  headerTitle: { color: Colors.text, fontSize: 19, fontWeight: "800" },
-  headerSpacer: { width: 62 },
-  sectionTitle: { color: Colors.text, fontSize: 18, fontWeight: "800", marginHorizontal: 20, marginTop: 20, marginBottom: 14 },
-  card: { backgroundColor: Colors.surface, borderColor: Colors.border, borderRadius: 16, borderWidth: 1, marginHorizontal: 20, overflow: "hidden" },
-  artwork: { alignItems: "center", backgroundColor: "#263F65", height: 140, justifyContent: "center" },
-  cardBody: { padding: 20 },
-  itemTitle: { color: Colors.text, fontSize: 19, fontWeight: "800" },
-  description: { color: Colors.textSub, fontSize: 14, marginTop: 6 },
-  button: { alignItems: "center", backgroundColor: Colors.primary, borderRadius: 10, marginTop: 18, paddingVertical: 13 },
-  disabledButton: { backgroundColor: Colors.border },
-  buttonText: { color: Colors.surface, fontSize: 14, fontWeight: "800" },
-  disabledButtonText: { color: Colors.text },
 });
