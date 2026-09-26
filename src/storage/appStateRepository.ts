@@ -42,6 +42,7 @@ export function createInitialAppState(): AppState {
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    isSideStoryUnlocked: false,
     activeTimer: null,
   };
 }
@@ -205,7 +206,8 @@ export function validateAppState(
       !isDateKey(value.lastCompletionDate)) ||
     !Array.isArray(value.unlockedStories) ||
     value.unlockedStories.length > catalog.episodes.length ||
-    parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined
+    parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined ||
+    typeof value.isSideStoryUnlocked !== "boolean"
   ) {
     return false;
   }
@@ -312,6 +314,14 @@ export function parsePersistedState(
 
   if (validateAppState(value, catalog)) {
     return value;
+  }
+  if (isRecord(value) && value.schemaVersion === 4) {
+    const migrated = {
+      ...value,
+      schemaVersion: APP_SCHEMA_VERSION,
+      isSideStoryUnlocked: false,
+    };
+    return validateAppState(migrated, catalog) ? migrated : null;
   }
   return isRecord(value) ? migrateLegacyState(value, catalog) : null;
 }

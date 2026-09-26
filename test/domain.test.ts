@@ -36,6 +36,7 @@ function stateWithTimer(timer: ActiveTimer): AppState {
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    isSideStoryUnlocked: false,
     activeTimer: timer,
   };
 }

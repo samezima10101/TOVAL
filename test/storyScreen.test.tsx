@@ -3,6 +3,7 @@ import { Text, TouchableOpacity, View } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import StoryScreen from "@/app/story";
+import SideStoryScreen from "@/app/side-story";
 import {
   APP_SCHEMA_VERSION,
   AppState,
@@ -64,6 +65,7 @@ function makeState(): AppState {
       },
     ],
     storyRouteProgress: {},
+    isSideStoryUnlocked: false,
     activeTimer: null,
   };
 }
@@ -89,6 +91,7 @@ function makeContext(
     markStoryRead,
     selectInitialStoryRoute,
     unlockAdditionalStoryRoute,
+    unlockSideStory: async () => undefined,
     startTimer: async () => {
       throw new Error("not used");
     },
@@ -133,6 +136,38 @@ async function advanceToFinalLine(
 ) {
   await advanceLines(renderer, lineCount - 1);
 }
+
+describe("side story access", () => {
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.clearAllMocks();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it("hides dialogue until purchased and returns to the shop after reading", async () => {
+    mockedUseAppState.mockReturnValue(makeContext(async () => undefined));
+    let renderer!: TestRenderer.ReactTestRenderer;
+    await act(async () => {
+      renderer = TestRenderer.create(<SideStoryScreen />);
+    });
+    expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "次のセリフへ進む")).toBe(false);
+    await act(async () => renderer.unmount());
+
+    mockedUseAppState.mockReturnValue(makeContext(async () => undefined, { ...makeState(), isSideStoryUnlocked: true }));
+    await act(async () => {
+      renderer = TestRenderer.create(<SideStoryScreen />);
+    });
+    expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "セリフを全文表示")).toBe(true);
+    await advanceToFinalLine(renderer, 4);
+    await finishTyping(renderer);
+    await act(async () => {
+      getMessageButton(renderer).props.onPress();
+      await Promise.resolve();
+    });
+    expect(router.dismissTo).toHaveBeenCalledWith("/shop");
+    await act(async () => renderer.unmount());
+  });
+});
 
 describe("StoryScreen read completion", () => {
   beforeEach(() => {

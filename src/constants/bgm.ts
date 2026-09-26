@@ -16,7 +16,7 @@ export const BGM_TRACKS = {
 
 export type BgmTrackId = keyof typeof BGM_TRACKS;
 export type BgmTrack = BgmTrackDefinition;
-export type AppRoute = "/" | "/memory" | "/timer" | "/story" | "/log" | "/shop";
+export type AppRoute = "/" | "/memory" | "/timer" | "/story" | "/log" | "/shop" | "/side-story";
 
 /** Assign one track to each screen so future screen-specific substitutions stay centralized. */
 export const SCREEN_BGM: Record<AppRoute, BgmTrackId> = {
@@ -26,6 +26,7 @@ export const SCREEN_BGM: Record<AppRoute, BgmTrackId> = {
   "/story": "default",
   "/log": "default",
   "/shop": "default",
+  "/side-story": "default",
 };
 
 export function getScreenBgm(pathname: string) {

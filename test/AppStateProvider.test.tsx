@@ -6,6 +6,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import {
   APP_SCHEMA_VERSION,
   AppState,
+  SIDE_STORY_COST_NT,
   STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
 import {
@@ -53,6 +54,7 @@ function makeInitialState(
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    isSideStoryUnlocked: false,
     activeTimer,
   };
 }
@@ -297,6 +299,44 @@ describe("AppStateProvider story route progress", () => {
       ).toEqual(
         [],
       );
+    } finally {
+      await harness.unmount();
+    }
+  });
+});
+
+describe("AppStateProvider side story", () => {
+  it("deducts NT once and keeps the story locked when saving fails", async () => {
+    const repository = makeRepository();
+    repository.state = { ...repository.state, totalNt: SIDE_STORY_COST_NT };
+    const harness = await renderProvider(repository);
+    try {
+      repository.failWrite = true;
+      await act(async () => {
+        await expect(harness.context.unlockSideStory()).rejects.toThrow("write failed");
+      });
+      expect(harness.context.state?.totalNt).toBe(SIDE_STORY_COST_NT);
+      expect(harness.context.state?.isSideStoryUnlocked).toBe(false);
+      repository.failWrite = false;
+      await act(async () => {
+        await Promise.all([harness.context.unlockSideStory(), harness.context.unlockSideStory()]);
+      });
+      expect(repository.state.totalNt).toBe(0);
+      expect(repository.state.isSideStoryUnlocked).toBe(true);
+      expect(repository.savedStates).toHaveLength(1);
+    } finally {
+      await harness.unmount();
+    }
+  });
+
+  it("does not unlock without enough NT", async () => {
+    const repository = makeRepository();
+    const harness = await renderProvider(repository);
+    try {
+      await act(async () => {
+        await expect(harness.context.unlockSideStory()).rejects.toThrow("NTが不足");
+      });
+      expect(repository.savedStates).toHaveLength(0);
     } finally {
       await harness.unmount();
     }

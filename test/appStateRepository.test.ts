@@ -5,6 +5,7 @@ import {
   createInitialAppState,
   parsePersistedState,
 } from "../src/storage/appStateRepository";
+import { APP_SCHEMA_VERSION } from "../src/domain/common/types";
 import {
   branchingEpisodeId,
   primaryRoute,
@@ -57,7 +58,7 @@ describe("app state repository", () => {
       }),
     );
     expect(legacy).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: APP_SCHEMA_VERSION,
       taskName: "旧タスク",
       totalNt: 12,
       totalCompletions: 1,
@@ -91,7 +92,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: APP_SCHEMA_VERSION,
       userName: "ユーザー",
       totalNt: 12,
       totalCompletions: 1,
@@ -132,7 +133,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 4,
+      schemaVersion: APP_SCHEMA_VERSION,
       totalNt: 24,
       unlockedStories: [
         { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
@@ -146,10 +147,34 @@ describe("app state repository", () => {
     });
   });
 
-  it("accepts and preserves schema v4 route progress", () => {
+  it("migrates v4 without losing route progress or NT", () => {
+    const previous = {
+      ...createInitialAppState(),
+      schemaVersion: 4,
+      isSideStoryUnlocked: undefined,
+      totalNt: 80,
+      storyRouteProgress: {
+        [branchingEpisodeId]: {
+          firstSelectedRouteId: primaryRoute.id,
+          extraUnlockedRouteIds: [secondaryRoute.id],
+        },
+      },
+    };
+    const migrated = parsePersistedState(JSON.stringify(previous), storyCatalog);
+    expect(migrated).toMatchObject({
+      schemaVersion: APP_SCHEMA_VERSION,
+      totalNt: 80,
+      isSideStoryUnlocked: false,
+      storyRouteProgress: previous.storyRouteProgress,
+    });
+    expect(parsePersistedState(JSON.stringify({ ...previous, totalNt: -1 }), storyCatalog)).toBeNull();
+  });
+
+  it("accepts and preserves purchased side story", () => {
     const state = parsePersistedState(
       JSON.stringify({
         ...createInitialAppState(),
+        isSideStoryUnlocked: true,
         storyRouteProgress: {
           [branchingEpisodeId]: {
             firstSelectedRouteId: primaryRoute.id,
@@ -160,6 +185,7 @@ describe("app state repository", () => {
       storyCatalog,
     );
 
+    expect(state?.isSideStoryUnlocked).toBe(true);
     expect(state?.storyRouteProgress).toEqual({
       [branchingEpisodeId]: {
         firstSelectedRouteId: primaryRoute.id,
@@ -171,7 +197,7 @@ describe("app state repository", () => {
   it("writes and reads one validated snapshot", async () => {
     const storage = new FakeStorage();
     const repository = createAppStateRepository(storage);
-    const state = { ...createInitialAppState(), taskName: "読書" };
+    const state = { ...createInitialAppState(), taskName: "読書", isSideStoryUnlocked: true };
 
     await repository.save(state);
     expect(storage.value).toContain('"taskName":"読書"');

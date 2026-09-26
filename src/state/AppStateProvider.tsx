@@ -15,6 +15,7 @@ import {
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
+  SIDE_STORY_COST_NT,
   STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
 import {
@@ -67,6 +68,7 @@ type AppStateContextValue = {
   markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
+  unlockSideStory: () => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
@@ -346,6 +348,25 @@ export function AppStateProvider({
     [catalog, commitState, enqueue, repository, requireState],
   );
 
+  const unlockSideStory = useCallback(
+    () =>
+      enqueue(async () => {
+        const current = requireState();
+        if (current.isSideStoryUnlocked) return;
+        if (current.totalNt < SIDE_STORY_COST_NT) {
+          throw new Error(`NTが不足しています（必要: ${SIDE_STORY_COST_NT} NT）。`);
+        }
+        const nextState = {
+          ...current,
+          totalNt: current.totalNt - SIDE_STORY_COST_NT,
+          isSideStoryUnlocked: true,
+        };
+        await repository.save(nextState);
+        commitState(nextState);
+      }),
+    [commitState, enqueue, repository, requireState],
+  );
+
   const startTimer = useCallback(
     (plannedSeconds: number) =>
       enqueue(async () => {
@@ -419,6 +440,7 @@ export function AppStateProvider({
       markStoryRead,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
+      unlockSideStory,
       startTimer,
       setTimerRouteFocused,
       cancelTimer,
@@ -432,6 +454,7 @@ export function AppStateProvider({
       retryHydration,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
+      unlockSideStory,
       setTaskName,
       setTimerRouteFocused,
       startTimer,
