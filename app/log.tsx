@@ -5,7 +5,6 @@ import BackButton from "@/src/components/common/BackButton";
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
 import { Colors } from "@/src/constants/theme";
-import { localDateKey } from "@/src/domain/common/date";
 import { DiaryLog } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -16,8 +15,7 @@ export default function CalendarScreen() {
   const logsByDate = useMemo(
     () =>
       (state?.diaryLogs ?? []).reduce<Record<string, DiaryLog[]>>((groups, log) => {
-        const date = localDateKey(log.completedAt);
-        (groups[date] ??= []).push(log);
+        (groups[log.completedDate] ??= []).push(log);
         return groups;
       }, {}),
     [state?.diaryLogs],

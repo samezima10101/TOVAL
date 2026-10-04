@@ -1,5 +1,6 @@
 import mockAsyncStorage from "@react-native-async-storage/async-storage/jest/async-storage-mock";
 
+import { localDateKey } from "../src/domain/common/date";
 import {
   createAppStateRepository,
   createInitialAppState,
@@ -57,7 +58,7 @@ describe("app state repository", () => {
       }),
     );
     expect(legacy).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: 6,
       taskName: "旧タスク",
       totalNt: 12,
       totalCompletions: 1,
@@ -91,7 +92,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: 6,
       userName: "ユーザー",
       totalNt: 12,
       totalCompletions: 1,
@@ -132,7 +133,7 @@ describe("app state repository", () => {
     );
 
     expect(migrated).toMatchObject({
-      schemaVersion: 5,
+      schemaVersion: 6,
       totalNt: 24,
       unlockedStories: [
         { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
@@ -158,7 +159,7 @@ describe("app state repository", () => {
     }));
 
     expect(state?.unlockedStories).toEqual(unlockedStories);
-    expect(state?.schemaVersion).toBe(5);
+    expect(state?.schemaVersion).toBe(6);
   });
 
   it("migrates schema v4 route progress and starts with empty diary logs", () => {
@@ -183,6 +184,47 @@ describe("app state repository", () => {
         extraUnlockedRouteIds: [secondaryRoute.id],
       },
     });
+  });
+
+  it("persists v5 log date migration once and retains diary, unread status, and timer", async () => {
+    const storage = new FakeStorage();
+    const completedAt = new Date(2025, 0, 2, 0, 30).getTime();
+    const oldState = {
+      ...createInitialAppState(),
+      schemaVersion: 5,
+      unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-02", isRead: false }],
+      diaryLogs: [{ id: "old-log", completedAt, totalTimerSeconds: 60, diary: "日記", unlockedEpisodeId: 1 }],
+      activeTimer: { sessionId: "active", plannedSeconds: 60, startedTaskName: "読書", accumulatedMs: 1000, runningSince: null },
+    };
+    storage.value = JSON.stringify(oldState);
+    const repository = createAppStateRepository(storage);
+    const migrated = await repository.load();
+    expect(migrated).toEqual({
+      ...oldState,
+      schemaVersion: 6,
+      diaryLogs: [{ ...oldState.diaryLogs[0], completedDate: localDateKey(completedAt) }],
+    });
+    expect(JSON.parse(storage.value!)).toEqual(migrated);
+    await expect(repository.load()).resolves.toEqual(migrated);
+
+    storage.value = JSON.stringify(oldState);
+    storage.shouldFailWrite = true;
+    await expect(repository.load()).rejects.toMatchObject({ operation: "write" });
+  });
+
+  it("round-trips stored dates even when they differ from the device's local date", async () => {
+    const storage = new FakeStorage();
+    const repository = createAppStateRepository(storage);
+    const state = {
+      ...createInitialAppState(),
+      diaryLogs: [{ id: "log", completedAt: 0, completedDate: "2025-01-02", totalTimerSeconds: 60, diary: "日記", unlockedEpisodeId: null }],
+    };
+    await repository.save(state);
+    await expect(repository.load()).resolves.toEqual(state);
+    await expect(repository.save({
+      ...state,
+      diaryLogs: [{ ...state.diaryLogs[0], completedDate: "2025-02-30" }],
+    })).rejects.toMatchObject({ operation: "write" });
   });
 
   it("writes and reads one validated snapshot", async () => {

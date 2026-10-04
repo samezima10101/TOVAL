@@ -1,4 +1,4 @@
-export const APP_SCHEMA_VERSION = 5;
+export const APP_SCHEMA_VERSION = 6;
 export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
@@ -52,6 +52,7 @@ export type ActiveTimer = {
 export type DiaryLog = {
   id: string;
   completedAt: number;
+  completedDate: string;
   totalTimerSeconds: number;
   diary: string;
   unlockedEpisodeId: EpisodeId | null;

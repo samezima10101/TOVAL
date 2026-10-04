@@ -3,6 +3,7 @@ import React from "react";
 import { AppState as NativeAppState } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
+import { localDateKey } from "@/src/domain/common/date";
 import type { AppState } from "@/src/domain/common/types";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 import { AppStateProvider } from "@/src/state/AppStateProvider";
@@ -87,6 +88,7 @@ it("excludes diary time and background transitions, resumes on close, and retain
     expect(persisted.diaryLogs).toEqual([{
       id: "diary-session",
       completedAt: startedAt + 130_000,
+      completedDate: localDateKey(startedAt + 130_000),
       totalTimerSeconds: 70,
       diary: "日記",
       unlockedEpisodeId: 1,

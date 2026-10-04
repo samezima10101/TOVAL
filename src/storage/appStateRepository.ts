@@ -128,6 +128,7 @@ function parseDiaryLogs(
       log.id.trim().length === 0 ||
       ids.has(log.id) ||
       !isNonNegativeSafeInteger(log.completedAt) ||
+      !isDateKey(log.completedDate) ||
       !isNonNegativeSafeInteger(log.totalTimerSeconds) ||
       typeof log.diary !== "string" ||
       (log.unlockedEpisodeId !== null &&
@@ -139,6 +140,7 @@ function parseDiaryLogs(
     logs.push({
       id: log.id,
       completedAt: log.completedAt,
+      completedDate: log.completedDate,
       totalTimerSeconds: log.totalTimerSeconds,
       diary: log.diary,
       unlockedEpisodeId: log.unlockedEpisodeId,
@@ -355,6 +357,20 @@ export function parsePersistedState(
   let value: unknown;
   try {
     value = JSON.parse(raw);
+    if (isRecord(value) && value.schemaVersion === 5 && Array.isArray(value.diaryLogs)) {
+      value = {
+        ...value,
+        schemaVersion: APP_SCHEMA_VERSION,
+        diaryLogs: value.diaryLogs.map((log) => {
+          if (!isRecord(log) || !isNonNegativeSafeInteger(log.completedAt)) return log;
+          return {
+            ...log,
+            // v5 did not store the original timezone, so only the current local date is recoverable.
+            completedDate: log.completedDate ?? localDateKey(log.completedAt),
+          };
+        }),
+      };
+    }
   } catch {
     return null;
   }
@@ -374,7 +390,7 @@ export function createAppStateRepository(
   storage: StorageLike = AsyncStorage,
   catalog: StoryCatalog = STORY_CATALOG,
 ): AppStateRepository {
-  return {
+  const repository: AppStateRepository = {
     async load() {
       let raw: string | null;
       try {
@@ -391,7 +407,11 @@ export function createAppStateRepository(
         return createInitialAppState();
       }
 
-      return parsePersistedState(raw, catalog) ?? createInitialAppState();
+      const state = parsePersistedState(raw, catalog);
+      if (state && JSON.parse(raw).schemaVersion === 5) {
+        await repository.save(state);
+      }
+      return state ?? createInitialAppState();
     },
 
     async save(state) {
@@ -413,6 +433,7 @@ export function createAppStateRepository(
       }
     },
   };
+  return repository;
 }
 
 export const appStateRepository = createAppStateRepository();
