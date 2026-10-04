@@ -100,6 +100,7 @@ export default function TimerScreen() {
       <DiaryModal
         visible={isDiaryOpen}
         saving={isProcessing}
+        error={error}
         onClose={closeDiary}
         onSave={handleFinish}
       />

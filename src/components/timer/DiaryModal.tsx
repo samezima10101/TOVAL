@@ -15,6 +15,7 @@ import { Colors } from "@/src/constants/theme";
 type DiaryModalProps = {
   visible: boolean;
   saving: boolean;
+  error: string | null;
   onSave: (diary: string) => Promise<void>;
   onClose: () => void;
 };
@@ -22,6 +23,7 @@ type DiaryModalProps = {
 export default function DiaryModal({
   visible,
   saving,
+  error,
   onSave,
   onClose,
 }: DiaryModalProps) {
@@ -48,6 +50,9 @@ export default function DiaryModal({
             accessibilityLabel="日記"
             style={styles.input}
           />
+          {error ? (
+            <Text accessibilityRole="alert" style={styles.error}>{error}</Text>
+          ) : null}
           <PrimaryButton
             title="保存して終了"
             onPress={() => void onSave(diary)}
@@ -99,6 +104,7 @@ const styles = StyleSheet.create({
     padding: 14,
     textAlignVertical: "top",
   },
+  error: { color: Colors.warning, fontSize: 13, textAlign: "center" },
   closeButton: { alignItems: "center", padding: 8 },
   closeText: { color: Colors.textSub, fontWeight: "700" },
 });
