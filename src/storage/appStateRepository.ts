@@ -271,6 +271,7 @@ export function validateAppState(
 function parseLegacyUnlockedStories(
   value: unknown,
   catalog: StoryCatalog,
+  preserveReadState: boolean,
 ): UnlockedStory[] {
   if (!Array.isArray(value) || value.length > catalog.episodes.length) {
     return [];
@@ -283,6 +284,7 @@ function parseLegacyUnlockedStories(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
+      (preserveReadState && typeof story.isRead !== "boolean") ||
       ids.has(story.episodeId)
     ) {
       return [];
@@ -291,8 +293,8 @@ function parseLegacyUnlockedStories(
     stories.push({
       episodeId: story.episodeId,
       unlockedDate: story.unlockedDate,
-      // Existing stories predate unread tracking and should not appear as new updates.
-      isRead: true,
+      // Schemas before v3 predate unread tracking and must not appear as new updates.
+      isRead: preserveReadState ? story.isRead === true : true,
     });
   }
   return stories;
@@ -330,7 +332,11 @@ function migrateLegacyState(
       value.lastCompletionDate === null || isDateKey(value.lastCompletionDate)
         ? value.lastCompletionDate
         : null,
-    unlockedStories: parseLegacyUnlockedStories(value.unlockedStories, catalog),
+    unlockedStories: parseLegacyUnlockedStories(
+      value.unlockedStories,
+      catalog,
+      typeof value.schemaVersion === "number" && value.schemaVersion >= 3,
+    ),
     storyRouteProgress:
       value.schemaVersion === 4
         ? (parseStoryRouteProgress(value.storyRouteProgress, catalog) ?? {})

@@ -146,6 +146,21 @@ describe("app state repository", () => {
     });
   });
 
+  it.each([3, 4])("preserves read and unread stories when migrating schema v%s", (schemaVersion) => {
+    const unlockedStories = [
+      { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+      { episodeId: 2, unlockedDate: "2025-01-02", isRead: false },
+    ];
+    const state = parsePersistedState(JSON.stringify({
+      ...createInitialAppState(),
+      schemaVersion,
+      unlockedStories,
+    }));
+
+    expect(state?.unlockedStories).toEqual(unlockedStories);
+    expect(state?.schemaVersion).toBe(5);
+  });
+
   it("migrates schema v4 route progress and starts with empty diary logs", () => {
     const state = parsePersistedState(
       JSON.stringify({
