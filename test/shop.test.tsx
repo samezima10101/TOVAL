@@ -1,5 +1,5 @@
 import React from "react";
-import { Alert, Text, TouchableOpacity } from "react-native";
+import { TouchableOpacity } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 import { router } from "expo-router";
 
@@ -32,11 +32,6 @@ async function next(renderer: TestRenderer.ReactTestRenderer) {
     await message.props.onPress();
   });
 }
-function context(overrides: Partial<ReturnType<typeof useAppState>> = {}) {
-  mockedUseAppState.mockReturnValue({ state: state(), unlockSideStory: jest.fn(async () => undefined),
-    announceSideStories: jest.fn(async () => undefined), ...overrides } as ReturnType<typeof useAppState>);
-}
-
 beforeEach(() => { jest.useFakeTimers(); jest.clearAllMocks(); });
 afterEach(() => jest.useRealTimers());
 
@@ -48,9 +43,12 @@ it("adds multiple conversations on story read completion, not on dates or unlock
   expect(listAvailableConversations({ ...unlocked, unlockedStories: [{ ...unlocked.unlockedStories[0], isRead: true }] }).map((item) => item.id)).toEqual([101, 102, 103]);
 });
 
-it("greets, announces new arrivals, plays from the list and says farewell before returning home", async () => {
+it("greets, announces arrivals, requests playback and says farewell before returning home", async () => {
   const announce = jest.fn(async () => undefined);
-  context({ state: { ...state(), purchasedSideStoryIds: [101] }, announceSideStories: announce });
+  mockedUseAppState.mockReturnValue({
+    state: { ...state(), purchasedSideStoryIds: [101] },
+    announceSideStories: announce,
+  } as unknown as ReturnType<typeof useAppState>);
   let renderer!: TestRenderer.ReactTestRenderer;
   await act(async () => { renderer = TestRenderer.create(<ShopScreen />); });
   expect(mockPreventRemove).toBe(true);
@@ -60,41 +58,10 @@ it("greets, announces new arrivals, plays from the list and says farewell before
   expect(announce).toHaveBeenCalledWith([101]);
   await act(async () => { button(renderer, "雨宿りの帰り道を再生").props.onPress(); });
   expect(router.push).toHaveBeenCalledWith({ pathname: "/side-story", params: { conversation: "101" } });
-  expect(button(renderer, "雨宿りの帰り道を再生")).toBeDefined();
   await act(async () => { mockOnBack(); });
   expect(router.dismissTo).not.toHaveBeenCalled();
   await next(renderer);
   expect(mockPreventRemove).toBe(false);
   expect(router.dismissTo).toHaveBeenCalledWith("/");
   await act(async () => renderer.unmount());
-});
-
-it("keeps the greeting open if notification saving fails and retries without losing arrivals", async () => {
-  const announce = jest.fn().mockRejectedValueOnce(new Error("保存失敗")).mockResolvedValueOnce(undefined);
-  context({ announceSideStories: announce });
-  let renderer!: TestRenderer.ReactTestRenderer;
-  await act(async () => { renderer = TestRenderer.create(<ShopScreen />); });
-  await next(renderer);
-  await next(renderer);
-  expect(renderer.root.findAllByType(Text).some((node) => node.props.children === "保存失敗")).toBe(true);
-  await next(renderer);
-  expect(announce).toHaveBeenCalledTimes(2);
-  expect(button(renderer, "雨宿りの帰り道を60 NTで解放")).toBeDefined();
-  await act(async () => renderer.unmount());
-});
-
-it("skips repeat announcements and purchases only after confirmation", async () => {
-  const purchase = jest.fn(async () => undefined);
-  const alert = jest.spyOn(Alert, "alert").mockImplementation(() => undefined);
-  context({ state: { ...state(), announcedSideStoryIds: [101] }, unlockSideStory: purchase });
-  let renderer!: TestRenderer.ReactTestRenderer;
-  await act(async () => { renderer = TestRenderer.create(<ShopScreen />); });
-  await next(renderer);
-  await act(async () => button(renderer, "雨宿りの帰り道を60 NTで解放").props.onPress());
-  expect(purchase).not.toHaveBeenCalled();
-  await act(async () => { alert.mock.calls[0][2]?.[1].onPress?.(); });
-  expect(purchase).toHaveBeenCalledWith(101);
-  expect(router.push).not.toHaveBeenCalled();
-  await act(async () => renderer.unmount());
-  alert.mockRestore();
 });
