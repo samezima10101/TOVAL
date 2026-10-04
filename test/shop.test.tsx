@@ -45,6 +45,22 @@ it("adds multiple conversations on story read completion, not on dates or unlock
   expect(listAvailableConversations({ ...unlocked, unlockedStories: [{ ...unlocked.unlockedStories[0], isRead: true }] }).map((item) => item.id)).toEqual([101, 102, 103]);
 });
 
+it("returns home when the header home button is pressed during farewell", async () => {
+  mockedUseAppState.mockReturnValue({ state: state() } as unknown as ReturnType<typeof useAppState>);
+  let renderer!: TestRenderer.ReactTestRenderer;
+  await act(async () => { renderer = TestRenderer.create(<ShopScreen />); });
+  try {
+    await act(async () => { button(renderer, "ホームへ戻る").props.onPress(); });
+    expect(router.dismissTo).not.toHaveBeenCalled();
+    await act(async () => { button(renderer, "ホームへ戻る").props.onPress(); });
+    expect(mockPreventRemove).toBe(false);
+    expect(router.dismissTo).toHaveBeenCalledTimes(1);
+    expect(router.dismissTo).toHaveBeenCalledWith("/");
+  } finally {
+    await act(async () => renderer.unmount());
+  }
+});
+
 it("greets, announces arrivals, requests playback and says farewell before returning home", async () => {
   const announce = jest.fn(async () => undefined);
   mockedUseAppState.mockReturnValue({

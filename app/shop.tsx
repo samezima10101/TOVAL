@@ -28,7 +28,10 @@ export default function ShopScreen() {
     ? listAvailableConversations(state).filter((item) => !state.announcedSideStoryIds.includes(item.id)).map((item) => item.id)
     : []);
 
-  usePreventRemove(phase !== "closed", () => setPhase("farewell"));
+  const handleBack = () => setPhase((current) =>
+    current === "greeting" || current === "list" ? "farewell" : "closed",
+  );
+  usePreventRemove(phase !== "closed", handleBack);
   useEffect(() => {
     if (phase === "closed") router.dismissTo("/");
   }, [phase]);
@@ -51,7 +54,7 @@ export default function ShopScreen() {
 
   return (
     <View style={styles.container}>
-      <StoryListHeader title="ショップ" onBack={() => setPhase("farewell")} />
+      <StoryListHeader title="ショップ" onBack={handleBack} />
       {phase === "list" ? (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.intro}>解放した会話は、いつでも読み返せます。</Text>
