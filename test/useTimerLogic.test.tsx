@@ -19,7 +19,7 @@ jest.mock("expo-router", () => ({
   },
 }));
 
-it("excludes diary time and background transitions, resumes on close, and retains the finish time on retry", async () => {
+it("recovers from pause failure, excludes diary time, and retains the finish time on save retry", async () => {
   jest.useFakeTimers();
   const startedAt = new Date(2025, 0, 1, 23, 58).getTime();
   jest.setSystemTime(startedAt);
@@ -61,6 +61,15 @@ it("excludes diary time and background transitions, resumes on close, and retain
       renderer = TestRenderer.create(<AppStateProvider repository={repository}><Probe /></AppStateProvider>);
     });
     jest.setSystemTime(startedAt + 60_000);
+    failWrite = true;
+    await act(async () => { await timer.openDiary(); });
+    expect(timer.isDiaryOpen).toBe(false);
+    expect(timer.error).toBe("write failed");
+    expect(timer.isProcessing).toBe(false);
+    failWrite = false;
+    await act(async () => { appStateChange("background"); });
+    await act(async () => { appStateChange("active"); });
+    expect(persisted.activeTimer?.runningSince).toBe(startedAt + 60_000);
     await act(async () => { await timer.openDiary(); });
     expect(timer.isDiaryOpen).toBe(true);
     expect(persisted.activeTimer?.runningSince).toBeNull();

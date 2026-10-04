@@ -78,6 +78,7 @@ export default function useTimerLogic() {
       await setTimerRouteFocused(false, pressedAt);
       setFinishedAt(pressedAt);
     } catch (cause) {
+      await setTimerRouteFocused(true).catch(() => undefined);
       setError(
         cause instanceof Error ? cause.message : "タイマーを停止できませんでした。",
       );
