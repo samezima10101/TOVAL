@@ -1,6 +1,9 @@
+import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
   ImageBackground,
+  Modal,
+  Pressable,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -13,6 +16,8 @@ import { Colors } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
+  const [isPowerSaving, setIsPowerSaving] = React.useState(false);
+  const restoreTimerScreen = () => setIsPowerSaving(false);
   const {
     activeTimer,
     snapshot,
@@ -33,7 +38,12 @@ export default function TimerScreen() {
       style={styles.backgroundImage}
       resizeMode="cover"
     >
-      <SafeAreaView style={styles.safeArea} edges={["top", "bottom"]}>
+      <SafeAreaView
+        style={styles.safeArea}
+        edges={["top", "bottom"]}
+        accessibilityElementsHidden={isPowerSaving}
+        importantForAccessibility={isPowerSaving ? "no-hide-descendants" : "auto"}
+      >
         <View style={styles.container}>
           <View style={styles.header}>
             {!snapshot.isComplete ? (
@@ -76,6 +86,15 @@ export default function TimerScreen() {
           </View>
 
           <View style={styles.footer}>
+            <TouchableOpacity
+              onPress={() => setIsPowerSaving(true)}
+              style={styles.powerSavingButton}
+              accessibilityRole="button"
+              accessibilityLabel="省電力モード"
+              accessibilityHint="画面を黒くします。黒画面をタップするとタイマー画面に戻ります。計測は継続します。"
+            >
+              <Text style={styles.cancelText}>省電力モード</Text>
+            </TouchableOpacity>
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <PrimaryButton
               title="終了して記録"
@@ -93,6 +112,27 @@ export default function TimerScreen() {
           </View>
         </View>
       </SafeAreaView>
+      {/* 別ルートにするとフォーカスを失い計測が止まるため、標準Modalで共通ヘッダー・フッターごと覆う。 */}
+      <Modal
+        visible={isPowerSaving}
+        animationType="none"
+        presentationStyle="fullScreen"
+        backdropColor="#000000"
+        statusBarTranslucent
+        navigationBarTranslucent
+        onRequestClose={restoreTimerScreen}
+      >
+        {isPowerSaving ? <StatusBar hidden /> : null}
+        <Pressable
+          style={styles.blackScreen}
+          onPress={restoreTimerScreen}
+          accessibilityRole="button"
+          accessibilityLabel="省電力モードを解除"
+          accessibilityHint="タイマー画面に戻ります。タイマーの計測は継続しています。"
+          accessibilityViewIsModal
+          onAccessibilityEscape={restoreTimerScreen}
+        />
+      </Modal>
     </ImageBackground>
   );
 }
@@ -166,6 +206,14 @@ const styles = StyleSheet.create({
   footer: {
     alignItems: "center",
     paddingBottom: 14,
+  },
+  powerSavingButton: {
+    padding: 14,
+    marginBottom: 10,
+  },
+  blackScreen: {
+    backgroundColor: "#000000",
+    flex: 1,
   },
   finishButton: {
     width: "100%",
