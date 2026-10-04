@@ -1,4 +1,5 @@
 import React from "react";
+import { Text } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import CalendarScreen from "@/app/log";
@@ -9,23 +10,24 @@ import { createInitialAppState } from "@/src/storage/appStateRepository";
 
 jest.mock("@/src/components/common/BackButton", () => () => null);
 jest.mock("@/src/components/log/CustomCalendar", () => () => null);
-jest.mock("@/src/components/log/LogModal", () => () => null);
 jest.mock("@/src/state/AppStateProvider", () => ({ useAppState: jest.fn() }));
 jest.mock("@react-native-async-storage/async-storage", () =>
   jest.requireActual("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
-it("groups near-midnight logs by their saved date rather than the current timezone", async () => {
+it("shows saved local dates and times and omits unknown legacy times regardless of timezone", async () => {
   const log = {
     id: "japan-midnight",
     completedAt: Date.UTC(2025, 0, 1, 15, 30),
     completedDate: "2025-01-02",
+    completedTime: "00:30",
     totalTimerSeconds: 60,
     diary: "日本時間の0時30分に完了",
     unlockedEpisodeId: null,
   };
+  const legacyLog = { ...log, id: "legacy", completedTime: undefined };
   jest.mocked(useAppState).mockReturnValue({
-    state: { ...createInitialAppState(), diaryLogs: [log] },
+    state: { ...createInitialAppState(), diaryLogs: [log, legacyLog] },
   } as ReturnType<typeof useAppState>);
   let renderer!: TestRenderer.ReactTestRenderer;
   try {
@@ -35,7 +37,12 @@ it("groups near-midnight logs by their saved date rather than the current timezo
     await act(async () => { calendar.props.onDayPress("2025-01-02"); });
     const modal = renderer.root.findByType(LogModal);
     expect(modal.props.selectedDate).toBe("2025-01-02");
-    expect(modal.props.logsByDate).toEqual({ "2025-01-02": [log] });
+    expect(modal.props.logsByDate).toEqual({ "2025-01-02": [log, legacyLog] });
+    const texts = modal.findAllByType(Text).map((text) =>
+      Array.isArray(text.props.children) ? text.props.children.join("") : text.props.children,
+    );
+    expect(texts).toContain("00:30 ・ 1分");
+    expect(texts).toContain("1分");
   } finally {
     await act(async () => { renderer?.unmount(); });
   }

@@ -221,6 +221,14 @@ describe("app state repository", () => {
     };
     await repository.save(state);
     await expect(repository.load()).resolves.toEqual(state);
+    const timedState = { ...state, diaryLogs: [{ ...state.diaryLogs[0], completedTime: "00:30" }] };
+    await repository.save(timedState);
+    await expect(repository.load()).resolves.toEqual(timedState);
+    for (const completedTime of ["24:00", "12:60", "0:30", ""]) {
+      await expect(repository.save({
+        ...state, diaryLogs: [{ ...state.diaryLogs[0], completedTime }],
+      })).rejects.toMatchObject({ operation: "write" });
+    }
     await expect(repository.save({
       ...state,
       diaryLogs: [{ ...state.diaryLogs[0], completedDate: "2025-02-30" }],

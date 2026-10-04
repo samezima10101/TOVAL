@@ -38,10 +38,7 @@ export default function LogModal({
               currentLogs.map((log) => (
                 <View key={log.id} style={styles.record}>
                   <Text style={styles.time}>
-                    {new Date(log.completedAt).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })} ・ {Math.floor(log.totalTimerSeconds / 60)}分
+                    {log.completedTime ? `${log.completedTime} ・ ` : ""}{Math.floor(log.totalTimerSeconds / 60)}分
                   </Text>
                   <Text style={styles.diary} selectable>
                     {log.diary || "振り返りなし"}

@@ -107,6 +107,7 @@ export function completeTimer(
         id: state.activeTimer.sessionId,
         completedAt: finishedAt,
         completedDate: completionDate,
+        completedTime: new Date(finishedAt).toTimeString().slice(0, 5),
         totalTimerSeconds: snapshot.elapsedSeconds,
         diary: diary.trim(),
         unlockedEpisodeId: unlock.unlockedEpisode,

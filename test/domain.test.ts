@@ -245,6 +245,7 @@ describe("completion rules", () => {
         id: "session",
         completedAt: finishedAt,
         completedDate: localDateKey(finishedAt),
+        completedTime: "12:00",
         totalTimerSeconds: 61,
         diary: "集中できた",
         unlockedEpisodeId: branchingEpisodeId,

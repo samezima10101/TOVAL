@@ -129,6 +129,8 @@ function parseDiaryLogs(
       ids.has(log.id) ||
       !isNonNegativeSafeInteger(log.completedAt) ||
       !isDateKey(log.completedDate) ||
+      (log.completedTime !== undefined &&
+        (typeof log.completedTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(log.completedTime))) ||
       !isNonNegativeSafeInteger(log.totalTimerSeconds) ||
       typeof log.diary !== "string" ||
       (log.unlockedEpisodeId !== null &&
@@ -141,6 +143,7 @@ function parseDiaryLogs(
       id: log.id,
       completedAt: log.completedAt,
       completedDate: log.completedDate,
+      ...(log.completedTime === undefined ? {} : { completedTime: log.completedTime }),
       totalTimerSeconds: log.totalTimerSeconds,
       diary: log.diary,
       unlockedEpisodeId: log.unlockedEpisodeId,

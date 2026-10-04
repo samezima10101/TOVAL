@@ -98,6 +98,7 @@ it("recovers from pause failure, excludes diary time, and retains the finish tim
       id: "diary-session",
       completedAt: startedAt + 130_000,
       completedDate: localDateKey(startedAt + 130_000),
+      completedTime: "00:00",
       totalTimerSeconds: 70,
       diary: "日記",
       unlockedEpisodeId: 1,

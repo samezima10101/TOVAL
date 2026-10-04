@@ -53,6 +53,7 @@ export type DiaryLog = {
   id: string;
   completedAt: number;
   completedDate: string;
+  completedTime?: string;
   totalTimerSeconds: number;
   diary: string;
   unlockedEpisodeId: EpisodeId | null;
