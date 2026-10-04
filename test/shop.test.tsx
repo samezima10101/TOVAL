@@ -4,6 +4,7 @@ import TestRenderer, { act } from "react-test-renderer";
 import { router } from "expo-router";
 
 import ShopScreen from "@/app/shop";
+import { SIDE_STORY } from "./fixtures/shop";
 import { listAvailableConversations } from "@/src/domain/sideStory";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { createInitialAppState } from "@/src/storage/appStateRepository";
@@ -16,6 +17,7 @@ jest.mock("expo-router/react-navigation", () => ({
 jest.mock("expo-router", () => ({ router: { dismissTo: jest.fn(), push: jest.fn() } }));
 jest.mock("@expo/vector-icons/Ionicons", () => () => null);
 jest.mock("@/src/state/AppStateProvider", () => ({ useAppState: jest.fn() }));
+jest.mock("@/src/content/shop", () => jest.requireActual("./fixtures/shop"));
 jest.mock("@react-native-async-storage/async-storage", () => require("@react-native-async-storage/async-storage/jest/async-storage-mock"));
 
 const mockedUseAppState = jest.mocked(useAppState);
@@ -56,7 +58,7 @@ it("greets, announces arrivals, requests playback and says farewell before retur
   expect(announce).not.toHaveBeenCalled();
   await next(renderer);
   expect(announce).toHaveBeenCalledWith([101]);
-  await act(async () => { button(renderer, "雨宿りの帰り道を再生").props.onPress(); });
+  await act(async () => { button(renderer, `${SIDE_STORY.title}を再生`).props.onPress(); });
   expect(router.push).toHaveBeenCalledWith({ pathname: "/side-story", params: { conversation: "101" } });
   await act(async () => { mockOnBack(); });
   expect(router.dismissTo).not.toHaveBeenCalled();

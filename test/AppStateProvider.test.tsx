@@ -6,9 +6,9 @@ import TestRenderer, { act } from "react-test-renderer";
 import {
   APP_SCHEMA_VERSION,
   AppState,
-  SIDE_STORY_COST_NT,
   STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
+import { SIDE_STORY_COST_NT } from "@/src/content/shop";
 import {
   AppStateProvider,
   StoryRouteError,
@@ -24,6 +24,7 @@ import {
 } from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
+jest.mock("@/src/content/shop", () => jest.requireActual("./fixtures/shop"));
 type TestRepository = AppStateRepository & {
   state: AppState;
   failWrite: boolean;

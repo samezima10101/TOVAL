@@ -15,9 +15,9 @@ import {
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
-  SIDE_STORY_COST_NT,
   STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
+import { SIDE_STORY_COST_NT } from "@/src/content/shop";
 import {
   cancelTimer as cancelTimerState,
   completeTimer,

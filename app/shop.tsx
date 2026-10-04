@@ -8,25 +8,17 @@ import StoryListCard from "@/src/components/common/StoryListCard";
 import StoryListHeader from "@/src/components/common/StoryListHeader";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
-import { SIDE_STORY_COST_NT, StoryEpisode } from "@/src/domain/common/types";
+import { StoryEpisode } from "@/src/domain/common/types";
+import {
+  SIDE_STORY_COST_NT,
+  SHOP_GREETING,
+  SHOP_GREETING_WITH_ARRIVALS,
+  SHOP_FAREWELL,
+  SHOP_KEEPER_NAME,
+} from "@/src/content/shop";
 import { listAvailableConversations, ShopConversation } from "@/src/domain/sideStory";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
-
-const greeting: StoryEpisode = {
-  id: -1, title: "エト", commonBefore: [
-    { id: "eto-hello", speaker: "sub", text: "……どうも……。", left: "normal", right: "normal" },
-  ], commonAfter: [],
-};
-const greetingWithArrivals: StoryEpisode = {
-  ...greeting,
-  commonAfter: [{ id: "eto-new", speaker: "sub", text: "新しい会話……手に入れました……。\n……よかったら、見ていってください……。", left: "normal", right: "normal" }],
-};
-const farewell: StoryEpisode = {
-  id: -2, title: "エト", commonBefore: [
-    { id: "eto-bye", speaker: "sub", text: "……またね……。", left: "normal", right: "normal" },
-  ], commonAfter: [],
-};
 
 export default function ShopScreen() {
   const { state, unlockSideStory, announceSideStories } = useAppState();
@@ -55,7 +47,7 @@ export default function ShopScreen() {
     ]);
   };
 
-  const opening = newConversationIds.length ? greetingWithArrivals : greeting;
+  const opening = newConversationIds.length ? SHOP_GREETING_WITH_ARRIVALS : SHOP_GREETING;
 
   return (
     <View style={styles.container}>
@@ -83,7 +75,7 @@ export default function ShopScreen() {
       ) : phase !== "closed" ? (
         <ShopGreeting
           key={phase}
-          episode={phase === "greeting" ? opening : farewell}
+          episode={phase === "greeting" ? opening : SHOP_FAREWELL}
           onRead={async () => { if (phase === "greeting") await announceSideStories(newConversationIds); }}
           onClose={() => setPhase(phase === "greeting" ? "list" : "closed")}
         />
@@ -99,14 +91,14 @@ function ShopGreeting({ episode, onRead, onClose }: {
 }) {
   const reader = useStoryReader(episode, "shop", onRead, undefined, undefined, onClose);
   return <View style={styles.container}>
-    <View style={styles.character} accessibilityLabel="エト（仮の立ち絵）">
+    <View style={styles.character} accessibilityLabel={`${SHOP_KEEPER_NAME}（仮の立ち絵）`}>
       <Ionicons name="person-outline" size={130} color={Colors.textSub} />
-      <Text style={styles.intro}>エト</Text>
+      <Text style={styles.intro}>{SHOP_KEEPER_NAME}</Text>
     </View>
     {reader.error ? <Text style={styles.error}>{reader.error}</Text> : null}
     {reader.line ? <StoryMessageBox
       speaker={reader.line.speaker}
-      speakerName="エト"
+      speakerName={SHOP_KEEPER_NAME}
       text={reader.visibleText}
       fullText={reader.line.text}
       isTyping={reader.isTyping}

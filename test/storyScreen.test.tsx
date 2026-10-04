@@ -20,6 +20,8 @@ import {
   storyCatalog,
 } from "./fixtures/story";
 
+jest.mock("@/src/content/shop", () => jest.requireActual("./fixtures/shop"));
+
 jest.mock("expo-router", () => ({
   router: {
     dismissTo: jest.fn(),
