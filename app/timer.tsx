@@ -14,13 +14,15 @@ import { Colors } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
-  const [isDiaryOpen, setIsDiaryOpen] = React.useState(false);
   const {
     activeTimer,
     snapshot,
     timerText,
     isProcessing,
     error,
+    isDiaryOpen,
+    openDiary,
+    closeDiary,
     handleCancel,
     handleFinish,
   } = useTimerLogic();
@@ -81,7 +83,7 @@ export default function TimerScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <PrimaryButton
               title="終了して記録"
-              onPress={() => setIsDiaryOpen(true)}
+              onPress={() => void openDiary()}
               disabled={!snapshot.isComplete || isProcessing}
               loading={isProcessing}
               style={styles.finishButton}
@@ -98,7 +100,7 @@ export default function TimerScreen() {
       <DiaryModal
         visible={isDiaryOpen}
         saving={isProcessing}
-        onClose={() => setIsDiaryOpen(false)}
+        onClose={closeDiary}
         onSave={handleFinish}
       />
     </ImageBackground>
