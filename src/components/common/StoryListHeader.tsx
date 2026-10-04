@@ -3,10 +3,10 @@ import { StyleSheet, Text, View } from "react-native";
 import BackButton from "@/src/components/common/BackButton";
 import { Colors } from "@/src/constants/theme";
 
-export default function StoryListHeader({ title }: { title: string }) {
+export default function StoryListHeader({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
     <View style={styles.header}>
-      <BackButton />
+      <BackButton onPress={onBack} />
       <Text style={styles.title}>{title}</Text>
       <View style={styles.spacer} />
     </View>

@@ -14,6 +14,7 @@ export default function useStoryReader(
   markStoryRead: (id: number) => Promise<void>,
   initialRouteId: string | undefined = undefined,
   selectInitialRoute?: SelectRoute,
+  onClose?: () => void,
 ) {
   const [lineIndex, setLineIndex] = React.useState(0);
   const [selectedRouteId, setSelectedRouteId] =
@@ -40,6 +41,10 @@ export default function useStoryReader(
   }, [episode?.id, initialRouteId]);
 
   const handleClose = () => {
+    if (onClose) {
+      onClose();
+      return;
+    }
     if (source === "memory" || source === "shop") {
       router.dismissTo(source === "shop" ? "/shop" : "/memory");
     } else {

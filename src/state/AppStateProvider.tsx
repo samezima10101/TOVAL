@@ -24,6 +24,7 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
+import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
   StoryCatalog,
@@ -68,7 +69,8 @@ type AppStateContextValue = {
   markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
-  unlockSideStory: () => Promise<void>;
+  unlockSideStory: (conversationId: number) => Promise<void>;
+  announceSideStories: (conversationIds: readonly number[]) => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
@@ -349,21 +351,37 @@ export function AppStateProvider({
   );
 
   const unlockSideStory = useCallback(
-    () =>
+    (conversationId: number) =>
       enqueue(async () => {
         const current = requireState();
-        if (current.isSideStoryUnlocked) return;
+        const conversation = listAvailableConversations(current).find((item) => item.id === conversationId);
+        if (!conversation) throw new Error("この会話はまだ入荷していません。");
+        if (current.purchasedSideStoryIds.includes(conversationId)) return;
         if (current.totalNt < SIDE_STORY_COST_NT) {
           throw new Error(`NTが不足しています（必要: ${SIDE_STORY_COST_NT} NT）。`);
         }
         const nextState = {
           ...current,
           totalNt: current.totalNt - SIDE_STORY_COST_NT,
-          isSideStoryUnlocked: true,
+          purchasedSideStoryIds: [...current.purchasedSideStoryIds, conversationId],
         };
         await repository.save(nextState);
         commitState(nextState);
       }),
+    [commitState, enqueue, repository, requireState],
+  );
+
+  const announceSideStories = useCallback(
+    (conversationIds: readonly number[]) => enqueue(async () => {
+      const current = requireState();
+      const newIds = listAvailableConversations(current)
+        .filter((item) => conversationIds.includes(item.id) && !current.announcedSideStoryIds.includes(item.id))
+        .map((item) => item.id);
+      if (!newIds.length) return;
+      const nextState = { ...current, announcedSideStoryIds: [...current.announcedSideStoryIds, ...newIds] };
+      await repository.save(nextState);
+      commitState(nextState);
+    }),
     [commitState, enqueue, repository, requireState],
   );
 
@@ -441,6 +459,7 @@ export function AppStateProvider({
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
       unlockSideStory,
+      announceSideStories,
       startTimer,
       setTimerRouteFocused,
       cancelTimer,
@@ -455,6 +474,7 @@ export function AppStateProvider({
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
       unlockSideStory,
+      announceSideStories,
       setTaskName,
       setTimerRouteFocused,
       startTimer,

@@ -1,3 +1,4 @@
+import { useLocalSearchParams } from "expo-router";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -5,15 +6,17 @@ import BackButton from "@/src/components/common/BackButton";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
-import { SIDE_STORY } from "@/src/domain/sideStory";
+import { SHOP_CONVERSATIONS, SIDE_STORY } from "@/src/domain/sideStory";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function SideStoryScreen() {
   const { state } = useAppState();
-  const isUnlocked = state?.isSideStoryUnlocked === true;
+  const { conversation } = useLocalSearchParams<{ conversation?: string }>();
+  const episode = conversation === undefined ? SIDE_STORY : SHOP_CONVERSATIONS.find((item) => item.id === Number(conversation));
+  const isUnlocked = Boolean(episode && state?.purchasedSideStoryIds.includes(episode.id));
   const { line, visibleText, isTyping, isLastLine, isProcessing, error, handleNext, handleClose } =
-    useStoryReader(isUnlocked ? SIDE_STORY : undefined, "shop", async () => undefined);
+    useStoryReader(isUnlocked ? episode : undefined, "shop", async () => undefined);
 
   if (!isUnlocked) {
     return (
@@ -23,12 +26,12 @@ export default function SideStoryScreen() {
       </SafeAreaView>
     );
   }
-  if (!line) return null;
+  if (!line || !episode) return null;
 
   return (
     <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{SIDE_STORY.title}</Text>
+        <Text style={styles.title}>{episode.title}</Text>
         <TouchableOpacity onPress={handleClose} accessibilityRole="button" accessibilityLabel="ストーリーを閉じる">
           <Text style={styles.close}>閉じる</Text>
         </TouchableOpacity>

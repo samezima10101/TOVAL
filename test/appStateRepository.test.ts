@@ -164,7 +164,8 @@ describe("app state repository", () => {
     expect(migrated).toMatchObject({
       schemaVersion: APP_SCHEMA_VERSION,
       totalNt: 80,
-      isSideStoryUnlocked: false,
+      purchasedSideStoryIds: [],
+      announcedSideStoryIds: [],
       storyRouteProgress: previous.storyRouteProgress,
     });
     expect(parsePersistedState(JSON.stringify({ ...previous, totalNt: -1 }), storyCatalog)).toBeNull();
@@ -174,7 +175,7 @@ describe("app state repository", () => {
     const state = parsePersistedState(
       JSON.stringify({
         ...createInitialAppState(),
-        isSideStoryUnlocked: true,
+        purchasedSideStoryIds: [101],
         storyRouteProgress: {
           [branchingEpisodeId]: {
             firstSelectedRouteId: primaryRoute.id,
@@ -185,7 +186,7 @@ describe("app state repository", () => {
       storyCatalog,
     );
 
-    expect(state?.isSideStoryUnlocked).toBe(true);
+    expect(state?.purchasedSideStoryIds).toEqual([101]);
     expect(state?.storyRouteProgress).toEqual({
       [branchingEpisodeId]: {
         firstSelectedRouteId: primaryRoute.id,
@@ -194,10 +195,25 @@ describe("app state repository", () => {
     });
   });
 
+  it("migrates v5 purchases and preserves NT without retaining the old flag", () => {
+    const old = { ...createInitialAppState(), schemaVersion: 5, totalNt: 90, isSideStoryUnlocked: true };
+    const migrated = parsePersistedState(JSON.stringify(old));
+    expect(migrated).toMatchObject({ schemaVersion: APP_SCHEMA_VERSION, totalNt: 90, purchasedSideStoryIds: [101], announcedSideStoryIds: [] });
+    expect(migrated).not.toHaveProperty("isSideStoryUnlocked");
+    expect(parsePersistedState(JSON.stringify({ ...old, isSideStoryUnlocked: "true" }))).toBeNull();
+  });
+
+  it("rejects malformed or duplicate conversation IDs instead of saving them", () => {
+    for (const ids of [[101, 101], ["101"], [-1], [1.5]]) {
+      expect(parsePersistedState(JSON.stringify({ ...createInitialAppState(), purchasedSideStoryIds: ids }))).toBeNull();
+      expect(parsePersistedState(JSON.stringify({ ...createInitialAppState(), announcedSideStoryIds: ids }))).toBeNull();
+    }
+  });
+
   it("writes and reads one validated snapshot", async () => {
     const storage = new FakeStorage();
     const repository = createAppStateRepository(storage);
-    const state = { ...createInitialAppState(), taskName: "読書", isSideStoryUnlocked: true };
+    const state = { ...createInitialAppState(), taskName: "読書", purchasedSideStoryIds: [101] };
 
     await repository.save(state);
     expect(storage.value).toContain('"taskName":"読書"');

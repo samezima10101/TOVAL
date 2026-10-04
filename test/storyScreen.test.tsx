@@ -65,7 +65,8 @@ function makeState(): AppState {
       },
     ],
     storyRouteProgress: {},
-    isSideStoryUnlocked: false,
+    purchasedSideStoryIds: [],
+    announcedSideStoryIds: [],
     activeTimer: null,
   };
 }
@@ -92,6 +93,7 @@ function makeContext(
     selectInitialStoryRoute,
     unlockAdditionalStoryRoute,
     unlockSideStory: async () => undefined,
+    announceSideStories: async () => undefined,
     startTimer: async () => {
       throw new Error("not used");
     },
@@ -138,6 +140,18 @@ async function advanceToFinalLine(
 }
 
 describe("side story access", () => {
+  it("plays the selected purchased conversation and refuses unknown or unpurchased IDs", async () => {
+    jest.useFakeTimers();
+    mockedUseAppState.mockReturnValue(makeContext(async () => undefined, { ...makeState(), purchasedSideStoryIds: [102] }));
+    for (const id of ["102", "103", "999", "garbage"]) {
+      mockedUseLocalSearchParams.mockReturnValue({ conversation: id });
+      let renderer!: TestRenderer.ReactTestRenderer;
+      await act(async () => { renderer = TestRenderer.create(<SideStoryScreen />); });
+      expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "セリフを全文表示")).toBe(id === "102");
+      await act(async () => renderer.unmount());
+    }
+  });
+
   beforeEach(() => {
     jest.useFakeTimers();
     jest.clearAllMocks();
@@ -145,6 +159,7 @@ describe("side story access", () => {
   afterEach(() => jest.useRealTimers());
 
   it("hides dialogue until purchased and returns to the shop after reading", async () => {
+    mockedUseLocalSearchParams.mockReturnValue({});
     mockedUseAppState.mockReturnValue(makeContext(async () => undefined));
     let renderer!: TestRenderer.ReactTestRenderer;
     await act(async () => {
@@ -153,7 +168,7 @@ describe("side story access", () => {
     expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "次のセリフへ進む")).toBe(false);
     await act(async () => renderer.unmount());
 
-    mockedUseAppState.mockReturnValue(makeContext(async () => undefined, { ...makeState(), isSideStoryUnlocked: true }));
+    mockedUseAppState.mockReturnValue(makeContext(async () => undefined, { ...makeState(), purchasedSideStoryIds: [101] }));
     await act(async () => {
       renderer = TestRenderer.create(<SideStoryScreen />);
     });

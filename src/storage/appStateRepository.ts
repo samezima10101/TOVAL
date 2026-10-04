@@ -42,7 +42,8 @@ export function createInitialAppState(): AppState {
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
-    isSideStoryUnlocked: false,
+    purchasedSideStoryIds: [],
+    announcedSideStoryIds: [],
     activeTimer: null,
   };
 }
@@ -106,6 +107,11 @@ function parseStoryRouteProgress(
   }
 
   return progress;
+}
+
+function isConversationIds(value: unknown): value is number[] {
+  return Array.isArray(value) && value.every((id) => Number.isSafeInteger(id) && id > 0) &&
+    new Set(value).size === value.length;
 }
 
 function isNonNegativeSafeInteger(value: unknown): value is number {
@@ -207,7 +213,8 @@ export function validateAppState(
     !Array.isArray(value.unlockedStories) ||
     value.unlockedStories.length > catalog.episodes.length ||
     parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined ||
-    typeof value.isSideStoryUnlocked !== "boolean"
+    !isConversationIds(value.purchasedSideStoryIds) ||
+    !isConversationIds(value.announcedSideStoryIds)
   ) {
     return false;
   }
@@ -315,11 +322,14 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
-  if (isRecord(value) && value.schemaVersion === 4) {
+  if (isRecord(value) && (value.schemaVersion === 4 || value.schemaVersion === 5)) {
+    if (value.schemaVersion === 5 && typeof value.isSideStoryUnlocked !== "boolean") return null;
+    const { isSideStoryUnlocked, ...previous } = value;
     const migrated = {
-      ...value,
+      ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
-      isSideStoryUnlocked: false,
+      purchasedSideStoryIds: isSideStoryUnlocked === true ? [101] : [],
+      announcedSideStoryIds: [],
     };
     return validateAppState(migrated, catalog) ? migrated : null;
   }

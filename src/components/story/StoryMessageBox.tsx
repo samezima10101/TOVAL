@@ -10,6 +10,7 @@ import {
 
 type Props = {
   speaker: Speaker;
+  speakerName?: string;
   text: string;
   fullText: string;
   isTyping: boolean;
@@ -20,6 +21,7 @@ type Props = {
 
 export default function StoryMessageBox({
   speaker,
+  speakerName,
   text,
   fullText,
   isTyping,
@@ -45,7 +47,7 @@ export default function StoryMessageBox({
       accessibilityState={{ disabled: isProcessing }}
     >
       <Text style={styles.speakerName}>
-        {STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[speaker]]}
+        {speakerName ?? STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[speaker]]}
       </Text>
       <Text style={styles.messageText}>{text}</Text>
       <Text style={styles.tapPrompt}>
