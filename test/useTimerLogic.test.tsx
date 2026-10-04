@@ -13,7 +13,7 @@ jest.mock("@/src/hooks/useTimerTick", () => () => Date.now());
 jest.mock("expo-router", () => ({
   router: { replace: jest.fn() },
   useFocusEffect: (callback: () => void | (() => void)) => {
-    const React = require("react");
+    const React = jest.requireActual<typeof import("react")>("react");
     React.useEffect(callback, [callback]);
   },
 }));
