@@ -69,6 +69,7 @@ function makeState(): AppState {
     storyRouteProgress: {},
     purchasedSideStoryIds: [],
     announcedSideStoryIds: [],
+    diaryLogs: [],
     activeTimer: null,
   };
 }

@@ -13,16 +13,17 @@ export default function useTimerLogic() {
 
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [finishedAt, setFinishedAt] = React.useState<number | null>(null);
   const activeTimer = state?.activeTimer ?? null;
 
   // 画面のフォーカス状態を管理
   useFocusEffect(
     React.useCallback(() => {
-      void setTimerRouteFocused(true).catch(() => undefined);
+      void setTimerRouteFocused(finishedAt === null).catch(() => undefined);
       return () => {
         void setTimerRouteFocused(false).catch(() => undefined);
       };
-    }, [setTimerRouteFocused]),
+    }, [finishedAt, setTimerRouteFocused]),
   );
 
   // アクティブなタイマーがない場合はホームにリダイレクト
@@ -69,11 +70,34 @@ export default function useTimerLogic() {
     );
   };
 
-  const handleFinish = async () => {
+  const openDiary = async () => {
+    const pressedAt = Date.now();
     setError(null);
     setIsProcessing(true);
     try {
-      const outcome = await finishTimer(Date.now());
+      await setTimerRouteFocused(false, pressedAt);
+      setFinishedAt(pressedAt);
+    } catch (cause) {
+      await setTimerRouteFocused(true).catch(() => undefined);
+      setError(
+        cause instanceof Error ? cause.message : "タイマーを停止できませんでした。",
+      );
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const closeDiary = () => {
+    if (!isProcessing) {
+      setFinishedAt(null);
+    }
+  };
+
+  const handleFinish = async (diary = "") => {
+    setError(null);
+    setIsProcessing(true);
+    try {
+      const outcome = await finishTimer(finishedAt ?? Date.now(), diary);
       if (outcome.unlockedEpisode) {
         router.replace({
           pathname: "/story",
@@ -100,6 +124,9 @@ export default function useTimerLogic() {
     timerText,
     isProcessing,
     error,
+    isDiaryOpen: finishedAt !== null,
+    openDiary,
+    closeDiary,
     handleCancel,
     handleFinish,
   };

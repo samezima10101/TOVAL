@@ -31,6 +31,8 @@ export default function TaskNameModal({
 
   React.useEffect(() => {
     if (visible) {
+      // Native Modal stays mounted when hidden; reset its draft on each opening.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setValue(initialValue);
       setError(null);
     }

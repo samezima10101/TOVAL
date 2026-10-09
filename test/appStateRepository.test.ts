@@ -6,6 +6,7 @@ import {
   parsePersistedState,
 } from "../src/storage/appStateRepository";
 import { APP_SCHEMA_VERSION } from "../src/domain/common/types";
+import { localDateKey } from "../src/domain/common/date";
 import {
   branchingEpisodeId,
   primaryRoute,
@@ -208,6 +209,59 @@ describe("app state repository", () => {
       expect(parsePersistedState(JSON.stringify({ ...createInitialAppState(), purchasedSideStoryIds: ids }))).toBeNull();
       expect(parsePersistedState(JSON.stringify({ ...createInitialAppState(), announcedSideStoryIds: ids }))).toBeNull();
     }
+  });
+
+  it.each([3, 4])("preserves read and unread stories when migrating schema v%s", (schemaVersion) => {
+    const unlockedStories = [
+      { episodeId: 1, unlockedDate: "2025-01-01", isRead: true },
+      { episodeId: 2, unlockedDate: "2025-01-02", isRead: false },
+    ];
+    const state = parsePersistedState(JSON.stringify({ ...createInitialAppState(), schemaVersion, unlockedStories }));
+    expect(state?.unlockedStories).toEqual(unlockedStories);
+    expect(state?.schemaVersion).toBe(APP_SCHEMA_VERSION);
+    expect(state?.diaryLogs).toEqual([]);
+  });
+
+  it.each([5, 6])("migrates diary and shop v%s snapshots without losing either feature", async (schemaVersion) => {
+    const storage = new FakeStorage();
+    const completedAt = new Date(2025, 0, 2, 0, 30).getTime();
+    const diaryLog = { id: "old-log", completedAt, completedDate: localDateKey(completedAt), totalTimerSeconds: 60, diary: "日記", unlockedEpisodeId: 1 };
+    const oldState = {
+      ...createInitialAppState(), schemaVersion, totalNt: 80,
+      unlockedStories: [{ episodeId: 1, unlockedDate: "2025-01-02", isRead: false }],
+      purchasedSideStoryIds: [101, 102], announcedSideStoryIds: [103],
+      diaryLogs: [schemaVersion === 5 ? { ...diaryLog, completedDate: undefined } : diaryLog],
+      activeTimer: { sessionId: "active", plannedSeconds: 60, startedTaskName: "読書", accumulatedMs: 1000, runningSince: null },
+    };
+    storage.value = JSON.stringify(oldState);
+    const repository = createAppStateRepository(storage);
+    const migrated = await repository.load();
+    expect(migrated).toEqual({ ...oldState, schemaVersion: APP_SCHEMA_VERSION, diaryLogs: [diaryLog] });
+    expect(JSON.parse(storage.value!)).toEqual(migrated);
+    await expect(repository.load()).resolves.toEqual(migrated);
+    storage.value = JSON.stringify(oldState);
+    storage.shouldFailWrite = true;
+    await expect(repository.load()).rejects.toMatchObject({ operation: "write" });
+
+    for (const omittedField of ["diaryLogs", "purchasedSideStoryIds", "announcedSideStoryIds"] as const) {
+      const previous = { ...oldState, [omittedField]: undefined };
+      expect(parsePersistedState(JSON.stringify(previous))).toEqual({ ...migrated, [omittedField]: [] });
+    }
+  });
+
+  it("round-trips stored dates even when they differ from the device's local date", async () => {
+    const storage = new FakeStorage();
+    const repository = createAppStateRepository(storage);
+    const state = { ...createInitialAppState(), diaryLogs: [{ id: "log", completedAt: 0, completedDate: "2025-01-02", totalTimerSeconds: 60, diary: "日記", unlockedEpisodeId: null }] };
+    await repository.save(state);
+    await expect(repository.load()).resolves.toEqual(state);
+    const timedState = { ...state, diaryLogs: [{ ...state.diaryLogs[0], completedTime: "00:30" }] };
+    await repository.save(timedState);
+    await expect(repository.load()).resolves.toEqual(timedState);
+    for (const completedTime of ["24:00", "12:60", "0:30", ""]) {
+      await expect(repository.save({ ...state, diaryLogs: [{ ...state.diaryLogs[0], completedTime }] })).rejects.toMatchObject({ operation: "write" });
+    }
+    await expect(repository.save({ ...state, diaryLogs: [{ ...state.diaryLogs[0], completedDate: "2025-02-30" }] })).rejects.toMatchObject({ operation: "write" });
   });
 
   it("writes and reads one validated snapshot", async () => {

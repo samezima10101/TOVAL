@@ -1,15 +1,20 @@
-import React, { useMemo } from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import React from "react";
+import {
+  Modal,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-type LoginRecord = {
-  storyTitle: string;
-  totalTimerMinutes: number;
-  taskMemo: string;
-};
+import { shiftLocalDateKey } from "@/src/domain/common/date";
+import { DiaryLog } from "@/src/domain/common/types";
+
 type RecordModalProps = {
   visible: boolean;
   selectedDate: string | null;
-  loginData: Record<string, LoginRecord>;
+  logsByDate: Record<string, DiaryLog[]>;
   onClose: () => void;
   onChangeDate: (date: string) => void;
 };
@@ -17,98 +22,55 @@ type RecordModalProps = {
 export default function LogModal({
   visible,
   selectedDate,
-  loginData,
+  logsByDate,
   onClose,
   onChangeDate,
 }: RecordModalProps) {
-  // ログイン記録がある日付一覧を昇順ソートして取得
-  const loginDates = useMemo(() => Object.keys(loginData).sort(), [loginData]);
-
-  // モーダル内の「←」ボタン処理
-  const handlePrev = () => {
-    if (!selectedDate) return;
-    const prevDates = loginDates.filter((date) => date < selectedDate);
-    if (prevDates.length > 0) {
-      onChangeDate(prevDates[prevDates.length - 1]);
-    }
-  };
-
-  // モーダル内の「→」ボタン処理
-  const handleNext = () => {
-    if (!selectedDate) return;
-    const nextDates = loginDates.filter((date) => date > selectedDate);
-    if (nextDates.length > 0) {
-      onChangeDate(nextDates[0]);
-    }
-  };
-
-  const currentRecord = selectedDate ? loginData[selectedDate] : null;
-  const hasPrev = selectedDate
-    ? loginDates.some((date) => date < selectedDate)
-    : false;
-  const hasNext = selectedDate
-    ? loginDates.some((date) => date > selectedDate)
-    : false;
+  const currentLogs = selectedDate ? logsByDate[selectedDate] ?? [] : [];
 
   return (
-    <Modal
-      animationType="fade"
-      transparent={true}
-      visible={visible}
-      onRequestClose={onClose}
-    >
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <Text style={styles.modalDateTitle}>{selectedDate}</Text>
+    <Modal animationType="fade" transparent visible={visible} onRequestClose={onClose}>
+      <View style={styles.overlay}>
+        <View style={styles.content}>
+          <Text style={styles.dateTitle}>{selectedDate}</Text>
+          <ScrollView style={styles.records}>
+            {currentLogs.length > 0 ? (
+              currentLogs.map((log) => (
+                <View key={log.id} style={styles.record}>
+                  <Text style={styles.time}>
+                    {log.completedTime ? `${log.completedTime} ・ ` : ""}{Math.floor(log.totalTimerSeconds / 60)}分
+                  </Text>
+                  <Text style={styles.diary} selectable>
+                    {log.diary || "振り返りなし"}
+                  </Text>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noRecord}>記録なし</Text>
+            )}
+          </ScrollView>
 
-          {currentRecord ? (
-            <View style={styles.recordContainer}>
-              <Text style={styles.recordText}>
-                1. 解放したストーリー：{"\n"}
-                {currentRecord.storyTitle}
-              </Text>
-              <Text style={styles.recordText}>
-                2. タイマー合計時間：{"\n"}
-                {currentRecord.totalTimerMinutes}分
-              </Text>
-              <Text style={styles.recordText}>
-                3. タスクメモ：{"\n"}
-                {currentRecord.taskMemo}
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.recordContainer}>
-              <Text style={styles.noRecordText}>ログイン記録なし</Text>
-            </View>
-          )}
-
-          <View style={styles.modalActions}>
+          <View style={styles.actions}>
             <TouchableOpacity
-              onPress={handlePrev}
-              disabled={!hasPrev}
+              onPress={() => selectedDate && onChangeDate(shiftLocalDateKey(selectedDate, -1))}
+              disabled={!selectedDate}
+              accessibilityRole="button"
+              accessibilityLabel="前の日"
               style={styles.arrowButton}
             >
-              <Text
-                style={[styles.arrowText, !hasPrev && styles.disabledArrowText]}
-              >
-                ← 前の記録
-              </Text>
+              <Text style={[styles.arrowText, !selectedDate && styles.disabledText]}>← 前の日</Text>
             </TouchableOpacity>
-
             <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Text style={styles.closeButtonText}>閉じる</Text>
+              <Text style={styles.closeText}>閉じる</Text>
             </TouchableOpacity>
-
             <TouchableOpacity
-              onPress={handleNext}
-              disabled={!hasNext}
+              onPress={() => selectedDate && onChangeDate(shiftLocalDateKey(selectedDate, 1))}
+              disabled={!selectedDate}
+              accessibilityRole="button"
+              accessibilityLabel="次の日"
               style={styles.arrowButton}
             >
-              <Text
-                style={[styles.arrowText, !hasNext && styles.disabledArrowText]}
-              >
-                次の記録 →
-              </Text>
+              <Text style={[styles.arrowText, !selectedDate && styles.disabledText]}>次の日 →</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -118,69 +80,23 @@ export default function LogModal({
 }
 
 const styles = StyleSheet.create({
-  modalOverlay: {
+  overlay: {
+    alignItems: "center",
+    backgroundColor: "rgba(0,0,0,0.5)",
     flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContent: {
-    width: "85%",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 24,
-    elevation: 5,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalDateTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 16,
-  },
-  recordContainer: {
-    minHeight: 80,
     justifyContent: "center",
   },
-  recordText: {
-    fontSize: 16,
-    marginBottom: 12,
-    lineHeight: 24,
-    color: "#333",
-  },
-  noRecordText: {
-    fontSize: 16,
-    color: "#999",
-    textAlign: "center",
-  },
-  modalActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginTop: 24,
-  },
-  arrowButton: {
-    paddingVertical: 8,
-  },
-  arrowText: {
-    fontSize: 14,
-    color: "#00adf5",
-    fontWeight: "bold",
-  },
-  disabledArrowText: {
-    color: "#ccc",
-  },
-  closeButton: {
-    backgroundColor: "#00adf5",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-  },
-  closeButtonText: {
-    color: "#fff",
-    fontWeight: "bold",
-  },
+  content: { backgroundColor: "#fff", borderRadius: 12, maxHeight: "75%", padding: 24, width: "85%" },
+  dateTitle: { fontSize: 20, fontWeight: "bold", marginBottom: 16, textAlign: "center" },
+  records: { minHeight: 100 },
+  record: { borderBottomColor: "#e2e8f0", borderBottomWidth: 1, gap: 6, paddingVertical: 12 },
+  time: { color: "#718096", fontSize: 13, fontWeight: "700" },
+  diary: { color: "#333", fontSize: 16, lineHeight: 24 },
+  noRecord: { color: "#999", fontSize: 16, paddingVertical: 30, textAlign: "center" },
+  actions: { alignItems: "center", flexDirection: "row", justifyContent: "space-between", marginTop: 20 },
+  arrowButton: { paddingVertical: 8 },
+  arrowText: { color: "#00adf5", fontSize: 14, fontWeight: "bold" },
+  disabledText: { color: "#ccc" },
+  closeButton: { backgroundColor: "#00adf5", borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  closeText: { color: "#fff", fontWeight: "bold" },
 });

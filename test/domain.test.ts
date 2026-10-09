@@ -1,4 +1,4 @@
-import { localDateKey } from "@/src/domain/common/date";
+import { localDateKey, shiftLocalDateKey } from "@/src/domain/common/date";
 import {
   ActiveTimer,
   APP_SCHEMA_VERSION,
@@ -38,9 +38,17 @@ function stateWithTimer(timer: ActiveTimer): AppState {
     storyRouteProgress: {},
     purchasedSideStoryIds: [],
     announcedSideStoryIds: [],
+    diaryLogs: [],
     activeTimer: timer,
   };
 }
+
+describe("local dates", () => {
+  it("moves across month boundaries", () => {
+    expect(shiftLocalDateKey("2025-03-01", -1)).toBe("2025-02-28");
+    expect(shiftLocalDateKey("2025-12-31", 1)).toBe("2026-01-01");
+  });
+});
 
 describe("timer calculations", () => {
   const timer: ActiveTimer = {
@@ -201,8 +209,11 @@ describe("home story talk entry", () => {
 
 describe("completion rules", () => {
   const finishedAt = new Date(2025, 0, 2, 12, 0, 0, 123).getTime();
-  const completeFixtureTimer = (state: AppState, finishedAt: number) =>
-    completeTimer(state, finishedAt, storyCatalog);
+  const completeFixtureTimer = (
+    state: AppState,
+    finishedAt: number,
+    diary = "",
+  ) => completeTimer(state, finishedAt, storyCatalog, diary);
 
   it("rewards actual whole seconds and unlocks one story", () => {
     const outcome = completeFixtureTimer(
@@ -214,6 +225,7 @@ describe("completion rules", () => {
         runningSince: finishedAt - 61_234,
       }),
       finishedAt,
+      "  集中できた  ",
     );
 
     expect(outcome.status).toBe("completed");
@@ -230,6 +242,17 @@ describe("completion rules", () => {
     expect(outcome.state.totalNt).toBe(68);
     expect(outcome.state.totalCompletions).toBe(3);
     expect(outcome.state.lastCompletionDate).toBe(localDateKey(finishedAt));
+    expect(outcome.state.diaryLogs).toEqual([
+      {
+        id: "session",
+        completedAt: finishedAt,
+        completedDate: localDateKey(finishedAt),
+        completedTime: "12:00",
+        totalTimerSeconds: 61,
+        diary: "集中できた",
+        unlockedEpisodeId: branchingEpisodeId,
+      },
+    ]);
   });
 
   it("does not reward cancellation or an early finish", () => {

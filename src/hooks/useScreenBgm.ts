@@ -8,6 +8,8 @@ export default function useScreenBgm(track: BgmTrack | null) {
   const player = useAudioPlayer(null);
 
   React.useEffect(() => {
+    // Expo AudioPlayer is a native SharedObject with writable playback properties.
+    // eslint-disable-next-line react-hooks/immutability
     player.loop = true;
     player.volume = track?.volume ?? BGM_VOLUME;
     void setAudioModeAsync({ playsInSilentMode: true }).catch(() => undefined);

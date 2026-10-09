@@ -1,4 +1,4 @@
-export const APP_SCHEMA_VERSION = 6;
+export const APP_SCHEMA_VERSION = 7;
 export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
@@ -53,6 +53,16 @@ export type ActiveTimer = {
   runningSince: number | null;
 };
 
+export type DiaryLog = {
+  id: string;
+  completedAt: number;
+  completedDate: string;
+  completedTime?: string;
+  totalTimerSeconds: number;
+  diary: string;
+  unlockedEpisodeId: EpisodeId | null;
+};
+
 export type AppState = {
   schemaVersion: typeof APP_SCHEMA_VERSION;
   userName: string;
@@ -64,5 +74,6 @@ export type AppState = {
   storyRouteProgress: Partial<Record<EpisodeId, StoryRouteProgress>>;
   purchasedSideStoryIds: number[];
   announcedSideStoryIds: number[];
+  diaryLogs: DiaryLog[];
   activeTimer: ActiveTimer | null;
 };

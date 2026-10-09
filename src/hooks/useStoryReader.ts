@@ -75,6 +75,8 @@ export default function useStoryReader(
   React.useEffect(() => {
     cancelTypewriterRef.current?.();
     cancelTypewriterRef.current = null;
+    // Reset together with the external typewriter timer, not one frame after it starts.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setTypedLineId(lineId);
     setVisibleCharacterCount(0);
 
