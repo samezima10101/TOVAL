@@ -20,6 +20,8 @@ export default function useTimerSetup(
 
   React.useEffect(() => {
     if (visible) {
+      // The native setup modal stays mounted, so reopening must reset its draft.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTotalMinutes(clampMinutes(initialMinutes));
       setError(null);
     }

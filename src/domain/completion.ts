@@ -72,6 +72,7 @@ export function completeTimer(
   state: AppState,
   finishedAt = Date.now(),
   catalog: StoryCatalog = STORY_CATALOG,
+  diary = "",
 ): CompletionOutcome {
   if (!state.activeTimer) {
     return {
@@ -100,6 +101,18 @@ export function completeTimer(
     totalCompletions: state.totalCompletions + 1,
     lastCompletionDate: completionDate,
     unlockedStories: unlock.unlockedStories,
+    diaryLogs: [
+      ...state.diaryLogs,
+      {
+        id: state.activeTimer.sessionId,
+        completedAt: finishedAt,
+        completedDate: completionDate,
+        completedTime: new Date(finishedAt).toTimeString().slice(0, 5),
+        totalTimerSeconds: snapshot.elapsedSeconds,
+        diary: diary.trim(),
+        unlockedEpisodeId: unlock.unlockedEpisode,
+      },
+    ],
     activeTimer: null,
   };
 

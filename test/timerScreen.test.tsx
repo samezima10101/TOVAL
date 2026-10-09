@@ -14,6 +14,7 @@ import TestRenderer, { act } from "react-test-renderer";
 
 import TimerScreen from "@/app/timer";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import DiaryModal from "@/src/components/timer/DiaryModal";
 import { AppState } from "@/src/domain/common/types";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 import { createInitialAppState } from "@/src/storage/appStateRepository";
@@ -89,7 +90,7 @@ describe("タイマー画面の省電力モード", () => {
       expect(enterButton.props.accessibilityRole).toBe("button");
       await act(async () => enterButton.props.onPress());
 
-      const modal = renderer.root.findByType(Modal);
+      const modal = renderer.root.find((node) => node.type === Modal && node.props.presentationStyle === "fullScreen");
       expect(modal.props).toMatchObject({
         visible: true,
         animationType: "none",
@@ -131,7 +132,7 @@ describe("タイマー画面の省電力モード", () => {
         if (dismissAction === "onRequestClose") modal.props.onRequestClose();
         else blackScreen.props[dismissAction]();
       });
-      expect(renderer.root.findByType(Modal).props.visible).toBe(false);
+      expect(modal.props.visible).toBe(false);
       expect(renderer.root.findAllByType(StatusBar)).toHaveLength(0);
       expect(renderer.root.findByType(SafeAreaView).props).toMatchObject({
         accessibilityElementsHidden: false,
@@ -141,14 +142,19 @@ describe("タイマー画面の省電力モード", () => {
       expect(router.replace).not.toHaveBeenCalled();
 
       await act(async () => {
-        renderer.root.findByType(PrimaryButton).props.onPress();
+        await renderer.root.findByType(PrimaryButton).props.onPress();
       });
-      expect(repository.save).toHaveBeenCalledTimes(savesAfterFocus + 1);
+      expect(renderer.root.findByType(DiaryModal).props.visible).toBe(true);
+      await act(async () => {
+        await renderer.root.findByType(DiaryModal).props.onSave("省電力後の日記");
+      });
+      expect(repository.save).toHaveBeenCalledTimes(savesAfterFocus + 2);
       expect(repository.save).toHaveBeenLastCalledWith(
         expect.objectContaining({
           activeTimer: null,
           totalNt: 22,
           totalCompletions: 1,
+          diaryLogs: [expect.objectContaining({ diary: "省電力後の日記", totalTimerSeconds: 5 })],
         }),
       );
       expect(router.replace).toHaveBeenCalledWith({

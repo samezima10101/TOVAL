@@ -14,6 +14,15 @@ export function todayKey(now = Date.now()): string {
   return localDateKey(now);
 }
 
+export function shiftLocalDateKey(value: string, days: number): string {
+  const date = new Date(`${value}T12:00:00`);
+  if (localDateKey(date) !== value) {
+    throw new RangeError("Invalid date key");
+  }
+  date.setDate(date.getDate() + days);
+  return localDateKey(date);
+}
+
 export function formatLocalDate(value: string): string {
   const parts = value.split("-");
   if (parts.length !== 3) {

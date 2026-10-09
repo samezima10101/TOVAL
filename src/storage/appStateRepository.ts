@@ -5,6 +5,7 @@ import {
   APP_SCHEMA_VERSION,
   ActiveTimer,
   AppState,
+  DiaryLog,
   EpisodeId,
   MAX_PLANNED_SECONDS,
   StoryRouteProgress,
@@ -44,6 +45,7 @@ export function createInitialAppState(): AppState {
     storyRouteProgress: {},
     purchasedSideStoryIds: [],
     announcedSideStoryIds: [],
+    diaryLogs: [],
     activeTimer: null,
   };
 }
@@ -116,6 +118,45 @@ function isConversationIds(value: unknown): value is number[] {
 
 function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function parseDiaryLogs(
+  value: unknown,
+  catalog: StoryCatalog,
+): DiaryLog[] | undefined {
+  if (!Array.isArray(value)) return undefined;
+
+  const ids = new Set<string>();
+  const logs: DiaryLog[] = [];
+  for (const log of value) {
+    if (
+      !isRecord(log) ||
+      typeof log.id !== "string" ||
+      log.id.trim().length === 0 ||
+      ids.has(log.id) ||
+      !isNonNegativeSafeInteger(log.completedAt) ||
+      !isDateKey(log.completedDate) ||
+      (log.completedTime !== undefined &&
+        (typeof log.completedTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(log.completedTime))) ||
+      !isNonNegativeSafeInteger(log.totalTimerSeconds) ||
+      typeof log.diary !== "string" ||
+      (log.unlockedEpisodeId !== null &&
+        !isEpisodeId(log.unlockedEpisodeId, catalog))
+    ) {
+      return undefined;
+    }
+    ids.add(log.id);
+    logs.push({
+      id: log.id,
+      completedAt: log.completedAt,
+      completedDate: log.completedDate,
+      ...(log.completedTime === undefined ? {} : { completedTime: log.completedTime }),
+      totalTimerSeconds: log.totalTimerSeconds,
+      diary: log.diary,
+      unlockedEpisodeId: log.unlockedEpisodeId,
+    });
+  }
+  return logs;
 }
 
 function parseActiveTimer(
@@ -214,7 +255,8 @@ export function validateAppState(
     value.unlockedStories.length > catalog.episodes.length ||
     parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined ||
     !isConversationIds(value.purchasedSideStoryIds) ||
-    !isConversationIds(value.announcedSideStoryIds)
+    !isConversationIds(value.announcedSideStoryIds) ||
+    parseDiaryLogs(value.diaryLogs, catalog) === undefined
   ) {
     return false;
   }
@@ -235,6 +277,7 @@ export function validateAppState(
 
   return (
     parseStoryRouteProgress(value.storyRouteProgress, catalog) !== undefined &&
+    parseDiaryLogs(value.diaryLogs, catalog) !== undefined &&
     parseActiveTimer(value.activeTimer) !== undefined
   );
 }
@@ -242,6 +285,7 @@ export function validateAppState(
 function parseLegacyUnlockedStories(
   value: unknown,
   catalog: StoryCatalog,
+  preserveReadState: boolean,
 ): UnlockedStory[] {
   if (!Array.isArray(value) || value.length > catalog.episodes.length) {
     return [];
@@ -254,6 +298,7 @@ function parseLegacyUnlockedStories(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
+      (preserveReadState && typeof story.isRead !== "boolean") ||
       ids.has(story.episodeId)
     ) {
       return [];
@@ -262,8 +307,8 @@ function parseLegacyUnlockedStories(
     stories.push({
       episodeId: story.episodeId,
       unlockedDate: story.unlockedDate,
-      // Existing stories predate unread tracking and should not appear as new updates.
-      isRead: true,
+      // Schemas before v3 predate unread tracking and must not appear as new updates.
+      isRead: preserveReadState ? story.isRead === true : true,
     });
   }
   return stories;
@@ -278,6 +323,7 @@ function migrateLegacyState(
     value.schemaVersion !== 1 &&
     value.schemaVersion !== 2 &&
     value.schemaVersion !== 3 &&
+    value.schemaVersion !== 4 &&
     value.schemaVersion !== undefined
   ) {
     return null;
@@ -300,8 +346,16 @@ function migrateLegacyState(
       value.lastCompletionDate === null || isDateKey(value.lastCompletionDate)
         ? value.lastCompletionDate
         : null,
-    unlockedStories: parseLegacyUnlockedStories(value.unlockedStories, catalog),
-    storyRouteProgress: {},
+    unlockedStories: parseLegacyUnlockedStories(
+      value.unlockedStories,
+      catalog,
+      typeof value.schemaVersion === "number" && value.schemaVersion >= 3,
+    ),
+    storyRouteProgress:
+      value.schemaVersion === 4
+        ? (parseStoryRouteProgress(value.storyRouteProgress, catalog) ?? {})
+        : {},
+    diaryLogs: [],
     activeTimer: activeTimer ?? null,
   };
 
@@ -315,6 +369,7 @@ export function parsePersistedState(
   let value: unknown;
   try {
     value = JSON.parse(raw);
+
   } catch {
     return null;
   }
@@ -322,14 +377,26 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
-  if (isRecord(value) && (value.schemaVersion === 4 || value.schemaVersion === 5)) {
-    if (value.schemaVersion === 5 && typeof value.isSideStoryUnlocked !== "boolean") return null;
+  // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
+  if (isRecord(value) && [4, 5, 6].includes(value.schemaVersion as number)) {
+    if (value.isSideStoryUnlocked !== undefined && typeof value.isSideStoryUnlocked !== "boolean") return null;
     const { isSideStoryUnlocked, ...previous } = value;
+    const diaryLogs = value.diaryLogs === undefined ? [] : value.diaryLogs;
     const migrated = {
       ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
-      purchasedSideStoryIds: isSideStoryUnlocked === true ? [101] : [],
-      announcedSideStoryIds: [],
+      purchasedSideStoryIds: isSideStoryUnlocked === true ? [101] : (value.purchasedSideStoryIds === undefined ? [] : value.purchasedSideStoryIds),
+      announcedSideStoryIds: value.announcedSideStoryIds === undefined ? [] : value.announcedSideStoryIds,
+      diaryLogs: value.schemaVersion === 5 && Array.isArray(diaryLogs)
+        ? diaryLogs.map((log) => {
+            if (!isRecord(log) || !isNonNegativeSafeInteger(log.completedAt)) return log;
+            return {
+              ...log,
+              // v5 did not store the original timezone, so only the current local date is recoverable.
+              completedDate: log.completedDate ?? localDateKey(log.completedAt),
+            };
+          })
+        : diaryLogs,
     };
     return validateAppState(migrated, catalog) ? migrated : null;
   }
@@ -345,7 +412,7 @@ export function createAppStateRepository(
   storage: StorageLike = AsyncStorage,
   catalog: StoryCatalog = STORY_CATALOG,
 ): AppStateRepository {
-  return {
+  const repository: AppStateRepository = {
     async load() {
       let raw: string | null;
       try {
@@ -362,7 +429,11 @@ export function createAppStateRepository(
         return createInitialAppState();
       }
 
-      return parsePersistedState(raw, catalog) ?? createInitialAppState();
+      const state = parsePersistedState(raw, catalog);
+      if (state && JSON.parse(raw).schemaVersion !== APP_SCHEMA_VERSION) {
+        await repository.save(state);
+      }
+      return state ?? createInitialAppState();
     },
 
     async save(state) {
@@ -384,6 +455,7 @@ export function createAppStateRepository(
       }
     },
   };
+  return repository;
 }
 
 export const appStateRepository = createAppStateRepository();
