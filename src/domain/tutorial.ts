@@ -4,13 +4,6 @@ export const TUTORIAL_STEPS = [
 
 export type TutorialStep = (typeof TUTORIAL_STEPS)[number];
 
-export function getTutorialMinutes(isDebug: boolean): number {
-  return isDebug ? 0 : 5;
-}
-
-// Regular timers are unaffected.
-export const TUTORIAL_MINUTES = getTutorialMinutes(__DEV__);
-
 export function isTutorialStep(value: unknown): value is TutorialStep {
   return TUTORIAL_STEPS.some((step) => step === value);
 }

@@ -13,7 +13,6 @@ import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import CoachMark, { tutorialStyles } from "@/src/components/tutorial/CoachMark";
-import { TUTORIAL_MINUTES } from "@/src/domain/tutorial";
 import { Colors } from "@/src/constants/theme";
 import { todayKey } from "@/src/domain/common/date";
 import {
@@ -190,8 +189,7 @@ export default function HomeScreen() {
       />
       <TimerSetupModal
         visible={isTimerSetupOpen}
-        initialMinutes={step === "start" ? TUTORIAL_MINUTES + 5 : undefined}
-        tutorialMinutes={step === "start" ? TUTORIAL_MINUTES : undefined}
+        tutorial={step === "start"}
         hasActiveTimer={Boolean(state.activeTimer)}
         onClose={() => setIsTimerSetupOpen(false)}
         onStart={handleStartTimer}

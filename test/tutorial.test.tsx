@@ -1,9 +1,10 @@
 import mockAsyncStorage from "@react-native-async-storage/async-storage/jest/async-storage-mock";
 import React from "react";
+import { AppState as NativeAppState } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import { AppState } from "@/src/domain/common/types";
-import { getTutorialMinutes, getTutorialPath, isTutorialStep, TUTORIAL_MINUTES } from "@/src/domain/tutorial";
+import { getTutorialPath, isTutorialStep } from "@/src/domain/tutorial";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 import { createInitialAppState, parsePersistedState } from "@/src/storage/appStateRepository";
 
@@ -14,6 +15,7 @@ describe("tutorial progress", () => {
   let context: ReturnType<typeof useAppState>;
   let persisted: AppState;
   let failWrite: boolean;
+  const previousAppState = NativeAppState.currentState;
   const repository = {
     load: async () => persisted,
     save: async (next: AppState) => {
@@ -25,8 +27,14 @@ describe("tutorial progress", () => {
   const mount = async () => {
     await act(async () => { renderer = TestRenderer.create(<AppStateProvider repository={repository}><Probe /></AppStateProvider>); });
   };
-  beforeEach(async () => { persisted = createInitialAppState(); failWrite = false; await mount(); });
-  afterEach(async () => { await act(async () => renderer.unmount()); });
+  beforeEach(async () => {
+    NativeAppState.currentState = "active";
+    persisted = createInitialAppState(); failWrite = false; await mount();
+  });
+  afterEach(async () => {
+    await act(async () => renderer.unmount());
+    NativeAppState.currentState = previousAppState;
+  });
 
   it("saves profile during the separate intro, resumes, finishes the timer, then reads episode 1", async () => {
     expect(context.state?.tutorialStep).toBe("intro");
@@ -38,13 +46,15 @@ describe("tutorial progress", () => {
     expect(persisted.tutorialStep).toBe("navigation");
     await act(async () => context.advanceTutorial());
     expect(persisted.tutorialStep).toBe("start");
-    await act(async () => { await expect(context.startTimer(1500)).rejects.toThrow("チュートリアル"); });
-    await act(async () => { await context.startTimer(TUTORIAL_MINUTES * 60); });
+    await act(async () => { await context.startTimer(1500); });
     expect(persisted.tutorialStep).toBe("timer");
+    expect(persisted.activeTimer?.plannedSeconds).toBe(1500);
     await act(async () => renderer.unmount());
     await mount();
     expect(context.state?.tutorialStep).toBe("timer");
-    await act(async () => { await context.finishTimer(Date.now(), "初めての記録"); });
+    const startedAt = Date.now();
+    await act(async () => context.setTimerRouteFocused(true, startedAt));
+    await act(async () => { await context.finishTimer(startedAt + 1500_000, "初めての記録"); });
     expect(persisted).toMatchObject({ tutorialStep: "talk", activeTimer: null, totalCompletions: 1 });
     expect(persisted.diaryLogs[0].diary).toBe("初めての記録");
     expect(persisted.unlockedStories).toHaveLength(1);
@@ -80,7 +90,5 @@ describe("tutorial progress", () => {
     expect(getTutorialPath("timer")).toBe("/timer");
     expect(getTutorialPath("talk")).toBe("/");
     expect(getTutorialPath("complete")).toBeNull();
-    expect(getTutorialMinutes(true)).toBe(0);
-    expect(getTutorialMinutes(false)).toBe(5);
   });
 });

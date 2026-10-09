@@ -76,15 +76,14 @@ describe("tutorial UI", () => {
     expect(context.advanceTutorial).toHaveBeenCalledTimes(1);
   });
 
-  it("requires the user to adjust the setup to zero before starting", async () => {
+  it.each([0, 5, 25, 90])("lets the tutorial start with a freely selected duration of %i minutes", async (minutes) => {
     const onStart = jest.fn(async () => undefined);
-    await mount(<TimerSetupModal visible initialMinutes={5} tutorialMinutes={0} hasActiveTimer={false} onClose={() => undefined} onResume={() => undefined} onStart={onStart} />);
+    await mount(<TimerSetupModal visible initialMinutes={minutes} tutorial hasActiveTimer={false} onClose={() => undefined} onResume={() => undefined} onStart={onStart} />);
     const button = (label: string) => renderer.root.find((node) => node.type === TouchableOpacity && node.props.accessibilityLabel === label);
-    expect(button("設定した時間でタイマーを開始").props.disabled).toBe(true);
-    await act(async () => button("5分減らす").props.onPress());
     expect(button("設定した時間でタイマーを開始").props.disabled).toBe(false);
+    await act(async () => button("5分増やす").props.onPress());
     await act(async () => button("設定した時間でタイマーを開始").props.onPress());
-    expect(onStart).toHaveBeenCalledWith(0);
+    expect(onStart).toHaveBeenCalledWith((minutes + 5) * 60);
   });
 
   it("explains power saving before diary and returns home rather than auto-playing the unlocked story", async () => {
