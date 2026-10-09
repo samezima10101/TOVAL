@@ -24,6 +24,7 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
+import { TUTORIAL_MINUTES } from "@/src/domain/tutorial";
 import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
@@ -66,6 +67,8 @@ type AppStateContextValue = {
   hydrationError: Error | null;
   retryHydration: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
+  setTutorialProfile: (userName: string, taskName: string) => Promise<void>;
+  advanceTutorial: () => Promise<void>;
   markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
@@ -245,6 +248,33 @@ export function AppStateProvider({
     [commitState, enqueue, repository, requireState],
   );
 
+  const setTutorialProfile = useCallback(
+    (userName: string, taskName: string) => enqueue(async () => {
+      const current = requireState();
+      if (current.tutorialStep !== "intro") return;
+      if (!userName.trim() || !taskName.trim()) {
+        throw new Error("名前とタスクを入力してください。");
+      }
+      const nextState = { ...current, userName: userName.trim(), taskName: taskName.trim() };
+      await repository.save(nextState);
+      commitState(nextState);
+    }),
+    [commitState, enqueue, repository, requireState],
+  );
+
+  const advanceTutorial = useCallback(
+    () => enqueue(async () => {
+      const current = requireState();
+      const nextStep = current.tutorialStep === "intro" && current.userName.trim() && current.taskName.trim()
+        ? "navigation" : current.tutorialStep === "navigation" ? "start" : current.tutorialStep === "talk" ? "episode" : null;
+      if (!nextStep) return;
+      const nextState: AppState = { ...current, tutorialStep: nextStep };
+      await repository.save(nextState);
+      commitState(nextState);
+    }),
+    [commitState, enqueue, repository, requireState],
+  );
+
   const markStoryRead = useCallback(
     (episodeId: EpisodeId) =>
       enqueue(async () => {
@@ -258,6 +288,8 @@ export function AppStateProvider({
 
         const nextState: AppState = {
           ...current,
+          ...(current.tutorialStep === "episode" && episodeId === catalog.episodes[0]?.id
+            ? { tutorialStep: "complete" as const } : {}),
           unlockedStories: current.unlockedStories.map((story, index) =>
             index === storyIndex ? { ...story, isRead: true } : story,
           ),
@@ -265,7 +297,7 @@ export function AppStateProvider({
         await repository.save(nextState);
         commitState(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [catalog, commitState, enqueue, repository, requireState],
   );
 
   const selectInitialStoryRoute = useCallback(
@@ -395,6 +427,9 @@ export function AppStateProvider({
         if (current.activeTimer) {
           return current.activeTimer;
         }
+        if (current.tutorialStep === "start" && plannedSeconds !== TUTORIAL_MINUTES * 60) {
+          throw new Error(`チュートリアルでは${TUTORIAL_MINUTES}分に設定してください。`);
+        }
 
         const activeTimer: ActiveTimer = {
           sessionId: makeSessionId(),
@@ -404,7 +439,9 @@ export function AppStateProvider({
           // The timer route resumes this segment after it is actually focused.
           runningSince: null,
         };
-        const nextState = { ...current, activeTimer };
+        const nextState: AppState = { ...current, activeTimer,
+          ...(current.tutorialStep === "start" ? { tutorialStep: "timer" as const } : {}),
+        };
         await repository.save(nextState);
         commitState(nextState);
         return activeTimer;
@@ -443,9 +480,12 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await repository.save(outcome.state);
-        commitState(outcome.state);
-        return outcome;
+        const nextState: AppState = { ...outcome.state,
+          ...(current.tutorialStep === "timer" ? { tutorialStep: "talk" as const } : {}),
+        };
+        await repository.save(nextState);
+        commitState(nextState);
+        return { ...outcome, state: nextState };
       }),
     [catalog, commitState, enqueue, repository, requireState],
   );
@@ -457,6 +497,8 @@ export function AppStateProvider({
       hydrationError,
       retryHydration,
       setTaskName,
+      setTutorialProfile,
+      advanceTutorial,
       markStoryRead,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
@@ -478,6 +520,8 @@ export function AppStateProvider({
       unlockSideStory,
       announceSideStories,
       setTaskName,
+      setTutorialProfile,
+      advanceTutorial,
       setTimerRouteFocused,
       startTimer,
       state,

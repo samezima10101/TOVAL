@@ -13,10 +13,15 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import DiaryModal from "@/src/components/timer/DiaryModal";
+import CoachMark from "@/src/components/tutorial/CoachMark";
+import { useAppState } from "@/src/state/AppStateProvider";
 import { Colors } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
+  const { state } = useAppState();
+  const isTutorial = state?.tutorialStep === "timer";
+  const [powerExplained, setPowerExplained] = React.useState(false);
   const [isPowerSaving, setIsPowerSaving] = React.useState(false);
   const restoreTimerScreen = () => setIsPowerSaving(false);
   const {
@@ -50,7 +55,7 @@ export default function TimerScreen() {
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            {!snapshot.isComplete ? (
+            {!snapshot.isComplete && !isTutorial ? (
               <TouchableOpacity
                 onPress={handleCancel}
                 style={styles.cancelButton}
@@ -62,7 +67,7 @@ export default function TimerScreen() {
                 <Text style={styles.cancelText}>✕ キャンセル</Text>
               </TouchableOpacity>
             ) : (
-              <Text style={styles.overtimeLabel}>終了可能</Text>
+              <Text style={styles.overtimeLabel}>{snapshot.isComplete ? "終了可能" : "集中モード実行中"}</Text>
             )}
           </View>
 
@@ -90,6 +95,8 @@ export default function TimerScreen() {
           </View>
 
           <View style={styles.footer}>
+            {isTutorial && !powerExplained ? <CoachMark title="省電力モード" text="省電力モードは画面を黒くし、タイマーの計測は続けます。黒い画面をタップすると戻れます。アプリを閉じたり別画面へ移動すると計測は止まります。確認したら「次へ」を押してください。" onNext={async () => { setPowerExplained(true); }} /> : null}
+            {isTutorial && powerExplained ? <CoachMark title="集中を終了" text="予定時間が終わったら「終了して記録」を押しましょう。次に日記の書き方をご案内します。" /> : null}
             <TouchableOpacity
               onPress={() => setIsPowerSaving(true)}
               style={styles.powerSavingButton}
@@ -103,7 +110,7 @@ export default function TimerScreen() {
             <PrimaryButton
               title="終了して記録"
               onPress={() => void openDiary()}
-              disabled={!snapshot.isComplete || isProcessing}
+              disabled={!snapshot.isComplete || isProcessing || (isTutorial && !powerExplained)}
               loading={isProcessing}
               style={styles.finishButton}
               accessibilityLabel="タイマーを終了して記録"
@@ -139,6 +146,7 @@ export default function TimerScreen() {
       </Modal>
       <DiaryModal
         visible={isDiaryOpen}
+        tutorial={isTutorial}
         saving={isProcessing}
         error={error}
         onClose={closeDiary}

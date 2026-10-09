@@ -1,3 +1,5 @@
+import type { TutorialStep } from "../tutorial";
+
 export const APP_SCHEMA_VERSION = 7;
 export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
@@ -65,6 +67,8 @@ export type DiaryLog = {
 
 export type AppState = {
   schemaVersion: typeof APP_SCHEMA_VERSION;
+  // Missing on pre-tutorial saves: existing users keep their current progress.
+  tutorialStep?: TutorialStep;
   userName: string;
   taskName: string;
   totalNt: number;

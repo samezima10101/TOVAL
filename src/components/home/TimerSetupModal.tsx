@@ -3,10 +3,12 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Colors } from "@/src/constants/theme";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
+import CoachMark from "@/src/components/tutorial/CoachMark";
 
 type Props = {
   visible: boolean;
   initialMinutes?: number;
+  tutorialMinutes?: number;
   hasActiveTimer: boolean;
   onClose: () => void;
   onStart: (plannedSeconds: number) => Promise<void>;
@@ -16,6 +18,7 @@ type Props = {
 export default function TimerSetupModal({
   visible,
   initialMinutes = 25,
+  tutorialMinutes,
   hasActiveTimer,
   onClose,
   onStart,
@@ -35,6 +38,7 @@ export default function TimerSetupModal({
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.title}>集中時間を設定</Text>
+          {tutorialMinutes !== undefined ? <CoachMark title="集中時間" text={`分の「－」を押して${tutorialMinutes}分に設定し、「タイマーを開始」を押しましょう。${tutorialMinutes === 0 ? "現在はデバッグ用の時間です。本番では5分で体験します。" : "まずは5分の集中を体験してみましょう。"}`} /> : null}
           {hasActiveTimer ? (
             <>
               <Text style={styles.description}>
@@ -116,13 +120,13 @@ export default function TimerSetupModal({
               <TouchableOpacity
                 style={[
                   styles.primaryAction,
-                  isStarting && styles.disabledAction,
+                  (isStarting || (tutorialMinutes !== undefined && displayHours * 60 + displayMins !== tutorialMinutes)) && styles.disabledAction,
                 ]}
                 onPress={handleStart}
-                disabled={isStarting}
+                disabled={isStarting || (tutorialMinutes !== undefined && displayHours * 60 + displayMins !== tutorialMinutes)}
                 accessibilityRole="button"
                 accessibilityLabel="設定した時間でタイマーを開始"
-                accessibilityState={{ disabled: isStarting, busy: isStarting }}
+                accessibilityState={{ disabled: isStarting || (tutorialMinutes !== undefined && displayHours * 60 + displayMins !== tutorialMinutes), busy: isStarting }}
               >
                 <Text style={styles.primaryActionText}>
                   {isStarting ? "保存中…" : "タイマーを開始"}

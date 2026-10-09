@@ -12,6 +12,8 @@ import PrimaryButton from "@/src/components/common/PrimaryButton";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
+import CoachMark, { tutorialStyles } from "@/src/components/tutorial/CoachMark";
+import { TUTORIAL_MINUTES } from "@/src/domain/tutorial";
 import { Colors } from "@/src/constants/theme";
 import { todayKey } from "@/src/domain/common/date";
 import {
@@ -21,9 +23,11 @@ import {
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function HomeScreen() {
-  const { state, setTaskName, startTimer } = useAppState();
+  const { state, setTaskName, startTimer, advanceTutorial } = useAppState();
   const [isEditingTask, setIsEditingTask] = React.useState(false);
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
+  const [talkError, setTalkError] = React.useState<string | null>(null);
+  const talkBusy = React.useRef(false);
 
   if (!state) {
     return null;
@@ -34,11 +38,14 @@ export default function HomeScreen() {
   const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
   const latestUnreadEpisode = getLatestUnreadEpisode(state.unlockedStories);
   const needsTask = state.taskName.trim().length === 0;
+  const step = state.tutorialStep;
+  const isTutorial = Boolean(step && step !== "complete");
+  const navigationAllowed = !isTutorial;
 
   const handleStartTimer = async (plannedSeconds: number) => {
     await startTimer(plannedSeconds);
     setIsTimerSetupOpen(false);
-    router.push("/timer");
+    if (step !== "start") router.push("/timer");
   };
 
   const handleResumeTimer = () => {
@@ -46,15 +53,22 @@ export default function HomeScreen() {
     router.push("/timer");
   };
 
-  const handleOpenTalk = () => {
-    if (!latestUnreadEpisode) {
+  const handleOpenTalk = async () => {
+    if (!latestUnreadEpisode || talkBusy.current) {
       return;
     }
-
-    router.push({
-      pathname: "/story",
-      params: { episode: String(latestUnreadEpisode.id), source: "home" },
-    });
+    talkBusy.current = true;
+    setTalkError(null);
+    try {
+      if (step === "talk") {
+        // TutorialNavigation performs the route change after the save succeeds.
+        await advanceTutorial();
+      } else {
+        router.push({ pathname: "/story", params: { episode: String(latestUnreadEpisode.id), source: "home" } });
+      }
+    } catch (cause) {
+      setTalkError(cause instanceof Error ? cause.message : "ストーリーを開けませんでした。");
+    } finally { talkBusy.current = false; }
   };
 
   return (
@@ -63,12 +77,19 @@ export default function HomeScreen() {
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
       >
+        {step === "navigation" ? <CoachMark title="ホームのボタン" text="メモリーでは読んだストーリー、ログでは日記と集中記録を確認できます。ショップでは会話を購入できます。今はボタンを押さず、説明を読んで次へ進みましょう。" onNext={advanceTutorial} /> : null}
+        {step === "talk" ? <CoachMark title="新しいストーリー" text="タスクを終えると新しい会話が届きます。下の吹き出しを押して、第1話を読んでみましょう。" /> : null}
+        {talkError ? <Text accessibilityRole="alert">{talkError}</Text> : null}
+        <View style={step === "talk" ? tutorialStyles.target : undefined}>
         <HomeStoryCard
           latestUnlockedEpisode={latestUnlockedEpisode}
           unreadEpisode={latestUnreadEpisode}
-          onOpenTalk={handleOpenTalk}
+          onOpenTalk={() => { void handleOpenTalk(); }}
           onOpenShop={() => router.push("/shop")}
+          talkDisabled={isTutorial && step !== "talk"}
+          shopDisabled={!navigationAllowed}
         />
+        </View>
 
         <View style={styles.intro}>
           <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
@@ -108,17 +129,19 @@ export default function HomeScreen() {
           </TouchableOpacity>
         ) : null}
 
+        {step === "start" ? <CoachMark title="タイマーを開始" text="下の「集中モードを開始」を押して、集中する時間を設定しましょう。" /> : null}
         <PrimaryButton
           title="集中モードを開始"
           onPress={() => setIsTimerSetupOpen(true)}
-          disabled={needsTask}
-          style={styles.startButton}
+          disabled={needsTask || (isTutorial && step !== "start")}
+          style={step === "start" ? { ...styles.startButton, ...tutorialStyles.target } : styles.startButton}
           accessibilityLabel="集中モードの時間を設定"
         />
 
-        <View style={styles.links}>
+        <View style={[styles.links, step === "navigation" && tutorialStyles.target]}>
           <TouchableOpacity
             onPress={() => setIsEditingTask(true)}
+            disabled={!navigationAllowed}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="タスク名を編集"
@@ -127,6 +150,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push("/memory")}
+            disabled={!navigationAllowed}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="メモリーを開く"
@@ -135,6 +159,7 @@ export default function HomeScreen() {
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => router.push("/log")}
+            disabled={!navigationAllowed}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="ログを開く"
@@ -154,7 +179,7 @@ export default function HomeScreen() {
       </ScrollView>
 
       <TaskNameModal
-        visible={needsTask || isEditingTask}
+        visible={!isTutorial && (needsTask || isEditingTask)}
         required={needsTask}
         initialValue={state.taskName}
         onClose={() => setIsEditingTask(false)}
@@ -165,6 +190,8 @@ export default function HomeScreen() {
       />
       <TimerSetupModal
         visible={isTimerSetupOpen}
+        initialMinutes={step === "start" ? TUTORIAL_MINUTES + 5 : undefined}
+        tutorialMinutes={step === "start" ? TUTORIAL_MINUTES : undefined}
         hasActiveTimer={Boolean(state.activeTimer)}
         onClose={() => setIsTimerSetupOpen(false)}
         onStart={handleStartTimer}

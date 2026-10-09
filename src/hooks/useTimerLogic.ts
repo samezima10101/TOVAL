@@ -98,7 +98,9 @@ export default function useTimerLogic() {
     setIsProcessing(true);
     try {
       const outcome = await finishTimer(finishedAt ?? Date.now(), diary);
-      if (outcome.unlockedEpisode) {
+      if (state?.tutorialStep === "timer") {
+        router.replace("/");
+      } else if (outcome.unlockedEpisode) {
         router.replace({
           pathname: "/story",
           params: {

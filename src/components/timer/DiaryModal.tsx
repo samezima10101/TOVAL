@@ -10,10 +10,12 @@ import {
 } from "react-native";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import CoachMark from "@/src/components/tutorial/CoachMark";
 import { Colors } from "@/src/constants/theme";
 
 type DiaryModalProps = {
   visible: boolean;
+  tutorial?: boolean;
   saving: boolean;
   error: string | null;
   onSave: (diary: string) => Promise<void>;
@@ -22,6 +24,7 @@ type DiaryModalProps = {
 
 export default function DiaryModal({
   visible,
+  tutorial = false,
   saving,
   error,
   onSave,
@@ -40,6 +43,7 @@ export default function DiaryModal({
       <KeyboardAvoidingView behavior="padding" style={styles.overlay}>
         <View style={styles.content}>
           <Text style={styles.title}>タスクを振り返ってみませんか？</Text>
+          {tutorial ? <CoachMark title="日記を書く" text="今日取り組んだことや感想を残せます。空欄でも保存できます。「保存して終了」を押すとホームに戻ります。日記はログから読み返せます。" /> : null}
           <TextInput
             value={diary}
             onChangeText={setDiary}

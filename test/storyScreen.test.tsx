@@ -92,6 +92,8 @@ function makeContext(
     hydrationError: null,
     retryHydration: async () => undefined,
     setTaskName: async () => undefined,
+    setTutorialProfile: async () => undefined,
+    advanceTutorial: async () => undefined,
     markStoryRead,
     selectInitialStoryRoute,
     unlockAdditionalStoryRoute,
