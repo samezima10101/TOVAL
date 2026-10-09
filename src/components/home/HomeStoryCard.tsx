@@ -1,6 +1,6 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import React from "react";
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import { Colors } from "@/src/constants/theme";
@@ -54,7 +54,7 @@ export default function HomeStoryCard({
         accessibilityRole="button"
         accessibilityLabel="ショップを開く"
       >
-        <Image source={require("@/assets/images/react-logo.png")} />
+        <Ionicons name="storefront-outline" size={48} color={Colors.primary} />
       </TouchableOpacity>
 
       <StoryCharacters containerStyle={styles.homeCharacters} />
@@ -123,6 +123,9 @@ const styles = StyleSheet.create({
   secret: {
     position: "absolute",
     top: 70,
+    left: 12,
+    padding: 12,
+    zIndex: 1,
   },
   homeCharacters: {
     flex: 0,

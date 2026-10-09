@@ -8,6 +8,7 @@ import {
   AppState,
   STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
+import { SIDE_STORY_COST_NT } from "@/src/content/shop";
 import {
   AppStateProvider,
   StoryRouteError,
@@ -23,6 +24,7 @@ import {
 } from "./fixtures/story";
 
 jest.mock("@react-native-async-storage/async-storage", () => mockAsyncStorage);
+jest.mock("@/src/content/shop", () => jest.requireActual("./fixtures/shop"));
 type TestRepository = AppStateRepository & {
   state: AppState;
   failWrite: boolean;
@@ -53,6 +55,8 @@ function makeInitialState(
     lastCompletionDate: null,
     unlockedStories: [],
     storyRouteProgress: {},
+    purchasedSideStoryIds: [],
+    announcedSideStoryIds: [],
     activeTimer,
   };
 }
@@ -297,6 +301,71 @@ describe("AppStateProvider story route progress", () => {
       ).toEqual(
         [],
       );
+    } finally {
+      await harness.unmount();
+    }
+  });
+});
+
+describe("AppStateProvider side story", () => {
+  it("rejects unavailable purchases and saves notifications once only after a successful write", async () => {
+    const repository = makeRepository();
+    repository.state.totalNt = 180;
+    const harness = await renderProvider(repository);
+    try {
+      await act(async () => {
+        await expect(harness.context.unlockSideStory(102)).rejects.toThrow("まだ入荷");
+        await expect(harness.context.unlockSideStory(999)).rejects.toThrow("まだ入荷");
+      });
+      repository.failWrite = true;
+      await act(async () => {
+        await expect(harness.context.announceSideStories([101])).rejects.toThrow("write failed");
+      });
+      expect(harness.context.state?.announcedSideStoryIds).toEqual([]);
+      repository.failWrite = false;
+      await act(async () => {
+        await harness.context.announceSideStories([101, 101, 102, 999]);
+        await harness.context.announceSideStories([101]);
+      });
+      expect(repository.state.announcedSideStoryIds).toEqual([101]);
+      expect(repository.state.totalNt).toBe(180);
+      expect(repository.savedStates).toHaveLength(1);
+    } finally {
+      await harness.unmount();
+    }
+  });
+
+  it("deducts NT once and keeps the story locked when saving fails", async () => {
+    const repository = makeRepository();
+    repository.state = { ...repository.state, totalNt: SIDE_STORY_COST_NT };
+    const harness = await renderProvider(repository);
+    try {
+      repository.failWrite = true;
+      await act(async () => {
+        await expect(harness.context.unlockSideStory(101)).rejects.toThrow("write failed");
+      });
+      expect(harness.context.state?.totalNt).toBe(SIDE_STORY_COST_NT);
+      expect(harness.context.state?.purchasedSideStoryIds).toEqual([]);
+      repository.failWrite = false;
+      await act(async () => {
+        await Promise.all([harness.context.unlockSideStory(101), harness.context.unlockSideStory(101)]);
+      });
+      expect(repository.state.totalNt).toBe(0);
+      expect(repository.state.purchasedSideStoryIds).toEqual([101]);
+      expect(repository.savedStates).toHaveLength(1);
+    } finally {
+      await harness.unmount();
+    }
+  });
+
+  it("does not unlock without enough NT", async () => {
+    const repository = makeRepository();
+    const harness = await renderProvider(repository);
+    try {
+      await act(async () => {
+        await expect(harness.context.unlockSideStory(101)).rejects.toThrow("NTが不足");
+      });
+      expect(repository.savedStates).toHaveLength(0);
     } finally {
       await harness.unmount();
     }

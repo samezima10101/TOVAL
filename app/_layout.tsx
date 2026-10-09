@@ -54,6 +54,7 @@ function AppShell() {
           <Stack.Screen name="story" options={{ title: "ストーリー" }} />
           <Stack.Screen name="log" options={{ title: "ログ" }} />
           <Stack.Screen name="shop" options={{ title: "ショップ" }} />
+          <Stack.Screen name="side-story" options={{ title: "サイドストーリー" }} />
         </Stack>
       </View>
 

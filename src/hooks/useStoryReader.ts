@@ -10,10 +10,11 @@ export const STORY_CHARACTER_INTERVAL_MS = 53;
 
 export default function useStoryReader(
   episode: StoryEpisode | undefined,
-  source: "memory" | "home" | "unlock",
+  source: "memory" | "home" | "unlock" | "shop",
   markStoryRead: (id: number) => Promise<void>,
   initialRouteId: string | undefined = undefined,
   selectInitialRoute?: SelectRoute,
+  onClose?: () => void,
 ) {
   const [lineIndex, setLineIndex] = React.useState(0);
   const [selectedRouteId, setSelectedRouteId] =
@@ -40,8 +41,12 @@ export default function useStoryReader(
   }, [episode?.id, initialRouteId]);
 
   const handleClose = () => {
-    if (source === "memory") {
-      router.dismissTo("/memory");
+    if (onClose) {
+      onClose();
+      return;
+    }
+    if (source === "memory" || source === "shop") {
+      router.dismissTo(source === "shop" ? "/shop" : "/memory");
     } else {
       router.replace("/");
     }

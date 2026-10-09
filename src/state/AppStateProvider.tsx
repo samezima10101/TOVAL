@@ -17,12 +17,14 @@ import {
   MAX_PLANNED_SECONDS,
   STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
+import { SIDE_STORY_COST_NT } from "@/src/content/shop";
 import {
   cancelTimer as cancelTimerState,
   completeTimer,
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
+import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
   StoryCatalog,
@@ -67,6 +69,8 @@ type AppStateContextValue = {
   markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
+  unlockSideStory: (conversationId: number) => Promise<void>;
+  announceSideStories: (conversationIds: readonly number[]) => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
@@ -346,6 +350,41 @@ export function AppStateProvider({
     [catalog, commitState, enqueue, repository, requireState],
   );
 
+  const unlockSideStory = useCallback(
+    (conversationId: number) =>
+      enqueue(async () => {
+        const current = requireState();
+        const conversation = listAvailableConversations(current).find((item) => item.id === conversationId);
+        if (!conversation) throw new Error("この会話はまだ入荷していません。");
+        if (current.purchasedSideStoryIds.includes(conversationId)) return;
+        if (current.totalNt < SIDE_STORY_COST_NT) {
+          throw new Error(`NTが不足しています（必要: ${SIDE_STORY_COST_NT} NT）。`);
+        }
+        const nextState = {
+          ...current,
+          totalNt: current.totalNt - SIDE_STORY_COST_NT,
+          purchasedSideStoryIds: [...current.purchasedSideStoryIds, conversationId],
+        };
+        await repository.save(nextState);
+        commitState(nextState);
+      }),
+    [commitState, enqueue, repository, requireState],
+  );
+
+  const announceSideStories = useCallback(
+    (conversationIds: readonly number[]) => enqueue(async () => {
+      const current = requireState();
+      const newIds = listAvailableConversations(current)
+        .filter((item) => conversationIds.includes(item.id) && !current.announcedSideStoryIds.includes(item.id))
+        .map((item) => item.id);
+      if (!newIds.length) return;
+      const nextState = { ...current, announcedSideStoryIds: [...current.announcedSideStoryIds, ...newIds] };
+      await repository.save(nextState);
+      commitState(nextState);
+    }),
+    [commitState, enqueue, repository, requireState],
+  );
+
   const startTimer = useCallback(
     (plannedSeconds: number) =>
       enqueue(async () => {
@@ -419,6 +458,8 @@ export function AppStateProvider({
       markStoryRead,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
+      unlockSideStory,
+      announceSideStories,
       startTimer,
       setTimerRouteFocused,
       cancelTimer,
@@ -432,6 +473,8 @@ export function AppStateProvider({
       retryHydration,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
+      unlockSideStory,
+      announceSideStories,
       setTaskName,
       setTimerRouteFocused,
       startTimer,
