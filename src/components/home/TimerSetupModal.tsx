@@ -38,7 +38,7 @@ export default function TimerSetupModal({
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.title}>集中時間を設定</Text>
-          {tutorial ? <CoachMark title="集中時間" text="「＋」「－」で好きな集中時間を設定し、「タイマーを開始」を押しましょう。0分はデバッグ用です。" /> : null}
+          {tutorial ? <CoachMark title="集中時間" text="「＋」「－」で好きな集中時間を設定し、「タイマーを開始」を押しましょう。" /> : null}
           {hasActiveTimer ? (
             <>
               <Text style={styles.description}>
@@ -56,7 +56,7 @@ export default function TimerSetupModal({
           ) : (
             <>
               <Text style={styles.description}>
-                5分単位、または1時間単位で調整できます。0:00はデバッグ用です。
+                5分単位、または1時間単位で調整できます。
               </Text>
 
               <View style={styles.pickerContainer}>
