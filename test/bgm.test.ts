@@ -9,10 +9,6 @@ describe("screen BGM mapping", () => {
     }
   });
 
-  it("uses the existing track for every screen for now", () => {
-    expect(new Set(Object.values(SCREEN_BGM))).toEqual(new Set(["default"]));
-  });
-
   it("does not play a track for an unknown route", () => {
     expect(getScreenBgm("/missing")).toBeNull();
   });

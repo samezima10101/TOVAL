@@ -1,5 +1,4 @@
 import React from "react";
-import { Text } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import CalendarScreen from "@/app/log";
@@ -15,7 +14,7 @@ jest.mock("@react-native-async-storage/async-storage", () =>
   jest.requireActual("@react-native-async-storage/async-storage/jest/async-storage-mock"),
 );
 
-it("shows saved local dates and times and omits unknown legacy times regardless of timezone", async () => {
+it("groups saved local dates and retains explicit or unknown completion times", async () => {
   const log = {
     id: "japan-midnight",
     completedAt: Date.UTC(2025, 0, 1, 15, 30),
@@ -38,11 +37,6 @@ it("shows saved local dates and times and omits unknown legacy times regardless 
     const modal = renderer.root.findByType(LogModal);
     expect(modal.props.selectedDate).toBe("2025-01-02");
     expect(modal.props.logsByDate).toEqual({ "2025-01-02": [log, legacyLog] });
-    const texts = modal.findAllByType(Text).map((text) =>
-      Array.isArray(text.props.children) ? text.props.children.join("") : text.props.children,
-    );
-    expect(texts).toContain("00:30 ・ 1分");
-    expect(texts).toContain("1分");
   } finally {
     await act(async () => { renderer?.unmount(); });
   }

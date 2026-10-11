@@ -1,10 +1,12 @@
 import React from "react";
-import { TouchableOpacity } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 import { router } from "expo-router";
 
 import ShopScreen from "@/app/shop";
-import { SIDE_STORY } from "./fixtures/shop";
+import StoryListHeader from "@/src/components/common/StoryListHeader";
+import StoryListCard from "@/src/components/common/StoryListCard";
+import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import { SIDE_STORY, SHOP_FAREWELL, SHOP_GREETING_WITH_ARRIVALS } from "./fixtures/shop";
 import { listAvailableConversations } from "@/src/domain/sideStory";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { createInitialAppState } from "@/src/storage/appStateRepository";
@@ -23,16 +25,11 @@ jest.mock("@react-native-async-storage/async-storage", () => require("@react-nat
 const mockedUseAppState = jest.mocked(useAppState);
 const state = () => ({ ...createInitialAppState(), totalNt: 180 });
 
-function button(renderer: TestRenderer.ReactTestRenderer, label: string) {
-  return renderer.root.find((node) => node.type === TouchableOpacity && node.props.accessibilityLabel === label);
-}
-async function next(renderer: TestRenderer.ReactTestRenderer) {
-  await act(async () => { jest.runAllTimers(); });
-  await act(async () => {
-    const message = renderer.root.find((node) => node.type === TouchableOpacity &&
-      ["次のセリフへ進む", "ストーリーを読み終える"].includes(node.props.accessibilityLabel));
-    await message.props.onPress();
-  });
+async function advanceDialogue(renderer: TestRenderer.ReactTestRenderer, lineCount: number) {
+  for (let index = 0; index < lineCount; index += 1) {
+    await act(async () => { jest.runAllTimers(); });
+    await act(async () => renderer.root.findByType(StoryMessageBox).props.onNext());
+  }
 }
 beforeEach(() => { jest.useFakeTimers(); jest.clearAllMocks(); });
 afterEach(() => jest.useRealTimers());
@@ -50,9 +47,9 @@ it("returns home when the header home button is pressed during farewell", async 
   let renderer!: TestRenderer.ReactTestRenderer;
   await act(async () => { renderer = TestRenderer.create(<ShopScreen />); });
   try {
-    await act(async () => { button(renderer, "ホームへ戻る").props.onPress(); });
+    await act(async () => { renderer.root.findByType(StoryListHeader).props.onBack(); });
     expect(router.dismissTo).not.toHaveBeenCalled();
-    await act(async () => { button(renderer, "ホームへ戻る").props.onPress(); });
+    await act(async () => { renderer.root.findByType(StoryListHeader).props.onBack(); });
     expect(mockPreventRemove).toBe(false);
     expect(router.dismissTo).toHaveBeenCalledTimes(1);
     expect(router.dismissTo).toHaveBeenCalledWith("/");
@@ -70,15 +67,19 @@ it("greets, announces arrivals, requests playback and says farewell before retur
   let renderer!: TestRenderer.ReactTestRenderer;
   await act(async () => { renderer = TestRenderer.create(<ShopScreen />); });
   expect(mockPreventRemove).toBe(true);
-  await next(renderer);
+  const openingLength = SHOP_GREETING_WITH_ARRIVALS.commonBefore.length + SHOP_GREETING_WITH_ARRIVALS.commonAfter.length;
+  // Announcement belongs to the completed greeting, not an exact number of lines.
   expect(announce).not.toHaveBeenCalled();
-  await next(renderer);
+  await advanceDialogue(renderer, openingLength);
   expect(announce).toHaveBeenCalledWith([101]);
-  await act(async () => { button(renderer, `${SIDE_STORY.title}を再生`).props.onPress(); });
+  const storyCard = renderer.root.findAllByType(StoryListCard)
+    .find((card) => card.props.title === SIDE_STORY.title);
+  expect(storyCard).toBeDefined();
+  await act(async () => storyCard!.props.onPress());
   expect(router.push).toHaveBeenCalledWith({ pathname: "/side-story", params: { conversation: "101" } });
   await act(async () => { mockOnBack(); });
   expect(router.dismissTo).not.toHaveBeenCalled();
-  await next(renderer);
+  await advanceDialogue(renderer, SHOP_FAREWELL.commonBefore.length + SHOP_FAREWELL.commonAfter.length);
   expect(mockPreventRemove).toBe(false);
   expect(router.dismissTo).toHaveBeenCalledWith("/");
   await act(async () => renderer.unmount());

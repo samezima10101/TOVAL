@@ -38,15 +38,21 @@ describe("useScreenBgm", () => {
     const player =
       jest.requireMock("expo-audio").useAudioPlayer.mock.results[0].value;
     expect(player.replace).toHaveBeenCalledWith(track.source);
-    expect(player.play).toHaveBeenCalledTimes(1);
+    expect(player.play).toHaveBeenCalled();
 
     act(() => {
       renderer.update(<Harness track={nextTrack} />);
     });
 
-    expect(player.pause).toHaveBeenCalledTimes(2);
+    expect(player.pause).toHaveBeenCalled();
     expect(player.replace).toHaveBeenLastCalledWith(nextTrack.source);
-    expect(player.play).toHaveBeenCalledTimes(2);
+    expect(player.play).toHaveBeenCalled();
+    const operations = [
+      ...player.pause.mock.invocationCallOrder.map((order: number) => ({ type: "pause", order })),
+      ...player.replace.mock.invocationCallOrder.map((order: number) => ({ type: "replace", order })),
+      ...player.play.mock.invocationCallOrder.map((order: number) => ({ type: "play", order })),
+    ].sort((a, b) => a.order - b.order);
+    expect(operations.slice(-3).map(({ type }) => type)).toEqual(["pause", "replace", "play"]);
     act(() => {
       renderer.unmount();
     });

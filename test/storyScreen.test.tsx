@@ -3,6 +3,9 @@ import { Text, TouchableOpacity, View } from "react-native";
 import TestRenderer, { act } from "react-test-renderer";
 
 import StoryScreen from "@/app/story";
+import StoryChoices from "@/src/components/story/StoryChoices";
+import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmation";
 import SideStoryScreen from "@/app/side-story";
 import {
   APP_SCHEMA_VERSION,
@@ -19,6 +22,7 @@ import {
   secondaryRoute,
   storyCatalog,
 } from "./fixtures/story";
+import { SIDE_STORY } from "./fixtures/shop";
 
 jest.mock("@/src/content/shop", () => jest.requireActual("./fixtures/shop"));
 
@@ -49,7 +53,6 @@ const mockedUseLocalSearchParams = useLocalSearchParams as jest.MockedFunction<
 >;
 const branchingEpisodeParam = String(branchingEpisodeId);
 const linearEpisodeParam = String(linearStory.id);
-const lockedSecondaryChoiceLabel = `${secondaryRoute.label}、鍵付き、60 NTで解放`;
 
 function makeState(): AppState {
   return {
@@ -108,13 +111,8 @@ function makeContext(
   };
 }
 
-function getMessageButton(renderer: TestRenderer.ReactTestRenderer) {
-  return renderer.root.find(
-    (node) =>
-      node.type === TouchableOpacity &&
-      (node.props.accessibilityLabel === "次のセリフへ進む" ||
-        node.props.accessibilityLabel === "ストーリーを読み終える"),
-  );
+function getMessageBox(renderer: TestRenderer.ReactTestRenderer) {
+  return renderer.root.findByType(StoryMessageBox);
 }
 
 async function finishTyping(renderer: TestRenderer.ReactTestRenderer) {
@@ -130,7 +128,7 @@ async function advanceLines(
   for (let index = 0; index < count; index += 1) {
     await finishTyping(renderer);
     await act(async () => {
-      getMessageButton(renderer).props.onPress();
+      getMessageBox(renderer).props.onNext();
     });
   }
 }
@@ -150,7 +148,7 @@ describe("side story access", () => {
       mockedUseLocalSearchParams.mockReturnValue({ conversation: id });
       let renderer!: TestRenderer.ReactTestRenderer;
       await act(async () => { renderer = TestRenderer.create(<SideStoryScreen />); });
-      expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "セリフを全文表示")).toBe(id === "102");
+      expect(renderer.root.findAllByType(StoryMessageBox)).toHaveLength(id === "102" ? 1 : 0);
       await act(async () => renderer.unmount());
     }
   });
@@ -168,18 +166,18 @@ describe("side story access", () => {
     await act(async () => {
       renderer = TestRenderer.create(<SideStoryScreen />);
     });
-    expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "次のセリフへ進む")).toBe(false);
+    expect(renderer.root.findAllByType(StoryMessageBox)).toHaveLength(0);
     await act(async () => renderer.unmount());
 
     mockedUseAppState.mockReturnValue(makeContext(async () => undefined, { ...makeState(), purchasedSideStoryIds: [101] }));
     await act(async () => {
       renderer = TestRenderer.create(<SideStoryScreen />);
     });
-    expect(renderer.root.findAllByType(TouchableOpacity).some((node) => node.props.accessibilityLabel === "セリフを全文表示")).toBe(true);
-    await advanceToFinalLine(renderer, 4);
+    expect(renderer.root.findAllByType(StoryMessageBox)).toHaveLength(1);
+    await advanceToFinalLine(renderer, SIDE_STORY.commonBefore.length + SIDE_STORY.commonAfter.length);
     await finishTyping(renderer);
     await act(async () => {
-      getMessageButton(renderer).props.onPress();
+      getMessageBox(renderer).props.onNext();
       await Promise.resolve();
     });
     expect(router.dismissTo).toHaveBeenCalledWith("/shop");
@@ -231,8 +229,8 @@ describe("StoryScreen read completion", () => {
     await finishTyping(renderer);
 
     await act(async () => {
-      getMessageButton(renderer).props.onPress();
-      getMessageButton(renderer).props.onPress();
+      getMessageBox(renderer).props.onNext();
+      getMessageBox(renderer).props.onNext();
       await Promise.resolve();
     });
 
@@ -276,34 +274,16 @@ describe("StoryScreen read completion", () => {
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
 
-    const choice = renderer.root.find(
-      (node) =>
-        node.type === TouchableOpacity &&
-        node.props.accessibilityLabel === primaryRoute.label,
-    );
     await act(async () => {
-      choice.props.onPress();
+      renderer.root.findByType(StoryChoices).props.onSelect(primaryRoute.id);
     });
     await finishTyping(renderer);
 
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === View &&
-          node.props.accessibilityLabel === "キャラクター表示",
-      ).length,
-    ).toBeGreaterThan(0);
     expect(selectInitialStoryRoute).toHaveBeenCalledWith(
       branchingEpisodeId,
       primaryRoute.id,
     );
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === primaryRoute.lines[0].text,
-      ),
-    ).toHaveLength(1);
+    expect(getMessageBox(renderer).props.fullText).toBe(primaryRoute.lines[0].text);
 
     mockedUseAppState.mockReturnValue(
       makeContext(
@@ -331,38 +311,20 @@ describe("StoryScreen read completion", () => {
       renderer.update(<StoryScreen catalog={storyCatalog} />);
     });
     await finishTyping(renderer);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === primaryRoute.lines[0].text,
-      ),
-    ).toHaveLength(1);
+    expect(getMessageBox(renderer).props.fullText).toBe(primaryRoute.lines[0].text);
 
     await act(async () => {
-      getMessageButton(renderer).props.onPress();
+      getMessageBox(renderer).props.onNext();
     });
     await finishTyping(renderer);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === primaryRoute.lines[1].text,
-      ),
-    ).toHaveLength(1);
+    expect(getMessageBox(renderer).props.fullText).toBe(primaryRoute.lines[1].text);
 
     await advanceLines(
       renderer,
       primaryRoute.lines.length + branchingStory.commonAfter.length - 2,
     );
     await finishTyping(renderer);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === branchingStory.commonAfter[0].text,
-      ),
-    ).toHaveLength(1);
+    expect(getMessageBox(renderer).props.fullText).toBe(branchingStory.commonAfter[0].text);
     await act(async () => {
       renderer.unmount();
     });
@@ -407,18 +369,8 @@ describe("StoryScreen read completion", () => {
     await finishTyping(renderer);
 
     expect(selectInitialStoryRoute).not.toHaveBeenCalled();
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === primaryRoute.lines[0].text,
-      ),
-    ).toHaveLength(1);
-    expect(
-      renderer.root.findAll(
-        (node) => node.props.accessibilityLabel === primaryRoute.label,
-      ),
-    ).toHaveLength(0);
+    expect(getMessageBox(renderer).props.fullText).toBe(primaryRoute.lines[0].text);
+    expect(renderer.root.findAllByType(StoryChoices)).toHaveLength(0);
     await act(async () => {
       renderer.unmount();
     });
@@ -456,52 +408,20 @@ describe("StoryScreen read completion", () => {
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
 
-    const lockedChoice = () =>
-      renderer.root.find(
-        (node) =>
-          node.type === TouchableOpacity &&
-          node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
-      );
-    await act(async () => lockedChoice().props.onPress());
+    const chooseLockedRoute = () =>
+      renderer.root.findByType(StoryChoices).props.onSelect(secondaryRoute.id);
+    await act(async () => chooseLockedRoute());
 
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === View &&
-          node.props.accessibilityLabel === "キャラクター表示",
-      ),
-    ).toHaveLength(1);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === "選択肢を解放しますか？",
-      ),
-    ).toHaveLength(1);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === TouchableOpacity &&
-          node.props.accessibilityLabel === "60 NTで解放する",
-      ),
-    ).toHaveLength(1);
+    const confirmation = renderer.root.findByType(StoryUnlockConfirmation);
+    expect(confirmation.props.routeLabel).toBe(secondaryRoute.label);
+    expect(confirmation.props.totalNt).toBe(120);
 
-    const back = renderer.root.find(
-      (node) =>
-        node.type === TouchableOpacity &&
-        node.props.accessibilityLabel === "戻る",
-    );
-    await act(async () => back.props.onPress());
-    expect(lockedChoice()).toBeDefined();
+    await act(async () => confirmation.props.onBack());
+    expect(renderer.root.findByType(StoryChoices).props.lockedRouteIds).toContain(secondaryRoute.id);
 
-    await act(async () => lockedChoice().props.onPress());
-    const confirm = renderer.root.find(
-      (node) =>
-        node.type === TouchableOpacity &&
-        node.props.accessibilityLabel === "60 NTで解放する",
-    );
+    await act(async () => chooseLockedRoute());
     await act(async () => {
-      confirm.props.onPress();
+      renderer.root.findByType(StoryUnlockConfirmation).props.onConfirm();
       await Promise.resolve();
     });
 
@@ -509,12 +429,8 @@ describe("StoryScreen read completion", () => {
       branchingEpisodeId,
       secondaryRoute.id,
     );
-    expect(
-      renderer.root.findAll(
-        (node) => node.props.accessibilityLabel === "次のセリフへ進む",
-      ),
-    ).toHaveLength(0);
-    expect(lockedChoice()).toBeDefined();
+    expect(renderer.root.findAllByType(StoryMessageBox)).toHaveLength(0);
+    expect(renderer.root.findByType(StoryChoices).props.lockedRouteIds).toContain(secondaryRoute.id);
     await act(async () => renderer.unmount());
   });
 
@@ -544,33 +460,18 @@ describe("StoryScreen read completion", () => {
       renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
-    const lockedChoice = renderer.root.find(
-      (node) =>
-        node.type === TouchableOpacity &&
-        node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
-    );
-    await act(async () => lockedChoice.props.onPress());
+    await act(async () => {
+      renderer.root.findByType(StoryChoices).props.onSelect(secondaryRoute.id);
+    });
 
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text && node.props.children === "NTが不足しています",
-      ),
-    ).toHaveLength(1);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === TouchableOpacity &&
-          node.props.accessibilityLabel === "選択肢に戻る",
-      ),
-    ).toHaveLength(1);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === TouchableOpacity &&
-          node.props.accessibilityLabel === "60 NTで解放する",
-      ),
-    ).toHaveLength(0);
+    const confirmation = renderer.root.findByType(StoryUnlockConfirmation);
+    expect(confirmation.props.totalNt).toBe(0);
+    expect(confirmation.props.routeLabel).toBe(secondaryRoute.label);
+    // Insufficient funds must not expose an enabled purchase action.
+    expect(confirmation.findAllByType(TouchableOpacity).filter((node) => !node.props.disabled))
+      .toHaveLength(1);
+    await act(async () => confirmation.props.onBack());
+    expect(renderer.root.findByType(StoryChoices)).toBeDefined();
     await act(async () => renderer.unmount());
   });
 
@@ -606,43 +507,23 @@ describe("StoryScreen read completion", () => {
       renderer = TestRenderer.create(<StoryScreen catalog={storyCatalog} />);
     });
     await advanceLines(renderer, branchingStory.commonBefore.length);
-    const lockedChoice = renderer.root.find(
-      (node) =>
-        node.type === TouchableOpacity &&
-        node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
-    );
-    await act(async () => lockedChoice.props.onPress());
-    const confirm = () =>
-      renderer.root.find(
-        (node) =>
-          node.type === TouchableOpacity &&
-          node.props.accessibilityLabel === "60 NTで解放する",
-      );
+    await act(async () => {
+      renderer.root.findByType(StoryChoices).props.onSelect(secondaryRoute.id);
+    });
+    const confirm = () => renderer.root.findByType(StoryUnlockConfirmation);
 
     await act(async () => {
-      confirm().props.onPress();
+      confirm().props.onConfirm();
       await Promise.resolve();
     });
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === Text &&
-          node.props.children === "解放を保存できませんでした",
-      ),
-    ).toHaveLength(1);
+    expect(confirm().props.error).toBe("解放を保存できませんでした");
 
     await act(async () => {
-      confirm().props.onPress();
+      confirm().props.onConfirm();
       await Promise.resolve();
     });
     expect(unlockAdditionalStoryRoute).toHaveBeenCalledTimes(2);
-    expect(
-      renderer.root.findAll(
-        (node) =>
-          node.type === TouchableOpacity &&
-          node.props.accessibilityLabel === lockedSecondaryChoiceLabel,
-      ),
-    ).toHaveLength(1);
+    expect(renderer.root.findByType(StoryChoices).props.lockedRouteIds).toContain(secondaryRoute.id);
     await act(async () => renderer.unmount());
   });
 
@@ -678,7 +559,7 @@ describe("StoryScreen read completion", () => {
     await finishTyping(renderer);
 
     await act(async () => {
-      getMessageButton(renderer).props.onPress();
+      getMessageBox(renderer).props.onNext();
       await Promise.resolve();
     });
 
@@ -690,9 +571,7 @@ describe("StoryScreen read completion", () => {
           node.type === Text && node.props.children === "保存できませんでした",
       ),
     ).toHaveLength(1);
-    expect(getMessageButton(renderer).props.accessibilityState).toEqual({
-      disabled: false,
-    });
+    expect(getMessageBox(renderer).props.isProcessing).toBe(false);
     await act(async () => {
       renderer.unmount();
     });

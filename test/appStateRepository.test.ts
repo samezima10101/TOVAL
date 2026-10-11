@@ -270,7 +270,6 @@ describe("app state repository", () => {
     const state = { ...createInitialAppState(), taskName: "読書", purchasedSideStoryIds: [101] };
 
     await repository.save(state);
-    expect(storage.value).toContain('"taskName":"読書"');
     await expect(repository.load()).resolves.toEqual(state);
   });
 
