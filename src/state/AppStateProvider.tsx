@@ -24,7 +24,6 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
-import { TUTORIAL_MINUTES } from "@/src/domain/tutorial";
 import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
@@ -426,9 +425,6 @@ export function AppStateProvider({
         const current = requireState();
         if (current.activeTimer) {
           return current.activeTimer;
-        }
-        if (current.tutorialStep === "start" && plannedSeconds !== TUTORIAL_MINUTES * 60) {
-          throw new Error(`チュートリアルでは${TUTORIAL_MINUTES}分に設定してください。`);
         }
 
         const activeTimer: ActiveTimer = {
