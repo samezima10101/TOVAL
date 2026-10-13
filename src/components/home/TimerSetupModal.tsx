@@ -3,10 +3,12 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Colors } from "@/src/constants/theme";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
+import CoachMark from "@/src/components/tutorial/CoachMark";
 
 type Props = {
   visible: boolean;
   initialMinutes?: number;
+  tutorial?: boolean;
   hasActiveTimer: boolean;
   onClose: () => void;
   onStart: (plannedSeconds: number) => Promise<void>;
@@ -16,6 +18,7 @@ type Props = {
 export default function TimerSetupModal({
   visible,
   initialMinutes = 25,
+  tutorial = false,
   hasActiveTimer,
   onClose,
   onStart,
@@ -35,6 +38,7 @@ export default function TimerSetupModal({
       <View style={styles.overlay}>
         <View style={styles.card}>
           <Text style={styles.title}>集中時間を設定</Text>
+          {tutorial ? <CoachMark title="集中時間" text="「＋」「－」で好きな集中時間を設定し、「タイマーを開始」を押しましょう。" /> : null}
           {hasActiveTimer ? (
             <>
               <Text style={styles.description}>
@@ -52,7 +56,7 @@ export default function TimerSetupModal({
           ) : (
             <>
               <Text style={styles.description}>
-                5分単位、または1時間単位で調整できます。0:00はデバッグ用です。
+                5分単位、または1時間単位で調整できます。
               </Text>
 
               <View style={styles.pickerContainer}>

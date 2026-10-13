@@ -11,6 +11,8 @@ type HomeStoryCardProps = {
   unreadEpisode?: StoryEpisode;
   onOpenTalk: () => void;
   onOpenShop: () => void;
+  talkDisabled?: boolean;
+  shopDisabled?: boolean;
 };
 
 export default function HomeStoryCard({
@@ -18,6 +20,8 @@ export default function HomeStoryCard({
   unreadEpisode,
   onOpenTalk,
   onOpenShop,
+  talkDisabled = false,
+  shopDisabled = false,
 }: HomeStoryCardProps) {
   const displayEpisode = unreadEpisode ?? latestUnlockedEpisode;
   const hasUnreadStory = Boolean(unreadEpisode);
@@ -34,6 +38,8 @@ export default function HomeStoryCard({
         {unreadEpisode ? (
           <TouchableOpacity
             onPress={onOpenTalk}
+            disabled={talkDisabled}
+            accessibilityState={{ disabled: talkDisabled }}
             style={styles.talkButton}
             accessibilityRole="button"
             accessibilityLabel={`${unreadEpisode.title}を読む`}
@@ -51,6 +57,8 @@ export default function HomeStoryCard({
       <TouchableOpacity
         style={styles.secret}
         onPress={onOpenShop}
+        disabled={shopDisabled}
+        accessibilityState={{ disabled: shopDisabled }}
         accessibilityRole="button"
         accessibilityLabel="ショップを開く"
       >

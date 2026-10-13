@@ -12,6 +12,7 @@ import {
   UnlockedStory,
 } from "@/src/domain/common/types";
 import { STORY_CATALOG, StoryCatalog } from "@/src/domain/storyData";
+import { isTutorialStep } from "@/src/domain/tutorial";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
 
@@ -36,6 +37,7 @@ export class AppStateStorageError extends Error {
 export function createInitialAppState(): AppState {
   return {
     schemaVersion: APP_SCHEMA_VERSION,
+    tutorialStep: "intro",
     userName: "",
     taskName: "",
     totalNt: 0,
@@ -241,6 +243,7 @@ export function validateAppState(
   }
 
   if (
+    (value.tutorialStep !== undefined && !isTutorialStep(value.tutorialStep)) ||
     typeof value.userName !== "string" ||
     typeof value.taskName !== "string" ||
     typeof value.totalNt !== "number" ||
@@ -336,6 +339,9 @@ function migrateLegacyState(
       : parseV1ActiveTimer(value.activeTimer);
   const migrated: AppState = {
     ...initial,
+    tutorialStep: typeof value.taskName === "string" || typeof value.userName === "string" || activeTimer ||
+      (isNonNegativeSafeInteger(value.totalCompletions) && value.totalCompletions > 0)
+      ? "complete" : "intro",
     userName: typeof value.userName === "string" ? value.userName : "",
     taskName: typeof value.taskName === "string" ? value.taskName : "",
     totalNt: isNonNegativeSafeInteger(value.totalNt) ? value.totalNt : 0,

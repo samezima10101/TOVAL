@@ -4,6 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
+import TutorialStory from "@/src/components/tutorial/TutorialStory";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
@@ -41,6 +42,11 @@ export default function StoryScreen({
 }: {
   catalog?: StoryCatalog;
 }) {
+  const { state } = useAppState();
+  return state?.tutorialStep === "intro" ? <TutorialStory /> : <EpisodeStoryScreen catalog={catalog} />;
+}
+
+function EpisodeStoryScreen({ catalog }: { catalog: StoryCatalog }) {
   const {
     state,
     markStoryRead,
@@ -181,10 +187,10 @@ export default function StoryScreen({
         <TouchableOpacity
           onPress={handleClose}
           style={styles.closeButton}
-          disabled={isProcessing}
+          disabled={isProcessing || state?.tutorialStep === "episode"}
           accessibilityRole="button"
           accessibilityLabel="ストーリーを閉じる"
-          accessibilityState={{ disabled: isProcessing }}
+          accessibilityState={{ disabled: isProcessing || state?.tutorialStep === "episode" }}
         >
           <Text style={styles.closeText}>閉じる</Text>
         </TouchableOpacity>

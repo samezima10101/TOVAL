@@ -3,6 +3,7 @@ import { Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import TutorialNavigation from "@/src/components/tutorial/TutorialNavigation";
 import { getScreenBgm } from "@/src/constants/bgm";
 import { Colors } from "@/src/constants/theme";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
@@ -56,6 +57,7 @@ function AppShell() {
           <Stack.Screen name="shop" options={{ title: "ショップ" }} />
           <Stack.Screen name="side-story" options={{ title: "サイドストーリー" }} />
         </Stack>
+        <TutorialNavigation />
       </View>
 
       <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
