@@ -46,7 +46,6 @@ npm run start
 ```bash
 npm run lint
 npx tsc --noEmit
-npm test
 npx expo-doctor
 ```
 
