@@ -48,6 +48,7 @@ const episodes: readonly StoryEpisode[] = [
         "normal",
       ),
     ],
+    // Temporary branching sample; replace with final episode content later.
     routes: [
       {
         id: "episode-01-encourage",
@@ -55,49 +56,30 @@ const episodes: readonly StoryEpisode[] = [
         lines: [
           line(
             "episode-01-encourage-01",
-            "sub",
-            "ありがとうございます！\n明日も頑張ります！",
-            "normal",
+            "boss",
+            "うん、いい返事だね。",
             "talk",
+            "normal",
           ),
           line(
             "episode-01-encourage-02",
-            "boss",
-            "いい返事だね～。\nでも、頑張りすぎはだめだよ？",
-            "talk",
-            "normal",
-          ),
-          line(
-            "episode-01-encourage-03",
             "sub",
-            "はい！\nしっかり休んで、また明日に備えます。",
+            "うわびっくりした。\n急に大声上げなくても...",
             "normal",
             "talk",
           ),
+          line("episode-01-encourage-03", "boss", "へへっ", "talk", "normal"),
         ],
       },
       {
         id: "episode-01-bow",
         label: "はい、わかりました。",
         lines: [
-          line(
-            "episode-01-bow-01",
-            "sub",
-            "はい、わかりました。",
-            "normal",
-            "talk",
-          ),
+          line("episode-01-bow-01", "sub", "...はい。", "normal", "talk"),
           line(
             "episode-01-bow-02",
-            "boss",
-            "あれ、ちょっと疲れてる？\n今日はもうゆっくり休みなね～。",
-            "talk",
-            "normal",
-          ),
-          line(
-            "episode-01-bow-03",
             "sub",
-            "……お気遣いありがとうございます。\nお言葉に甘えます。",
+            "（なんか...気まずっ）",
             "normal",
             "talk",
           ),
@@ -106,6 +88,7 @@ const episodes: readonly StoryEpisode[] = [
     ],
     commonAfter: [
       line("episode-01-03", "sub", "・・・では失礼します。", "normal", "talk"),
+      line("episode-01-03", "boss", "ばいば～い", "talk", "normal"),
     ],
   },
   {
@@ -148,18 +131,10 @@ const episodes: readonly StoryEpisode[] = [
   },
 ];
 
-export type StoryCatalog = Readonly<{
-  episodes: readonly StoryEpisode[];
-}>;
+export const STORY_EPISODES: readonly StoryEpisode[] = episodes;
 
-export const STORY_CATALOG: StoryCatalog = { episodes };
-export const STORY_EPISODES: readonly StoryEpisode[] = STORY_CATALOG.episodes;
-
-export function getStoryEpisode(
-  id: number,
-  catalog: StoryCatalog = STORY_CATALOG,
-): StoryEpisode | undefined {
-  return catalog.episodes.find((episode) => episode.id === id);
+export function getStoryEpisode(id: number): StoryEpisode | undefined {
+  return episodes.find((episode) => episode.id === id);
 }
 
 export function getStoryRoute(
@@ -177,7 +152,11 @@ export function getPlayableStoryLines(
   routeId?: string,
 ): readonly StoryLine[] {
   const route = getStoryRoute(episode, routeId);
-  return [...episode.commonBefore, ...(route?.lines ?? []), ...episode.commonAfter];
+  return [
+    ...episode.commonBefore,
+    ...(route?.lines ?? []),
+    ...episode.commonAfter,
+  ];
 }
 
 export function isStoryRouteUnlocked(
@@ -193,32 +172,24 @@ export function isStoryRouteUnlocked(
 /** The most recently unlocked episode is shown in the home story card. */
 export function getLatestUnlockedEpisode(
   unlockedStories: readonly UnlockedStory[],
-  catalog: StoryCatalog = STORY_CATALOG,
 ): StoryEpisode | undefined {
   const latestStory = unlockedStories[unlockedStories.length - 1];
-  return latestStory ? getStoryEpisode(latestStory.episodeId, catalog) : undefined;
+  return latestStory ? getStoryEpisode(latestStory.episodeId) : undefined;
 }
 
 /** The newest unread episode is the home screen's temporary talk entry. */
 export function getLatestUnreadEpisode(
   unlockedStories: readonly UnlockedStory[],
-  catalog: StoryCatalog = STORY_CATALOG,
 ): StoryEpisode | undefined {
   for (let index = unlockedStories.length - 1; index >= 0; index -= 1) {
     const story = unlockedStories[index];
     if (!story.isRead) {
-      return getStoryEpisode(story.episodeId, catalog);
+      return getStoryEpisode(story.episodeId);
     }
   }
   return undefined;
 }
 
-export function isEpisodeId(
-  value: number,
-  catalog: StoryCatalog = STORY_CATALOG,
-): value is EpisodeId {
-  return (
-    Number.isInteger(value) &&
-    catalog.episodes.some((episode) => episode.id === value)
-  );
+export function isEpisodeId(value: number): value is EpisodeId {
+  return Number.isInteger(value) && value >= 1 && value <= episodes.length;
 }
