@@ -24,6 +24,8 @@ import {
   CompletionOutcome,
 } from "@/src/domain/completion";
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
+import { localDateKey, localTimeKey } from "@/src/domain/common/date";
+import { editDiary } from "@/src/domain/diary";
 import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
@@ -35,6 +37,7 @@ import {
   appStateRepository,
   AppStateRepository,
   createInitialAppState,
+  PreservedDataError,
 } from "@/src/storage/appStateRepository";
 
 export type HydrationStatus = "loading" | "ready" | "error";
@@ -65,7 +68,11 @@ type AppStateContextValue = {
   status: HydrationStatus;
   hydrationError: Error | null;
   retryHydration: () => Promise<void>;
+  initializePreservedData: () => Promise<void>;
+  timerSaveError: string | null;
+  retryTimerSave: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
+  updateDiary: (logId: string, diary: string) => Promise<void>;
   markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
@@ -123,15 +130,43 @@ export function AppStateProvider({
   const [state, setState] = useState<AppState | null>(null);
   const [status, setStatus] = useState<HydrationStatus>("loading");
   const [hydrationError, setHydrationError] = useState<Error | null>(null);
+  const [timerSaveError, setTimerSaveError] = useState<string | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const appIsActiveRef = useRef(NativeAppState.currentState === "active");
   const timerRouteFocusedRef = useRef(false);
+  const timerRevisionRef = useRef(0);
+  const timerSaveBlockedRef = useRef(false);
 
   const commitState = useCallback((nextState: AppState) => {
     stateRef.current = nextState;
     setState(nextState);
   }, []);
+
+  const saveAndCommit = useCallback(async (nextState: AppState) => {
+    const revision = timerRevisionRef.current;
+    try {
+      await repository.save(nextState);
+    } catch (error) {
+      if (error instanceof PreservedDataError) {
+        setHydrationError(error);
+        setStatus("error");
+        stateRef.current = null;
+      }
+      throw error;
+    }
+    // A native lifecycle/focus event may pause the live segment while a write
+    // is in flight. Never restore that older running segment on completion.
+    const live = stateRef.current?.activeTimer;
+    commitState(revision !== timerRevisionRef.current && live &&
+      nextState.activeTimer?.sessionId === live.sessionId
+      ? { ...nextState, activeTimer: live }
+      : nextState);
+    if (!nextState.activeTimer) {
+      timerSaveBlockedRef.current = false;
+      setTimerSaveError(null);
+    }
+  }, [commitState, repository]);
 
   const enqueue = useCallback(<T,>(operation: () => Promise<T>): Promise<T> => {
     const previous = queueRef.current;
@@ -152,34 +187,51 @@ export function AppStateProvider({
   }, []);
 
   const applyTimerEligibility = useCallback(
-    ({ appIsActive, routeFocused, changedAt }: TimerEligibilityChange) =>
-      enqueue(async () => {
-        if (appIsActive !== undefined) {
-          appIsActiveRef.current = appIsActive;
-        }
-        if (routeFocused !== undefined) {
-          timerRouteFocusedRef.current = routeFocused;
-        }
-
+    ({ appIsActive, routeFocused, changedAt }: TimerEligibilityChange) => {
+      if (appIsActive !== undefined) appIsActiveRef.current = appIsActive;
+      if (routeFocused !== undefined) timerRouteFocusedRef.current = routeFocused;
+      timerRevisionRef.current += 1;
+      const observed = stateRef.current;
+      // Pausing is a synchronous safety operation, independent of storage and
+      // the mutation queue. Business changes still require a successful write.
+      if (observed?.activeTimer && (!appIsActiveRef.current || !timerRouteFocusedRef.current)) {
+        commitState({ ...observed, activeTimer: pauseTimer(observed.activeTimer, changedAt) });
+      }
+      return enqueue(async () => {
         const current = stateRef.current;
-        if (!current?.activeTimer) {
-          return;
+        if (!current?.activeTimer || timerSaveBlockedRef.current) return;
+        try {
+          // Persist the paused accumulation first. Only begin a new segment
+          // after success, using the current eligibility and current time.
+          await saveAndCommit(current);
+          const live = stateRef.current;
+          if (live?.activeTimer && appIsActiveRef.current && timerRouteFocusedRef.current) {
+            commitState({ ...live, activeTimer: resumeTimer(live.activeTimer, Date.now()) });
+          }
+        } catch (error) {
+          timerSaveBlockedRef.current = true;
+          const live = stateRef.current;
+          if (live?.activeTimer) {
+            commitState({ ...live, activeTimer: pauseTimer(live.activeTimer, Date.now()) });
+          }
+          setTimerSaveError("タイマーの停止・再開を保存できませんでした。計測を停止しています。再試行が成功すると、計測できる画面で再開します。");
+          throw error;
         }
-
-        const eligible = appIsActiveRef.current && timerRouteFocusedRef.current;
-        const nextTimer = eligible
-          ? resumeTimer(current.activeTimer, changedAt)
-          : pauseTimer(current.activeTimer, changedAt);
-        if (nextTimer === current.activeTimer) {
-          return;
-        }
-
-        const nextState = { ...current, activeTimer: nextTimer };
-        await repository.save(nextState);
-        commitState(nextState);
-      }),
-    [commitState, enqueue, repository],
+      });
+    },
+    [commitState, enqueue, saveAndCommit],
   );
+
+  const retryTimerSave = useCallback(async () => {
+    await enqueue(async () => {
+      const current = stateRef.current;
+      if (!current) return;
+      await saveAndCommit(current);
+      timerSaveBlockedRef.current = false;
+      setTimerSaveError(null);
+    });
+    await applyTimerEligibility({ changedAt: Date.now() });
+  }, [applyTimerEligibility, enqueue, saveAndCommit]);
 
   const setTimerRouteFocused = useCallback(
     (focused: boolean, changedAt = Date.now()) =>
@@ -199,6 +251,8 @@ export function AppStateProvider({
       stateRef.current = loaded;
       setState(loaded);
       setStatus("ready");
+      timerSaveBlockedRef.current = false;
+      setTimerSaveError(null);
       void applyTimerEligibility({ changedAt: Date.now() }).catch(
         () => undefined,
       );
@@ -209,6 +263,11 @@ export function AppStateProvider({
       setStatus("error");
     }
   }, [applyTimerEligibility, repository]);
+
+  const initializePreservedData = useCallback(async () => {
+    await enqueue(() => repository.initializePreservedData());
+    await retryHydration();
+  }, [enqueue, repository, retryHydration]);
 
   useEffect(() => {
     // Storage hydration also drives retry UI; it is an external-system effect.
@@ -239,10 +298,9 @@ export function AppStateProvider({
         }
         const current = requireState();
         const nextState = { ...current, taskName: normalized };
-        await repository.save(nextState);
-        commitState(nextState);
+        await saveAndCommit(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [enqueue, requireState, saveAndCommit],
   );
 
   const markStoryRead = useCallback(
@@ -262,10 +320,16 @@ export function AppStateProvider({
             index === storyIndex ? { ...story, isRead: true } : story,
           ),
         };
-        await repository.save(nextState);
-        commitState(nextState);
+        await saveAndCommit(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [enqueue, requireState, saveAndCommit],
+  );
+
+  const updateDiary = useCallback(
+    (logId: string, diary: string) => enqueue(async () => {
+      await saveAndCommit(editDiary(requireState(), logId, diary));
+    }),
+    [enqueue, requireState, saveAndCommit],
   );
 
   const selectInitialStoryRoute = useCallback(
@@ -298,10 +362,9 @@ export function AppStateProvider({
             },
           },
         };
-        await repository.save(nextState);
-        commitState(nextState);
+        await saveAndCommit(nextState);
       }),
-    [catalog, commitState, enqueue, repository, requireState],
+    [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const unlockAdditionalStoryRoute = useCallback(
@@ -346,10 +409,9 @@ export function AppStateProvider({
             },
           },
         };
-        await repository.save(nextState);
-        commitState(nextState);
+        await saveAndCommit(nextState);
       }),
-    [catalog, commitState, enqueue, repository, requireState],
+    [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const unlockSideStory = useCallback(
@@ -367,10 +429,9 @@ export function AppStateProvider({
           totalNt: current.totalNt - SIDE_STORY_COST_NT,
           purchasedSideStoryIds: [...current.purchasedSideStoryIds, conversationId],
         };
-        await repository.save(nextState);
-        commitState(nextState);
+        await saveAndCommit(nextState);
       }),
-    [commitState, enqueue, repository, requireState],
+    [enqueue, requireState, saveAndCommit],
   );
 
   const announceSideStories = useCallback(
@@ -381,15 +442,21 @@ export function AppStateProvider({
         .map((item) => item.id);
       if (!newIds.length) return;
       const nextState = { ...current, announcedSideStoryIds: [...current.announcedSideStoryIds, ...newIds] };
-      await repository.save(nextState);
-      commitState(nextState);
+      await saveAndCommit(nextState);
     }),
-    [commitState, enqueue, repository, requireState],
+    [enqueue, requireState, saveAndCommit],
   );
 
   const startTimer = useCallback(
-    (plannedSeconds: number) =>
-      enqueue(async () => {
+    (plannedSeconds: number) => {
+      // Capture at the button call, before waiting for any queued storage work.
+      const pressedAt = Date.now();
+      const startInfo = {
+        startedAt: pressedAt,
+        startedDate: localDateKey(pressedAt),
+        startedTime: localTimeKey(pressedAt),
+      };
+      return enqueue(async () => {
         assertPlannedSeconds(plannedSeconds);
         const current = requireState();
         if (current.activeTimer) {
@@ -397,6 +464,7 @@ export function AppStateProvider({
         }
 
         const activeTimer: ActiveTimer = {
+          startInfo,
           sessionId: makeSessionId(),
           plannedSeconds,
           startedTaskName: current.taskName,
@@ -405,11 +473,11 @@ export function AppStateProvider({
           runningSince: null,
         };
         const nextState = { ...current, activeTimer };
-        await repository.save(nextState);
-        commitState(nextState);
+        await saveAndCommit(nextState);
         return activeTimer;
-      }),
-    [commitState, enqueue, repository, requireState],
+      });
+    },
+    [enqueue, requireState, saveAndCommit],
   );
 
   const cancelTimer = useCallback(
@@ -424,11 +492,10 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await repository.save(outcome.state);
-        commitState(outcome.state);
+        await saveAndCommit(outcome.state);
         return true;
       }),
-    [commitState, enqueue, repository, requireState],
+    [enqueue, requireState, saveAndCommit],
   );
 
   const finishTimer = useCallback(
@@ -443,11 +510,10 @@ export function AppStateProvider({
           throw new TimerNotReadyError();
         }
 
-        await repository.save(outcome.state);
-        commitState(outcome.state);
+        await saveAndCommit(outcome.state);
         return outcome;
       }),
-    [catalog, commitState, enqueue, repository, requireState],
+    [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const value = useMemo<AppStateContextValue>(
@@ -456,7 +522,11 @@ export function AppStateProvider({
       status,
       hydrationError,
       retryHydration,
+      initializePreservedData,
+      timerSaveError,
+      retryTimerSave,
       setTaskName,
+      updateDiary,
       markStoryRead,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
@@ -471,6 +541,9 @@ export function AppStateProvider({
       cancelTimer,
       finishTimer,
       hydrationError,
+      initializePreservedData,
+      timerSaveError,
+      retryTimerSave,
       markStoryRead,
       retryHydration,
       selectInitialStoryRoute,
@@ -478,6 +551,7 @@ export function AppStateProvider({
       unlockSideStory,
       announceSideStories,
       setTaskName,
+      updateDiary,
       setTimerRouteFocused,
       startTimer,
       state,

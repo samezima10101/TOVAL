@@ -13,10 +13,11 @@ import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Colors } from "@/src/constants/theme";
-import { todayKey } from "@/src/domain/common/date";
+import useLocalToday from "@/src/hooks/useLocalToday";
 import {
   getLatestUnlockedEpisode,
   getLatestUnreadEpisode,
+  STORY_CATALOG,
 } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -24,13 +25,16 @@ export default function HomeScreen() {
   const { state, setTaskName, startTimer } = useAppState();
   const [isEditingTask, setIsEditingTask] = React.useState(false);
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
+  const today = useLocalToday();
 
   if (!state) {
     return null;
   }
 
-  const completedToday = state.lastCompletionDate === todayKey();
+  const completedToday = state.lastCompletionDate === today;
   const unlockedCount = state.unlockedStories.length;
+  const nextEpisode = STORY_CATALOG.episodes.find((episode) =>
+    !state.unlockedStories.some((story) => story.episodeId === episode.id));
   const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
   const latestUnreadEpisode = getLatestUnreadEpisode(state.unlockedStories);
   const needsTask = state.taskName.trim().length === 0;
@@ -87,7 +91,7 @@ export default function HomeScreen() {
 
         <View style={styles.statsCard}>
           <Stat label="累計完了" value={`${state.totalCompletions}回`} />
-          <Stat label="ストーリー" value={`${unlockedCount} / 3話`} />
+          <Stat label="ストーリー" value={`${unlockedCount} / ${STORY_CATALOG.episodes.length}話`} />
           <Stat label="現在のNT" value={`${state.totalNt} NT`} />
         </View>
 
@@ -146,9 +150,11 @@ export default function HomeScreen() {
         <View style={styles.storyProgress}>
           <Text style={styles.storyProgressTitle}>STORY PROGRESS</Text>
           <Text style={styles.storyProgressText}>
-            {unlockedCount === 3
+            {!nextEpisode
               ? "すべて解放済み"
-              : `次の完了で ${unlockedCount + 1}話目を解放できます`}
+              : completedToday
+                ? "今日は解放済みです。明日の初回完了で次の会話を解放できます"
+                : `今日の初回完了で ${nextEpisode.id}話目を解放できます`}
           </Text>
         </View>
       </ScrollView>

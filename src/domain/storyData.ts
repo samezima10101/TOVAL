@@ -132,9 +132,11 @@ const episodes: readonly StoryEpisode[] = [
 ];
 
 export const STORY_EPISODES: readonly StoryEpisode[] = episodes;
+export type StoryCatalog = { episodes: readonly StoryEpisode[] };
+export const STORY_CATALOG: StoryCatalog = { episodes: STORY_EPISODES };
 
-export function getStoryEpisode(id: number): StoryEpisode | undefined {
-  return episodes.find((episode) => episode.id === id);
+export function getStoryEpisode(id: number, catalog: StoryCatalog = STORY_CATALOG): StoryEpisode | undefined {
+  return catalog.episodes.find((episode) => episode.id === id);
 }
 
 export function getStoryRoute(
@@ -190,6 +192,6 @@ export function getLatestUnreadEpisode(
   return undefined;
 }
 
-export function isEpisodeId(value: number): value is EpisodeId {
-  return Number.isInteger(value) && value >= 1 && value <= episodes.length;
+export function isEpisodeId(value: number, catalog: StoryCatalog = STORY_CATALOG): value is EpisodeId {
+  return Number.isInteger(value) && catalog.episodes.some((episode) => episode.id === value);
 }

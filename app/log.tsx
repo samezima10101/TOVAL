@@ -9,13 +9,13 @@ import { DiaryLog } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function CalendarScreen() {
-  const { state } = useAppState();
+  const { state, updateDiary } = useAppState();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   const logsByDate = useMemo(
     () =>
       (state?.diaryLogs ?? []).reduce<Record<string, DiaryLog[]>>((groups, log) => {
-        (groups[log.completedDate] ??= []).push(log);
+        (groups[log.logDate] ??= []).push(log);
         return groups;
       }, {}),
     [state?.diaryLogs],
@@ -35,13 +35,15 @@ export default function CalendarScreen() {
         recordedDates={recordedDates}
         onDayPress={handleDayPress}
       />
-      <LogModal
+      {modalVisible ? <LogModal
+        key={selectedDate}
         visible={modalVisible}
         selectedDate={selectedDate}
         logsByDate={logsByDate}
         onClose={() => setModalVisible(false)}
         onChangeDate={setSelectedDate}
-      />
+        onSaveDiary={updateDiary}
+      /> : null}
     </View>
   );
 }

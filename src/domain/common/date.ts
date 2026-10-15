@@ -14,6 +14,12 @@ export function todayKey(now = Date.now()): string {
   return localDateKey(now);
 }
 
+/** Capture the local clock along with the instant; later timezone changes must not relabel it. */
+export function localTimeKey(value: number): string {
+  const date = new Date(value);
+  return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+}
+
 export function shiftLocalDateKey(value: string, days: number): string {
   const date = new Date(`${value}T12:00:00`);
   if (localDateKey(date) !== value) {

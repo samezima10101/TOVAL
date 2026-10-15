@@ -2,6 +2,7 @@ import { localDateKey } from "./common/date";
 import { AppState, EpisodeId, UnlockedStory } from "./common/types";
 import { STORY_CATALOG, StoryCatalog } from "./storyData";
 import { getTimerSnapshot } from "./timer";
+import { normalizeDiary } from "./diary";
 
 export type CompletionStatus = "completed" | "not-ready" | "no-active-timer";
 
@@ -105,11 +106,15 @@ export function completeTimer(
       ...state.diaryLogs,
       {
         id: state.activeTimer.sessionId,
+        startInfo: state.activeTimer.startInfo,
+        // Legacy timers have no trustworthy button-press date. Keep the previous
+        // completion-date grouping rather than inventing a start.
+        logDate: state.activeTimer.startInfo?.startedDate ?? completionDate,
         completedAt: finishedAt,
         completedDate: completionDate,
         completedTime: new Date(finishedAt).toTimeString().slice(0, 5),
         totalTimerSeconds: snapshot.elapsedSeconds,
-        diary: diary.trim(),
+        diary: normalizeDiary(diary),
         unlockedEpisodeId: unlock.unlockedEpisode,
       },
     ],

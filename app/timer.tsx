@@ -25,6 +25,8 @@ export default function TimerScreen() {
     timerText,
     isProcessing,
     error,
+    timerSaveError,
+    retrySave,
     isDiaryOpen,
     openDiary,
     closeDiary,
@@ -80,7 +82,7 @@ export default function TimerScreen() {
               {timerText}
             </Text>
             <Text style={styles.statusText}>
-              {snapshot.isComplete
+              {timerSaveError ? "保存待ち・計測停止中" : snapshot.isComplete
                 ? "予定時間を終えました"
                 : "集中モード実行中…"}
             </Text>
@@ -136,8 +138,15 @@ export default function TimerScreen() {
           accessibilityViewIsModal
           onAccessibilityEscape={restoreTimerScreen}
         />
+        {timerSaveError ? (
+          <View style={styles.blackScreenError} accessibilityRole="alert">
+            <Text style={{ color: "white" }}>{timerSaveError}</Text>
+            <PrimaryButton title="タイマー保存を再試行" onPress={() => void retrySave()} disabled={isProcessing} />
+          </View>
+        ) : null}
       </Modal>
       <DiaryModal
+        onRetrySave={timerSaveError ? () => void retrySave() : undefined}
         visible={isDiaryOpen}
         saving={isProcessing}
         error={error}
@@ -149,6 +158,7 @@ export default function TimerScreen() {
 }
 
 const styles = StyleSheet.create({
+  blackScreenError: { position: "absolute", top: 80, left: 24, right: 24, gap: 16 },
   backgroundImage: {
     flex: 1,
   },

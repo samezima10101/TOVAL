@@ -18,7 +18,7 @@
 | タイマー | 初期値25分、0分〜23時間55分、5分・1時間ずつ調整。予定終了後も延長を計測 | [設定](../../src/hooks/useTimerSetup.ts)、[計測](../../src/domain/timer.ts) |
 | 中断・再開 | アプリactiveかつタイマー画面focusedの場合に計測。セッションを保存して再開 | [Provider](../../src/state/AppStateProvider.tsx)、[タイマーフック](../../src/hooks/useTimerLogic.ts) |
 | 完了・報酬 | 正常終了ごとに累計回数+1、実集中秒数をNTへ加算。同日の初回完了のみ次の1話を解放 | [完了処理](../../src/domain/completion.ts) |
-| 日記・ログ | 終了時に任意の日記を入力し、完了ごとの集中時間をカレンダーから閲覧 | [日記](../../src/components/timer/DiaryModal.tsx)、[ログ](../../app/log.tsx) |
+| 日記・ログ | 正常完了を開始日で集計。選択日の合計、開始時刻・集中時間・日記を表示。保存済み日記は最大1000文字で編集・空変更・キャンセル可。旧記録は所属日保持・開始時刻「記録なし」 | [日記](../../src/components/timer/DiaryModal.tsx)、[ログ](../../app/log.tsx)、[検証状況](../manual-acceptance-checklist.md#date-record-alignment) |
 | メイン会話 | 全3話。文字送り、途中タップで全文表示、第1話に2分岐。初回選択は無料、別分岐は60 NT | [本文](../../src/domain/storyData.ts)、[読取フック](../../src/hooks/useStoryReader.ts)、[Provider](../../src/state/AppStateProvider.tsx) |
 | メモリー | 解放したメイン会話を再生。タイトル・話数・解放日を表示 | [メモリー](../../app/memory.tsx) |
 | ショップ | 店員の挨拶・退店会話、サイド会話3件を各60 NTで購入・再生。うち2件は第2話の読了後に入荷 | [ショップ](../../app/shop.tsx)、[商品](../../src/content/shop.ts)、[入荷条件](../../src/domain/sideStory.ts) |
@@ -49,10 +49,10 @@
 | ショップ | READMEは立入禁止のプレースホルダー。β/リリース要件にも「実装なし」 | 入荷・購入・NT消費・再生・店員会話を実装 | [ショップ](../../app/shop.tsx)、[Provider](../../src/state/AppStateProvider.tsx) |
 | 文字送り・分岐 | READMEでは残課題 | 53ms/文字、第1話の2分岐、追加分岐60 NTを実装 | [読取フック](../../src/hooks/useStoryReader.ts)、[本文](../../src/domain/storyData.ts) |
 | 最小時間 | αは0分可、β/リリースは5分以上 | 現在も0分可。デバッグ専用の環境制限なし | [設定モーダル](../../src/components/home/TimerSetupModal.tsx)、[Provider](../../src/state/AppStateProvider.tsx) |
-| 完了リセット | αは翌日0時。β/リリースは0時か24時間後が未決 | ローカル日付と`lastCompletionDate`を描画時に比較。24時間方式ではない | [ホーム](../../app/index.tsx)、[日付](../../src/domain/common/date.ts) |
+| 完了リセット | αは翌日0時。β/リリースは0時か24時間後が未決 | 終了日のローカル暦で判定。ホームは0時・active復帰で当日表示を更新 | [ホーム](../../app/index.tsx)、[日付更新](../../src/hooks/useLocalToday.ts) |
 | 話数 | α3話、β14話、リリース60話 | メイン3話、サイド3件。第2・3話に分岐なし | [本文](../../src/domain/storyData.ts)、[商品](../../src/content/shop.ts) |
 | ユーザー名 | 要件に名前とヘッダー表示あり | 保存項目はあるが初期値空。入力・更新・表示UIなし | [型](../../src/domain/common/types.ts)、[保存](../../src/storage/appStateRepository.ts)、[レイアウト](../../app/_layout.tsx) |
-| ログの時刻 | β要件は「タイマー起動時間」 | 保存・表示するのは終了ボタンを押した時刻。開始時刻やタスク名はログに残らない | [タイマーフック](../../src/hooks/useTimerLogic.ts)、[完了](../../src/domain/completion.ts)、[ログ表示](../../src/components/log/LogModal.tsx) |
+| ログの時刻 | β要件は「タイマー起動時間」 | 開始ボタンの時刻・日付を保存し、開始日へ所属。終了情報は完了/解放用に保持。旧開始情報を推定しない。タスク名はログに残さない | [開始処理](../../src/state/AppStateProvider.tsx)、[完了](../../src/domain/completion.ts)、[ログ表示](../../src/components/log/LogModal.tsx) |
 | リリース機能 | 休憩・BGM/環境音/背景の設定と購入・会話オート | 固定BGM/背景のみ。休憩・設定/購入・会話オートは未実装 | [タイマー](../../app/timer.tsx)、[BGM](../../src/constants/bgm.ts)、[読取フック](../../src/hooks/useStoryReader.ts) |
 
 **要確認**: α・β・リリースのどれが現在の受け入れ基準か。「β未完了」は妥当でも、どの未実装が必要かは計画の決定が必要。[未解決事項](open-questions.md)で整理する。

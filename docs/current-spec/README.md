@@ -7,6 +7,8 @@
 
 今後の完成判定は、策定を完了した[完成基準](../completion-criteria.md)と[手動チェックリスト](../manual-acceptance-checklist.md)で行う。既存READMEと段階別要件は完成基準として使用しない。
 
+2026-10-15追記: 調査後にA01/A04とA03/A05の実装を行い、関係するデータ・画面・フローを更新した。以下の調査時点の診断結果と最新結果は区別する。最新の[記録・計測保護](../manual-acceptance-checklist.md#record-protection)と[日付・ログ](../manual-acceptance-checklist.md#date-record-alignment)の記録を参照。iPhone実機は未検証。
+
 ## 読む順序
 
 | 文書 | 内容 |

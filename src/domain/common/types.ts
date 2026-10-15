@@ -1,4 +1,5 @@
-export const APP_SCHEMA_VERSION = 7;
+export const APP_SCHEMA_VERSION = 8;
+export const MAX_DIARY_LENGTH = 1000;
 export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 export const STORY_COUNT = 3;
@@ -45,7 +46,14 @@ export type UnlockedStory = {
   isRead: boolean;
 };
 
+export type SessionStart = {
+  startedAt: number;
+  startedDate: string;
+  startedTime: string;
+};
+
 export type ActiveTimer = {
+  startInfo: SessionStart | null;
   sessionId: string;
   plannedSeconds: number;
   startedTaskName: string;
@@ -54,6 +62,8 @@ export type ActiveTimer = {
 };
 
 export type DiaryLog = {
+  startInfo: SessionStart | null;
+  logDate: string;
   id: string;
   completedAt: number;
   completedDate: string;
