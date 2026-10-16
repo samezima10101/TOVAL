@@ -1,4 +1,5 @@
 import { router, useFocusEffect } from "expo-router";
+import { usePreventRemove } from "expo-router/react-navigation";
 import React from "react";
 import { Alert } from "react-native";
 
@@ -16,6 +17,15 @@ export default function useTimerLogic() {
   const [finishedAt, setFinishedAt] = React.useState<number | null>(null);
   const processingRef = React.useRef(false);
   const leavingRef = React.useRef(false);
+  const [destination, setDestination] = React.useState<"home" | number | null>(null);
+  // While a completion/cancellation is saving, OS back must not unmount the
+  // owner and let its pending continuation navigate from another screen.
+  usePreventRemove(isProcessing && destination === null, () => undefined);
+  React.useEffect(() => {
+    if (destination === null) return;
+    if (destination === "home") router.dismissTo("/");
+    else router.replace({ pathname: "/story", params: { episode: String(destination), source: "unlock" } });
+  }, [destination]);
   const activeTimer = state?.activeTimer ?? null;
   const retrySave = async () => {
     if (processingRef.current) return;
@@ -45,7 +55,8 @@ export default function useTimerLogic() {
   // アクティブなタイマーがない場合はホームにリダイレクト
   React.useEffect(() => {
     if (!activeTimer && !leavingRef.current) {
-      router.replace("/");
+      leavingRef.current = true;
+      router.dismissTo("/");
     }
   }, [activeTimer]);
 
@@ -57,7 +68,7 @@ export default function useTimerLogic() {
     : "";
 
   const handleCancel = () => {
-    if (processingRef.current) return;
+    if (processingRef.current || leavingRef.current) return;
     Alert.alert(
       "タイマーをキャンセルしますか？",
       "今回の集中時間は記録されず、NT・完了回数・ストーリーも変わりません。",
@@ -67,14 +78,14 @@ export default function useTimerLogic() {
           text: "キャンセルする",
           style: "destructive",
           onPress: async () => {
-            if (processingRef.current) return;
+            if (processingRef.current || leavingRef.current) return;
             processingRef.current = true;
             leavingRef.current = true;
             setError(null);
             setIsProcessing(true);
             try {
               await cancelTimer(Date.now());
-              router.replace("/");
+              setDestination("home");
             } catch (cause) {
               leavingRef.current = false;
               setError(
@@ -93,7 +104,7 @@ export default function useTimerLogic() {
   };
 
   const openDiary = async () => {
-    if (processingRef.current || finishedAt !== null) return;
+    if (processingRef.current || leavingRef.current || finishedAt !== null) return;
     processingRef.current = true;
     const pressedAt = Date.now();
     setError(null);
@@ -112,30 +123,20 @@ export default function useTimerLogic() {
   };
 
   const closeDiary = () => {
-    if (!processingRef.current) {
+    if (!processingRef.current && !leavingRef.current) {
       setFinishedAt(null);
     }
   };
 
   const handleFinish = async (diary = "") => {
-    if (processingRef.current || finishedAt === null) return;
+    if (processingRef.current || leavingRef.current || finishedAt === null) return;
     processingRef.current = true;
     leavingRef.current = true;
     setError(null);
     setIsProcessing(true);
     try {
       const outcome = await finishTimer(finishedAt ?? Date.now(), diary);
-      if (outcome.unlockedEpisode) {
-        router.replace({
-          pathname: "/story",
-          params: {
-            episode: String(outcome.unlockedEpisode),
-            source: "unlock",
-          },
-        });
-      } else {
-        router.replace("/");
-      }
+      setDestination(outcome.unlockedEpisode ?? "home");
     } catch (cause) {
       leavingRef.current = false;
       setError(

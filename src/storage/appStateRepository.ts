@@ -295,7 +295,7 @@ export function validateAppState(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
-      typeof story.isRead !== "boolean" ||
+      "isRead" in story ||
       ids.has(story.episodeId)
     ) {
       return false;
@@ -313,7 +313,7 @@ export function validateAppState(
 function parseLegacyUnlockedStories(
   value: unknown,
   catalog: StoryCatalog,
-  preserveReadState: boolean,
+  requireOldReadFlag: boolean,
 ): UnlockedStory[] | undefined {
   if (!Array.isArray(value) || value.length > catalog.episodes.length) {
     return undefined;
@@ -326,7 +326,7 @@ function parseLegacyUnlockedStories(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
-      (preserveReadState && typeof story.isRead !== "boolean") ||
+      (requireOldReadFlag && typeof story.isRead !== "boolean") ||
       ids.has(story.episodeId)
     ) {
       return undefined;
@@ -335,8 +335,6 @@ function parseLegacyUnlockedStories(
     stories.push({
       episodeId: story.episodeId,
       unlockedDate: story.unlockedDate,
-      // Schemas before v3 predate unread tracking and must not appear as new updates.
-      isRead: preserveReadState ? story.isRead === true : true,
     });
   }
   return stories;
@@ -419,6 +417,14 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
+  // v8 had read/unread flags. Validate their old types before discarding only
+  // that retired field; do not turn malformed old records into valid saves.
+  if (isRecord(value) && value.schemaVersion === 8) {
+    const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
+    if (!unlockedStories) return null;
+    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, unlockedStories };
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
   // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
   // v7 has all three arrays as required fields. Missing data is corruption,
   // not an invitation to silently replace history or purchases with defaults.
@@ -426,6 +432,8 @@ export function parsePersistedState(
     if (value.schemaVersion === 7 &&
       (value.diaryLogs === undefined || value.purchasedSideStoryIds === undefined || value.announcedSideStoryIds === undefined)) return null;
     if (value.isSideStoryUnlocked !== undefined && typeof value.isSideStoryUnlocked !== "boolean") return null;
+    const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
+    if (!unlockedStories) return null;
     const { isSideStoryUnlocked, ...previous } = value;
     const diaryLogs = value.diaryLogs === undefined ? [] : value.diaryLogs;
     const purchased = value.purchasedSideStoryIds === undefined ? [] : value.purchasedSideStoryIds;
@@ -433,6 +441,7 @@ export function parsePersistedState(
     const migrated = {
       ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
+      unlockedStories,
       activeTimer: isRecord(value.activeTimer) ? { ...value.activeTimer, startInfo: null } : value.activeTimer,
       purchasedSideStoryIds: isSideStoryUnlocked === true ? [...new Set([...purchased, 101])] : purchased,
       announcedSideStoryIds: value.announcedSideStoryIds === undefined ? [] : value.announcedSideStoryIds,

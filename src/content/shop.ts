@@ -1,6 +1,5 @@
 import type { StoryEpisode, ShopConversation } from "@/src/domain/common/types";
 
-export const SIDE_STORY_COST_NT = 60;
 export const SHOP_KEEPER_NAME = "エト";
 
 export const SIDE_STORY: ShopConversation = {
@@ -39,13 +38,12 @@ export const SIDE_STORY: ShopConversation = {
   commonAfter: [],
 };
 
-// ponytail: 追加2件は仮の本文・入荷条件。正式シナリオが届いたらこのデータだけ差し替える。
+// 追加2件は仮本文。価格・入荷条件はconfig/conversationSettings.tsで編集する。
 export const SHOP_CONVERSATIONS: readonly ShopConversation[] = [
   SIDE_STORY,
   {
     id: 102,
     title: "休憩のひととき",
-    requiredEpisodeId: 2,
     commonBefore: [
       { id: "side-02-01", speaker: "sub", text: "……少し、休憩しませんか。", left: "normal", right: "talk" },
       { id: "side-02-02", speaker: "boss", text: "いいね。温かいものでも飲もうか。", left: "talk", right: "normal" },
@@ -55,7 +53,6 @@ export const SHOP_CONVERSATIONS: readonly ShopConversation[] = [
   {
     id: 103,
     title: "雨上がり",
-    requiredEpisodeId: 2,
     commonBefore: [
       { id: "side-03-01", speaker: "boss", text: "雨、やんだみたいだね。", left: "talk", right: "normal" },
       { id: "side-03-02", speaker: "sub", text: "……本当だ。少し、外を歩きましょうか。", left: "normal", right: "talk" },

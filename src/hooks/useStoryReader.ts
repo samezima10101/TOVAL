@@ -5,42 +5,46 @@ import { StoryEpisode } from "@/src/domain/common/types";
 import { getPlayableStoryLines, getStoryRoute } from "@/src/domain/storyData";
 
 type SelectRoute = (routeId: string) => Promise<void>;
+type ReaderOptions = {
+  source: "memory" | "home" | "unlock" | "shop";
+  initialRouteId?: string;
+  selectInitialRoute?: SelectRoute;
+  // Used by the shop to persist arrival announcements, not read/unread status.
+  onFinish?: () => Promise<void>;
+  onClose?: () => void;
+  processingRef?: React.RefObject<boolean>;
+  exitRequestedRef?: React.RefObject<boolean>;
+};
 
 export const STORY_CHARACTER_INTERVAL_MS = 53;
 
 export default function useStoryReader(
   episode: StoryEpisode | undefined,
-  source: "memory" | "home" | "unlock" | "shop",
-  markStoryRead: (id: number) => Promise<void>,
-  initialRouteId: string | undefined = undefined,
-  selectInitialRoute?: SelectRoute,
-  onClose?: () => void,
+  { source, initialRouteId, selectInitialRoute, onFinish, onClose,
+    processingRef, exitRequestedRef }: ReaderOptions,
 ) {
   const [lineIndex, setLineIndex] = React.useState(0);
   const [selectedRouteId, setSelectedRouteId] =
     React.useState(initialRouteId);
-  const selectedRouteIdRef = React.useRef(initialRouteId);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [visibleCharacterCount, setVisibleCharacterCount] = React.useState(0);
   const [typedLineId, setTypedLineId] = React.useState<string | undefined>();
-  const isProcessingRef = React.useRef(false);
+  const localProcessingRef = React.useRef(false);
+  const isProcessingRef = processingRef ?? localProcessingRef;
+  const closedRef = React.useRef(false);
+  const tapFrameRef = React.useRef<number | null>(null);
   const cancelTypewriterRef = React.useRef<(() => void) | null>(null);
 
-  React.useEffect(() => {
-    if (
-      initialRouteId !== undefined &&
-      selectedRouteIdRef.current === initialRouteId
-    ) {
-      return;
-    }
-    setLineIndex(0);
-    selectedRouteIdRef.current = initialRouteId;
-    setSelectedRouteId(initialRouteId);
-    setError(null);
-  }, [episode?.id, initialRouteId]);
+  // Callers key each new conversation; saved selections changing during playback
+  // must not restart the reader. Reopening mounts it at line zero.
+  React.useEffect(() => () => {
+    if (tapFrameRef.current !== null) cancelAnimationFrame(tapFrameRef.current);
+  }, []);
 
-  const handleClose = () => {
+  const closeReader = () => {
+    if (closedRef.current) return;
+    closedRef.current = true;
     if (onClose) {
       onClose();
       return;
@@ -48,8 +52,11 @@ export default function useStoryReader(
     if (source === "memory" || source === "shop") {
       router.dismissTo(source === "shop" ? "/shop" : "/memory");
     } else {
-      router.replace("/");
+      router.dismissTo("/");
     }
+  };
+  const handleClose = () => {
+    if (!isProcessingRef.current && !exitRequestedRef?.current) closeReader();
   };
 
   const hasChoice = Boolean(episode?.routes?.length);
@@ -133,14 +140,13 @@ export default function useStoryReader(
       !hasChoice ||
       selectedRouteId ||
       !getStoryRoute(episode, routeId) ||
-      isProcessingRef.current
+      isProcessingRef.current || closedRef.current || exitRequestedRef?.current
     ) {
       return;
     }
 
     setError(null);
     isProcessingRef.current = true;
-    selectedRouteIdRef.current = routeId;
     setIsProcessing(true);
     try {
       if (selectInitialRoute) {
@@ -149,7 +155,6 @@ export default function useStoryReader(
       setSelectedRouteId(routeId);
       setLineIndex(episode.commonBefore.length);
     } catch (cause) {
-      selectedRouteIdRef.current = undefined;
       setError(
         cause instanceof Error
           ? cause.message
@@ -162,9 +167,10 @@ export default function useStoryReader(
   };
 
   const handleNext = async () => {
-    if (!episode || isWaitingForChoice || !line || isProcessingRef.current) {
+    if (!episode || isWaitingForChoice || !line || isProcessingRef.current || closedRef.current || exitRequestedRef?.current || tapFrameRef.current !== null) {
       return;
     }
+    tapFrameRef.current = requestAnimationFrame(() => { tapFrameRef.current = null; });
     if (isTyping) {
       cancelTypewriterRef.current?.();
       cancelTypewriterRef.current = null;
@@ -175,14 +181,19 @@ export default function useStoryReader(
       setLineIndex((index) => index + 1);
       return;
     }
+    if (!onFinish) {
+      closeReader();
+      return;
+    }
 
     setError(null);
     isProcessingRef.current = true;
     setIsProcessing(true);
 
     try {
-      await markStoryRead(episode.id);
-      handleClose();
+      await onFinish();
+      isProcessingRef.current = false;
+      closeReader();
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -202,6 +213,7 @@ export default function useStoryReader(
     isLastLine,
     isWaitingForChoice,
     isProcessing,
+    isProcessingRef,
     error,
     handleNext,
     handleSelectRoute,

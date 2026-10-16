@@ -15,9 +15,8 @@ import {
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
-  STORY_ROUTE_UNLOCK_COST_NT,
 } from "@/src/domain/common/types";
-import { SIDE_STORY_COST_NT } from "@/src/content/shop";
+import { selectStoryRoute, purchaseStoryRoute, purchaseSideStory } from "@/src/domain/conversation";
 import {
   cancelTimer as cancelTimerState,
   completeTimer,
@@ -30,8 +29,6 @@ import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
   StoryCatalog,
-  getStoryEpisode,
-  getStoryRoute,
 } from "@/src/domain/storyData";
 import {
   appStateRepository,
@@ -56,13 +53,6 @@ export class NoActiveTimerError extends Error {
   }
 }
 
-export class StoryRouteError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "StoryRouteError";
-  }
-}
-
 type AppStateContextValue = {
   state: AppState | null;
   status: HydrationStatus;
@@ -73,7 +63,6 @@ type AppStateContextValue = {
   retryTimerSave: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
   updateDiary: (logId: string, diary: string) => Promise<void>;
-  markStoryRead: (episodeId: EpisodeId) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockSideStory: (conversationId: number) => Promise<void>;
@@ -303,28 +292,6 @@ export function AppStateProvider({
     [enqueue, requireState, saveAndCommit],
   );
 
-  const markStoryRead = useCallback(
-    (episodeId: EpisodeId) =>
-      enqueue(async () => {
-        const current = requireState();
-        const storyIndex = current.unlockedStories.findIndex(
-          (story) => story.episodeId === episodeId,
-        );
-        if (storyIndex === -1 || current.unlockedStories[storyIndex].isRead) {
-          return;
-        }
-
-        const nextState: AppState = {
-          ...current,
-          unlockedStories: current.unlockedStories.map((story, index) =>
-            index === storyIndex ? { ...story, isRead: true } : story,
-          ),
-        };
-        await saveAndCommit(nextState);
-      }),
-    [enqueue, requireState, saveAndCommit],
-  );
-
   const updateDiary = useCallback(
     (logId: string, diary: string) => enqueue(async () => {
       await saveAndCommit(editDiary(requireState(), logId, diary));
@@ -333,104 +300,29 @@ export function AppStateProvider({
   );
 
   const selectInitialStoryRoute = useCallback(
-    (episodeId: EpisodeId, routeId: string) =>
-      enqueue(async () => {
-        const current = requireState();
-        if (!current.unlockedStories.some((story) => story.episodeId === episodeId)) {
-          throw new StoryRouteError("このストーリーはまだ解放されていません。");
-        }
-        const episode = getStoryEpisode(episodeId, catalog);
-        const route = episode && getStoryRoute(episode, routeId);
-        if (!episode?.routes?.length || !route) {
-          throw new StoryRouteError("選択肢が見つかりません。");
-        }
-        const progress = current.storyRouteProgress[episodeId];
-        if (progress?.firstSelectedRouteId) {
-          throw new StoryRouteError("初回の選択肢はすでに選択されています。");
-        }
-        if (progress?.extraUnlockedRouteIds.includes(routeId)) {
-          throw new StoryRouteError("この選択肢はすでに解放されています。");
-        }
-
-        const nextState = {
-          ...current,
-          storyRouteProgress: {
-            ...current.storyRouteProgress,
-            [episodeId]: {
-              firstSelectedRouteId: routeId,
-              extraUnlockedRouteIds: [...(progress?.extraUnlockedRouteIds ?? [])],
-            },
-          },
-        };
-        await saveAndCommit(nextState);
-      }),
+    (episodeId: EpisodeId, routeId: string) => enqueue(async () => {
+      const current = requireState();
+      const next = selectStoryRoute(current, episodeId, routeId, catalog);
+      if (next !== current) await saveAndCommit(next);
+    }),
     [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const unlockAdditionalStoryRoute = useCallback(
-    (episodeId: EpisodeId, routeId: string) =>
-      enqueue(async () => {
-        const current = requireState();
-        if (!current.unlockedStories.some((story) => story.episodeId === episodeId)) {
-          throw new StoryRouteError("このストーリーはまだ解放されていません。");
-        }
-        const episode = getStoryEpisode(episodeId, catalog);
-        const route = episode && getStoryRoute(episode, routeId);
-        if (!episode?.routes?.length || !route) {
-          throw new StoryRouteError("選択肢が見つかりません。");
-        }
-        const progress = current.storyRouteProgress[episodeId];
-        if (!progress?.firstSelectedRouteId) {
-          throw new StoryRouteError("初回の選択肢を選んでから解放してください。");
-        }
-        if (progress.firstSelectedRouteId === routeId) {
-          throw new StoryRouteError("この選択肢はすでに解放されています。");
-        }
-        if (progress.extraUnlockedRouteIds.includes(routeId)) {
-          throw new StoryRouteError("この選択肢はすでに解放されています。");
-        }
-        if (current.totalNt < STORY_ROUTE_UNLOCK_COST_NT) {
-          throw new StoryRouteError(
-            `NTが不足しています（必要: ${STORY_ROUTE_UNLOCK_COST_NT} NT）。`,
-          );
-        }
-
-        const nextState = {
-          ...current,
-          totalNt: current.totalNt - STORY_ROUTE_UNLOCK_COST_NT,
-          storyRouteProgress: {
-            ...current.storyRouteProgress,
-            [episodeId]: {
-              firstSelectedRouteId: progress.firstSelectedRouteId,
-              extraUnlockedRouteIds: [
-                ...progress.extraUnlockedRouteIds,
-                routeId,
-              ],
-            },
-          },
-        };
-        await saveAndCommit(nextState);
-      }),
+    (episodeId: EpisodeId, routeId: string) => enqueue(async () => {
+      const current = requireState();
+      const next = purchaseStoryRoute(current, episodeId, routeId, catalog);
+      if (next !== current) await saveAndCommit(next);
+    }),
     [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const unlockSideStory = useCallback(
-    (conversationId: number) =>
-      enqueue(async () => {
-        const current = requireState();
-        const conversation = listAvailableConversations(current).find((item) => item.id === conversationId);
-        if (!conversation) throw new Error("この会話はまだ入荷していません。");
-        if (current.purchasedSideStoryIds.includes(conversationId)) return;
-        if (current.totalNt < SIDE_STORY_COST_NT) {
-          throw new Error(`NTが不足しています（必要: ${SIDE_STORY_COST_NT} NT）。`);
-        }
-        const nextState = {
-          ...current,
-          totalNt: current.totalNt - SIDE_STORY_COST_NT,
-          purchasedSideStoryIds: [...current.purchasedSideStoryIds, conversationId],
-        };
-        await saveAndCommit(nextState);
-      }),
+    (conversationId: number) => enqueue(async () => {
+      const current = requireState();
+      const next = purchaseSideStory(current, conversationId);
+      if (next !== current) await saveAndCommit(next);
+    }),
     [enqueue, requireState, saveAndCommit],
   );
 
@@ -527,7 +419,6 @@ export function AppStateProvider({
       retryTimerSave,
       setTaskName,
       updateDiary,
-      markStoryRead,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
       unlockSideStory,
@@ -544,7 +435,6 @@ export function AppStateProvider({
       initializePreservedData,
       timerSaveError,
       retryTimerSave,
-      markStoryRead,
       retryHydration,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,

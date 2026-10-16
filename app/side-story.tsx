@@ -1,4 +1,5 @@
 import { useLocalSearchParams } from "expo-router";
+import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -7,16 +8,28 @@ import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
 import { SHOP_CONVERSATIONS, SIDE_STORY } from "@/src/domain/sideStory";
+import useConversationExit from "@/src/hooks/useConversationExit";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function SideStoryScreen() {
+  const { conversation } = useLocalSearchParams<{ conversation?: string }>();
+  return <SideStoryPlayback key={String(conversation)} />;
+}
+
+function SideStoryPlayback() {
   const { state } = useAppState();
   const { conversation } = useLocalSearchParams<{ conversation?: string }>();
   const episode = conversation === undefined ? SIDE_STORY : SHOP_CONVERSATIONS.find((item) => item.id === Number(conversation));
   const isUnlocked = Boolean(episode && state?.purchasedSideStoryIds.includes(episode.id));
+  const readingRef = React.useRef(false);
+  const exit = useConversationExit("/shop", () => readingRef.current);
+  const reader = useStoryReader(isUnlocked ? episode : undefined, {
+    source: "shop", onClose: exit.requestExit,
+    processingRef: readingRef, exitRequestedRef: exit.leavingRef,
+  });
   const { line, visibleText, isTyping, isLastLine, isProcessing, error, handleNext, handleClose } =
-    useStoryReader(isUnlocked ? episode : undefined, "shop", async () => undefined);
+    reader;
 
   if (!isUnlocked) {
     return (

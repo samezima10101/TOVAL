@@ -3,11 +3,11 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Colors } from "@/src/constants/theme";
 import {
-  STORY_ROUTE_UNLOCK_COST_NT,
   StoryRoute,
 } from "@/src/domain/common/types";
 
 type StoryChoicesProps = {
+  priceNt: number;
   routes: readonly StoryRoute[];
   onSelect: (routeId: string) => void;
   lockedRouteIds?: readonly string[];
@@ -15,6 +15,7 @@ type StoryChoicesProps = {
 };
 
 export default function StoryChoices({
+  priceNt,
   routes,
   onSelect,
   lockedRouteIds = [],
@@ -38,7 +39,7 @@ export default function StoryChoices({
             accessibilityRole="button"
             accessibilityLabel={
               isLocked
-                ? `${route.label}、鍵付き、${STORY_ROUTE_UNLOCK_COST_NT} NTで解放`
+                ? `${route.label}、鍵付き、${priceNt} NTで解放`
                 : route.label
             }
             accessibilityState={{ disabled }}
@@ -47,7 +48,7 @@ export default function StoryChoices({
               {route.label}
             </Text>
             {isLocked ? (
-              <Text style={styles.cost}>🔒 {STORY_ROUTE_UNLOCK_COST_NT} NT</Text>
+              <Text style={styles.cost}>🔒 {priceNt} NT</Text>
             ) : null}
           </TouchableOpacity>
         );

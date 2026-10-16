@@ -1,8 +1,6 @@
-export const APP_SCHEMA_VERSION = 8;
+export const APP_SCHEMA_VERSION = 9;
 export const MAX_DIARY_LENGTH = 1000;
-export const STORY_ROUTE_UNLOCK_COST_NT = 60;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
-export const STORY_COUNT = 3;
 
 export type EpisodeId = number;
 export type Speaker = "boss" | "sub";
@@ -31,9 +29,7 @@ export type StoryEpisode = {
   commonAfter: readonly StoryLine[];
 };
 
-export type ShopConversation = Omit<StoryEpisode, "routes"> & {
-  requiredEpisodeId?: EpisodeId;
-};
+export type ShopConversation = Omit<StoryEpisode, "routes">;
 
 export type StoryRouteProgress = {
   firstSelectedRouteId?: string;
@@ -43,7 +39,6 @@ export type StoryRouteProgress = {
 export type UnlockedStory = {
   episodeId: EpisodeId;
   unlockedDate: string;
-  isRead: boolean;
 };
 
 export type SessionStart = {

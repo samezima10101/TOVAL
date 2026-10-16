@@ -57,7 +57,6 @@ function nextUnlockedStory(
         {
           episodeId: nextEpisode.id,
           unlockedDate: dateKey,
-          isRead: false,
         },
       ],
     };

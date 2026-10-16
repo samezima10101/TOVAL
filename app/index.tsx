@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import useGuardedPush from "@/src/hooks/useGuardedPush";
 import React from "react";
 import {
   ScrollView,
@@ -16,12 +16,12 @@ import { Colors } from "@/src/constants/theme";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import {
   getLatestUnlockedEpisode,
-  getLatestUnreadEpisode,
   STORY_CATALOG,
 } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function HomeScreen() {
+  const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
   const [isEditingTask, setIsEditingTask] = React.useState(false);
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
@@ -36,29 +36,17 @@ export default function HomeScreen() {
   const nextEpisode = STORY_CATALOG.episodes.find((episode) =>
     !state.unlockedStories.some((story) => story.episodeId === episode.id));
   const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
-  const latestUnreadEpisode = getLatestUnreadEpisode(state.unlockedStories);
   const needsTask = state.taskName.trim().length === 0;
 
   const handleStartTimer = async (plannedSeconds: number) => {
     await startTimer(plannedSeconds);
     setIsTimerSetupOpen(false);
-    router.push("/timer");
+    push("/timer");
   };
 
   const handleResumeTimer = () => {
     setIsTimerSetupOpen(false);
-    router.push("/timer");
-  };
-
-  const handleOpenTalk = () => {
-    if (!latestUnreadEpisode) {
-      return;
-    }
-
-    router.push({
-      pathname: "/story",
-      params: { episode: String(latestUnreadEpisode.id), source: "home" },
-    });
+    push("/timer");
   };
 
   return (
@@ -69,9 +57,7 @@ export default function HomeScreen() {
       >
         <HomeStoryCard
           latestUnlockedEpisode={latestUnlockedEpisode}
-          unreadEpisode={latestUnreadEpisode}
-          onOpenTalk={handleOpenTalk}
-          onOpenShop={() => router.push("/shop")}
+          onOpenShop={() => push("/shop")}
         />
 
         <View style={styles.intro}>
@@ -130,7 +116,7 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>タスクを編集</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/memory")}
+            onPress={() => push("/memory")}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="メモリーを開く"
@@ -138,7 +124,7 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>📖 メモリーを見る</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => router.push("/log")}
+            onPress={() => push("/log")}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="ログを開く"

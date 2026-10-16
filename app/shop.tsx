@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
-import { router } from "expo-router";
-import { usePreventRemove } from "expo-router/react-navigation";
-import { useEffect, useState } from "react";
+import { router, useFocusEffect } from "expo-router";
+import { useIsFocused, usePreventRemove } from "expo-router/react-navigation";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import StoryListCard from "@/src/components/common/StoryListCard";
@@ -9,8 +9,8 @@ import StoryListHeader from "@/src/components/common/StoryListHeader";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors } from "@/src/constants/theme";
 import { StoryEpisode } from "@/src/domain/common/types";
+import { getSideStorySetting } from "@/src/config/conversationSettings";
 import {
-  SIDE_STORY_COST_NT,
   SHOP_GREETING,
   SHOP_GREETING_WITH_ARRIVALS,
   SHOP_FAREWELL,
@@ -24,30 +24,50 @@ export default function ShopScreen() {
   const { state, unlockSideStory, announceSideStories } = useAppState();
   const [phase, setPhase] = useState<"greeting" | "list" | "farewell" | "closed">("greeting");
   const [isPurchasing, setIsPurchasing] = useState(false);
+  const busyRef = useRef(false);
+  const phaseRef = useRef(phase);
+  const replayingRef = useRef(false);
+  const exitDispatchedRef = useRef(false);
+  const isFocused = useIsFocused();
+  const changePhase = (next: typeof phase) => { phaseRef.current = next; setPhase(next); };
+  const setBusy = (next: boolean) => { busyRef.current = next; setIsPurchasing(next); };
+  useFocusEffect(useCallback(() => { replayingRef.current = false; }, []));
   const [newConversationIds] = useState(() => state
     ? listAvailableConversations(state).filter((item) => !state.announcedSideStoryIds.includes(item.id)).map((item) => item.id)
     : []);
 
-  const handleBack = () => setPhase((current) =>
-    current === "greeting" || current === "list" ? "farewell" : "closed",
-  );
-  usePreventRemove(phase !== "closed", handleBack);
+  const handleBack = () => {
+    if (busyRef.current || replayingRef.current) return;
+    if (phaseRef.current === "greeting" || phaseRef.current === "list") changePhase("farewell");
+    // Repeated back/swipe cannot skip or restart the farewell.
+  };
+  usePreventRemove(isFocused && phase !== "closed", handleBack);
   useEffect(() => {
-    if (phase === "closed") router.dismissTo("/");
+    if (phase === "closed" && !exitDispatchedRef.current) {
+      exitDispatchedRef.current = true;
+      router.dismissTo("/");
+    }
   }, [phase]);
 
   if (!state) return null;
 
   const confirmPurchase = (conversation: ShopConversation) => {
-    Alert.alert("会話を解放", `「${conversation.title}」を${SIDE_STORY_COST_NT} NTで解放しますか？`, [
-      { text: "キャンセル", style: "cancel" },
+    if (busyRef.current || replayingRef.current || phaseRef.current !== "list") return;
+    const { priceNt } = getSideStorySetting(conversation.id);
+    setBusy(true);
+    Alert.alert("会話を解放", `「${conversation.title}」を${priceNt} NTで解放しますか？`, [
+      { text: "キャンセル", style: "cancel", onPress: () => setBusy(false) },
       { text: "解放する", onPress: () => {
-        setIsPurchasing(true);
         void unlockSideStory(conversation.id)
           .catch((error: unknown) => Alert.alert("解放できませんでした", error instanceof Error ? error.message : "もう一度お試しください。"))
-          .finally(() => setIsPurchasing(false));
+          .finally(() => setBusy(false));
       } },
-    ]);
+    ], { cancelable: false });
+  };
+  const replay = (conversationId: number) => {
+    if (busyRef.current || replayingRef.current || phaseRef.current !== "list") return;
+    replayingRef.current = true;
+    router.push({ pathname: "/side-story", params: { conversation: String(conversationId) } });
   };
 
   const opening = newConversationIds.length ? SHOP_GREETING_WITH_ARRIVALS : SHOP_GREETING;
@@ -60,17 +80,18 @@ export default function ShopScreen() {
           <Text style={styles.intro}>解放した会話は、いつでも読み返せます。</Text>
           {listAvailableConversations(state).map((conversation) => {
             const isUnlocked = state.purchasedSideStoryIds.includes(conversation.id);
+            const { priceNt } = getSideStorySetting(conversation.id);
             return <StoryListCard
               key={conversation.id}
               label="Record"
               title={conversation.title}
-              detail={isUnlocked ? "解放済み" : `${SIDE_STORY_COST_NT} NTで解放`}
+              detail={isUnlocked ? "解放済み" : `${priceNt} NTで解放`}
               isUnlocked={isUnlocked}
               action={isUnlocked ? "▶ 再生" : "解放"}
-              actionLabel={isUnlocked ? `${conversation.title}を再生` : `${conversation.title}を${SIDE_STORY_COST_NT} NTで解放`}
-              disabled={isPurchasing || (!isUnlocked && state.totalNt < SIDE_STORY_COST_NT)}
+              actionLabel={isUnlocked ? `${conversation.title}を再生` : `${conversation.title}を${priceNt} NTで解放`}
+              disabled={isPurchasing || (!isUnlocked && state.totalNt < priceNt)}
               onPress={isUnlocked
-                ? () => router.push({ pathname: "/side-story", params: { conversation: String(conversation.id) } })
+                ? () => replay(conversation.id)
                 : () => confirmPurchase(conversation)}
             />;
           })}
@@ -79,20 +100,26 @@ export default function ShopScreen() {
         <ShopGreeting
           key={phase}
           episode={phase === "greeting" ? opening : SHOP_FAREWELL}
-          onRead={async () => { if (phase === "greeting") await announceSideStories(newConversationIds); }}
-          onClose={() => setPhase(phase === "greeting" ? "list" : "closed")}
+          onFinish={async () => {
+            setBusy(true);
+            try { if (phaseRef.current === "greeting") await announceSideStories(newConversationIds); }
+            finally { setBusy(false); }
+          }}
+          onClose={() => {
+            if (phaseRef.current === phase) changePhase(phase === "greeting" ? "list" : "closed");
+          }}
         />
       ) : null}
     </View>
   );
 }
 
-function ShopGreeting({ episode, onRead, onClose }: {
+function ShopGreeting({ episode, onFinish, onClose }: {
   episode: StoryEpisode;
-  onRead: () => Promise<void>;
+  onFinish: () => Promise<void>;
   onClose: () => void;
 }) {
-  const reader = useStoryReader(episode, "shop", onRead, undefined, undefined, onClose);
+  const reader = useStoryReader(episode, { source: "shop", onFinish, onClose });
   return <View style={styles.container}>
     <View style={styles.character} accessibilityLabel={`${SHOP_KEEPER_NAME}（仮の立ち絵）`}>
       <Ionicons name="person-outline" size={130} color={Colors.textSub} />

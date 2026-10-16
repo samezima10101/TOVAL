@@ -4,9 +4,13 @@
 
 同日追記: A03・A05の開始情報・開始日集計・日記編集・ホーム日付更新を実装。[日付と記録の検証記録](../manual-acceptance-checklist.md#date-record-alignment)を参照。画面操作・iPhone実機は未検証。
 
+同日ユーザー報告: 編集キャンセル・キーボード・ロックは検証して問題なしとの報告を受領。環境未記録。本文の実機未検証はこの報告範囲を除く。[確認記録](../manual-acceptance-checklist.md#user-device-confirmation)。
+
+2026-10-16更新: 既読/未読を廃止、v9へ移行。入荷条件は指定したメイン話の解放。以前の実装記録は当時の結果。[今回の変更・検証](../manual-acceptance-checklist.md#read-status-removal)。
+
 ## 永続化の単位と更新順序
 
-**事実**: AsyncStorageのキー`@my-june/app-state-v1`に、AppState全体を1件のJSON文字列で保存する。キー末尾v1はデータスキーマの番号ではなく、現在の`schemaVersion`は8。DB、クラウド同期、別のログファイルは実装されていない。根拠: [APP_STATE_STORAGE_KEY/load/save](../../src/storage/appStateRepository.ts)、[型](../../src/domain/common/types.ts)。
+**事実**: AsyncStorageのキー`@my-june/app-state-v1`に、AppState全体を1件のJSON文字列で保存する。キー末尾v1はデータスキーマの番号ではなく、現在の`schemaVersion`は9。DB、クラウド同期、別のログファイルは実装されていない。根拠: [APP_STATE_STORAGE_KEY/load/save](../../src/storage/appStateRepository.ts)、[型](../../src/domain/common/types.ts)。
 
 **事実**: Providerの変更操作はPromiseキューで直列化し、最新のstateRefを参照する。原則は「検証→次状態を作る→Repository保存→stateRef/React state更新」。保存失敗時は共有状態を更新せず、後続操作のキューは継続する。保証範囲はこのProvider内であり、複数ブラウザタブや別プロセス間の排他制御はない。根拠: [enqueue/commitState](../../src/state/AppStateProvider.tsx)。
 
@@ -18,13 +22,13 @@
 
 | 項目 | 型・初期値 | 用途・更新 |
 | --- | --- | --- |
-| `schemaVersion` | 現在8 | 保存形式の識別 |
+| `schemaVersion` | 現在9 | 保存形式の識別 |
 | `userName` | string、空 | 旧データから維持するが現在の設定・表示UIなし |
 | `taskName` | string、空 | 1件の現在タスク。入力保存時にtrim |
 | `totalNt` | 非負整数、0 | 正常完了で加算、分岐・サイド購入で減算 |
 | `totalCompletions` | 非負整数、0 | 正常完了ごとに+1。同日でも加算 |
 | `lastCompletionDate` | YYYY-MM-DDまたはnull | 最後の正常終了日。当日完了と当日の話解放を判定 |
-| `unlockedStories` | 配列、空 | メイン解放ID・解放日・既読を保持 |
+| `unlockedStories` | 配列、空 | メイン解放ID・解放日を保持 |
 | `storyRouteProgress` | 話IDをキーにするオブジェクト、空 | 初回分岐・追加購入分岐 |
 | `purchasedSideStoryIds` | 重複なしの正整数配列、空 | 購入済みサイド会話ID |
 | `announcedSideStoryIds` | 重複なしの正整数配列、空 | ショップ挨拶で告知済みの商品ID |
@@ -35,10 +39,10 @@
 
 | データ | 項目 | 意味 |
 | --- | --- | --- |
-| `UnlockedStory` | `episodeId`、`unlockedDate`、`isRead` | 解放したメイン話、解放時のローカル日付、話単位の読了 |
+| `UnlockedStory` | `episodeId`、`unlockedDate` | 解放したメイン話、解放時のローカル日付 |
 | `StoryRouteProgress` | `firstSelectedRouteId?`、`extraUnlockedRouteIds` | 最初に無料選択した分岐と、追加購入した分岐ID |
 
-**事実**: 第1話の分岐IDは`episode-01-encourage`と`episode-01-bow`。追加価格は`STORY_ROUTE_UNLOCK_COST_NT=60`。初回選択を後から置き換える操作はなく、追加解放は別配列へ追加する。根拠: [本文](../../src/domain/storyData.ts)、[Provider](../../src/state/AppStateProvider.tsx)、[定数](../../src/domain/common/types.ts)。
+**事実**: 第1話の分岐IDは`episode-01-encourage`と`episode-01-bow`。追加価格は[専用設定](../../src/config/conversationSettings.ts)の話ごとの`additionalRoutePriceNt`（初期60）。初回選択を後から置き換える操作はなく、追加解放は別配列へ追加する。根拠: [本文](../../src/domain/storyData.ts)、[Provider](../../src/state/AppStateProvider.tsx)、[設定編集方法](../conversation-settings.md)。
 
 ### タイマー
 
@@ -79,9 +83,8 @@
 | 期限前キャンセル | `activeTimer=null`。他の業務データは変更なし | [cancelTimer](../../src/domain/completion.ts) |
 | 正常完了 | NT・累計・最終日更新、日記追加、条件付き話追加、タイマー消去 | [completeTimer](../../src/domain/completion.ts) |
 | 保存済み日記編集 | 指定ログの`diary`だけを更新。1000文字以下・空文字可・trim。保存成功前は元のログを保持 | [editDiary](../../src/domain/diary.ts)、[updateDiary](../../src/state/AppStateProvider.tsx) |
-| メイン読了 | 該当話の`isRead=true` | [markStoryRead](../../src/state/AppStateProvider.tsx) |
 | 初回分岐選択 | `firstSelectedRouteId`追加 | [selectInitialStoryRoute](../../src/state/AppStateProvider.tsx) |
-| 別分岐購入 | 残高-60、`extraUnlockedRouteIds`追加 | [unlockAdditionalStoryRoute](../../src/state/AppStateProvider.tsx) |
+| 別分岐購入 | 残高から設定価格を減算、`extraUnlockedRouteIds`追加 | [unlockAdditionalStoryRoute](../../src/state/AppStateProvider.tsx) |
 | サイド購入 | 残高-60、`purchasedSideStoryIds`追加 | [unlockSideStory](../../src/state/AppStateProvider.tsx) |
 | 入荷告知読了 | `announcedSideStoryIds`に未告知ID追加 | [announceSideStories](../../src/state/AppStateProvider.tsx) |
 | 旧データ読込 | 移行後に現行形式を保存 | [load/parsePersistedState](../../src/storage/appStateRepository.ts) |
@@ -103,36 +106,39 @@
 
 | 保存形式 | 処理 |
 | --- | --- |
-| v8 | 型、整数、日付、開始情報（nullまたは全3項目）、所属日と開始日の一致、ID重複、既存話ID、タイマー範囲等を検証して受入。欠落した開始情報を自動補正しない |
-| v7 | `startInfo=null`、ログの`logDate=completedDate`を追加しv8として検証。元の必須配列（日記・購入・告知）の欠落は破損として拒否 |
-| v4/v5/v6 | 従来の互換補完に加え開始情報null・元所属日のlogDateを追加しv8として検証。購入・告知・日記を欠けていれば補う |
+| v9 | 型、整数、日付、開始情報（nullまたは全3項目）、所属日と開始日の一致、ID重複、既存話ID、タイマー範囲等を検証して受入。欠落した開始情報を自動補正しない |
+| v8 | 旧isReadの真偽値を検証して除去。他の必須項目は補完せず、解放・購入・NT・ログ・タイマー等を保持してv9へ保存 |
+| v7 | `startInfo=null`、ログの`logDate=completedDate`を追加し、旧isReadを除去してv9として検証。元の必須配列（日記・購入・告知）の欠落は破損として拒否 |
+| v4/v5/v6 | 従来の互換補完に加え開始情報null・元所属日のlogDateを追加し、旧isReadを除去してv9として検証。購入・告知・日記を欠けていれば補う |
 | 旧`isSideStoryUnlocked=true` | 購入済みID `[101]`へ移行 |
 | v5の日記で日付欠落 | `completedAt`から読込時のローカル日付を補う。元のタイムゾーンは復元不可 |
-| v0〜v3/番号なし | 旧形式の省略可能フィールドを補完。存在する不正フィールドは受け入れない。v3より前の解放話は既読として扱う。元形式にない日記・ショップは初期値 |
+| v0〜v3/番号なし | 旧形式の省略可能フィールドを補完。存在する不正フィールドは受け入れない。v3以降で必須だった旧isReadは型を検証後に除去する。元形式にない日記・ショップは初期値 |
 | v1以前のタイマー | startedAtから実集中を復元できないため累積0、停止として維持 |
 | v4 | 専用のv4/v5/v6分岐が先に実行されるため、そこで不正ならlegacy経路には進まずnull |
 | JSON不正、未対応バージョン、現行/旧形式の検証不合格 | parseはnull、loadはPreservedDataError。通常画面を開かず主キー原文を保護し、通常保存・移行による上書きを拒否 |
 
-**互換動作**: 開始情報を持たない全旧タイマーは`startInfo=null`のまま再開・完了する。v1以前の旧startedAtも、元のローカル暦・開始ボタンの記録として転用しない。完了時は従来の終了日に所属させ、開始時刻は「記録なし」。開始日を現在日や再開日から推定しない。v5の日付欠落だけは従来どおりcompletedAtから補完する。既存の日付があれば移動しない。主キーは変更せず、対応旧版を読んだ時にv8へ1回保存する。移行保存の失敗時は旧原文が残り、読込エラーから再試行できる。
+**互換動作**: 開始情報を持たない全旧タイマーは`startInfo=null`のまま再開・完了する。v1以前の旧startedAtも、元のローカル暦・開始ボタンの記録として転用しない。完了時は従来の終了日に所属させ、開始時刻は「記録なし」。開始日を現在日や再開日から推定しない。v5の日付欠落だけは従来どおりcompletedAtから補完する。既存の日付があれば移動しない。主キーは変更せず、対応旧版を読んだ時にv9へ1回保存する。移行保存の失敗時は旧原文が残り、読込エラーから再試行できる。
 
 **事実**: 有効な旧形式はload時に現行形式で保存する。不正データでは書込資格を無効にし、通常保存前にも主キーの形式を確認する。再読込または明示的初期化へ進める。初期化時だけ `@my-june/recovery/<時刻>-<乱数>` に原文を退避・照合し、主キーが変わっていないことを確認して初期値へ置換する。退避失敗は通知して中止する。自動修復/退避からのアプリ内自動復元はない。実行中の保存タイマーはProvider読込時に区間を停止へ正規化し、未確定時間を加算しない。
 
 **事実**: 分岐IDは文字列・重複等の検証が中心で、該当話の実在分岐との照合はない。購入/告知IDも正整数・重複のみで商品カタログと照合しない。話解放と分岐進捗の整合、最終完了日とログの整合は全面的には検証しない。通常の購入APIでは実在性を再確認するが、保存データ全体の意味的整合を保証するものではない。
 
-**検証状況**: 破損保護・退避・旧形式はメモリストレージで補助確認済み。保存済み累積を維持し未保存区間の損失を許容する方針はA04で確定。iPhoneのエラー表示/ロック/再起動等は未検証。[保持項目・検証データ・再現手順](../manual-acceptance-checklist.md#record-protection)を参照。物語ID変更時の移行ルールは引き続き未確定。
+**検証状況**: 破損保護・退避・旧形式はメモリストレージで補助確認済み。保存済み累積を維持し未保存区間の損失を許容する方針はA04で確定。iPhoneのエラー表示/ロック/再起動等は未検証。[保持項目・検証データ・再現手順](../manual-acceptance-checklist.md#record-protection)を参照。本文/価格/条件の変更ではIDを維持し、既存購入・解放をリセットしない。ID変更や削除には別途移行設計が必要。
+
+2026-10-16: 保存形式v9。旧既読フラグのみ除去する。第2・3話も分岐未選択なら次の再生時に無料選択。旧移行・破損保護・日記編集・タイマーの同期停止を維持。[保持・保存失敗の補助確認](../manual-acceptance-checklist.md#conversation-completion)、[設定編集方法](../conversation-settings.md)。
 
 ## 静的コンテンツ
 
 | 内容 | 保存場所・現状 |
 | --- | --- |
-| メイン本文 | [storyData.ts](../../src/domain/storyData.ts): 1「初めてのタスク完了！」、2「上司からの労い」、3「部下の決意」 |
+| メイン本文 | [stories](../../src/content/stories/): 全14話各2分岐の独立ファイル。[storyData.ts](../../src/domain/storyData.ts)でカタログ化 |
 | サイド本文 | [shop.ts](../../src/content/shop.ts): 101「雨宿りの帰り道」4行、102「休憩のひととき」2行、103「雨上がり」2行 |
-| 入荷条件 | [sideStory.ts](../../src/domain/sideStory.ts): 101条件なし、102/103は第2話既読、購入済みは常に可 |
+| 入荷条件 | [専用設定](../../src/config/conversationSettings.ts): 初期101条件なし、102/103は第2話解放。[sideStory.ts](../../src/domain/sideStory.ts)で共通判定、購入済みは常に可 |
 | 店員会話 | [shop.ts](../../src/content/shop.ts): 挨拶1行、入荷告知追加1行、退店1行。エトの立ち絵は仮アイコン |
 | 表情 | [StoryCharacters](../../src/components/story/StoryCharacters.tsx): 各2画像、doubtはtalkと同じ画像を使用 |
 | BGM・背景 | [bgm.ts](../../src/constants/bgm.ts)、[timer.tsx](../../app/timer.tsx): ローカル固定アセット |
 
-**事実**: 102/103の本文・入荷条件はソースコメントで仮と明記されている。本文はアプリに同梱し、CMSやサーバーから取得しない。変更はソース変更と再配布が必要。
+**事実**: 全メインと102/103は仮本文。価格・入荷条件は専用設定で本文から分離した。本文はアプリに同梱し、CMSやサーバーから取得しない。変更はソース変更と再配布が必要。
 
 ## 認証・権限・外部サービス
 
