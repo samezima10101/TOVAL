@@ -1,6 +1,6 @@
 # BGM設定と将来の音量調整
 
-更新日: 2026-10-18（日本時間）。対象: 工程4後半・Expo SDK 57。
+更新日: 2026-10-19（日本時間）。対象: 工程4後半・Expo SDK 57。
 
 ## 編集するファイル
 
@@ -36,6 +36,8 @@
 ルートの[AppShell](../app/_layout.tsx)だけが[useScreenBgm](../src/hooks/useScreenBgm.ts)を呼び、`useAudioPlayer(null)`で1プレイヤーを保持する。同じ音源ではreplace/seekをせず、別音源ではpause→replace→playとする。非同期の音声モード設定を直列化し、古い遷移・背景移動の要求は再生前に破棄する。
 
 ホームのスイッチは`useAppState().setBgmEnabled`へ接続する。初期値オン。保存中は連打を抑止し、保存成功後に表示と再生を変更する。失敗時は保存済み設定を維持して通知し、同じ希望値で保存を再試行できる。購入・日記編集と同じ保存キュー／破損保全を使う。音声自体の失敗は共通バナーとコンソールへ通知し、「BGMを再試行」で現在の設定を再適用する。音声失敗によってオン／オフの保存値を勝手に変更しない。
+
+共通バナーの表示は[AppFrame](../src/components/common/AppFrame.tsx)が担当し、AppShellからエラーと再試行コールバックを受け取る。プレイヤーを持つフックはAppShellに残し、読み込み・復旧の表示切替でも呼び出し位置を維持する。
 
 `playsInSilentMode=false`、`shouldPlayInBackground=false`。AppStateがactive以外なら同期的にpauseし、復帰時に現在の画面・保存済みオン／オフを再確認する。黒画面Modalだけでは停止しない。タイマーの計測資格・停止／再開処理には接続しない。
 

@@ -1,6 +1,6 @@
 # データ・連携仕様
 
-更新日: 2026-10-18（日本時間）。現行の保存形式はv10。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
+更新日: 2026-10-19（日本時間）。現行の保存形式はv10。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
 
 ## 永続化の単位と更新順序
 
@@ -83,7 +83,7 @@
 | サイド購入 | 残高から設定価格を減算、`purchasedSideStoryIds`追加 | [unlockSideStory](../src/state/AppStateProvider.tsx) |
 | 入荷告知読了 | `announcedSideStoryIds`に未告知ID追加 | [announceSideStories](../src/state/AppStateProvider.tsx) |
 | 旧データ読込 | 移行後に現行形式を保存 | [load/parsePersistedState](../src/storage/appStateRepository.ts) |
-| 破損データの明示的初期化 | 対象・影響を確認後、原文をrecoveryキーへ退避・照合してから主キーを初期化 | [initializePreservedData](../src/storage/appStateRepository.ts)、[確認UI](../app/_layout.tsx) |
+| 破損データの明示的初期化 | 対象・影響を確認後、原文をrecoveryキーへ退避・照合してから主キーを初期化 | [initializePreservedData](../src/storage/appStateRepository.ts)、[確認UI](../src/components/common/AppStartupGate.tsx) |
 
 **事実**: 日記編集は既存の保存キューとsaveAndCommitを使い、集中時間・NT・完了回数・会話解放を変更しない。失敗時は元の状態と入力下書きを維持してエラーを表示し、保存を再試行できる。編集キャンセルは下書きの破棄のみ。旧ログの長い日記は読込時に切り捨てず保持するが、編集保存時には1000文字以下にする。
 
