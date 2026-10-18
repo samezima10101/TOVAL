@@ -18,6 +18,8 @@ import {
   isEpisodeId,
   isStoryRouteUnlocked,
 } from "@/src/domain/storyData";
+import { getAdditionalRoutePriceNt } from "@/src/config/conversationSettings";
+import useConversationExit from "@/src/hooks/useConversationExit";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -41,9 +43,13 @@ export default function StoryScreen({
 }: {
   catalog?: StoryCatalog;
 }) {
+  const params = useLocalSearchParams<{ episode?: string; source?: string; route?: string }>();
+  return <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />;
+}
+
+function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const {
     state,
-    markStoryRead,
     selectInitialStoryRoute,
     unlockAdditionalStoryRoute,
   } = useAppState();
@@ -51,6 +57,7 @@ export default function StoryScreen({
     string | null
   >(null);
   const [isUnlocking, setIsUnlocking] = React.useState(false);
+  const unlockingRef = React.useRef(false);
   const [unlockError, setUnlockError] = React.useState<string | null>(null);
   const params = useLocalSearchParams<{
     episode?: string;
@@ -84,6 +91,20 @@ export default function StoryScreen({
   const canPlayDirectRoute =
     !routeId || !episode?.routes?.length || routeIsUnlocked;
 
+  const readingRef = React.useRef(false);
+  const exit = useConversationExit(source === "memory" ? "/memory" : "/",
+    () => unlockingRef.current || readingRef.current);
+  const reader = useStoryReader(
+    isUnlocked && canPlayDirectRoute ? episode : undefined,
+    {
+      source,
+      initialRouteId,
+      selectInitialRoute: episodeId ? (selectedRouteId) => selectInitialStoryRoute(episodeId, selectedRouteId) : undefined,
+      onClose: exit.requestExit,
+      processingRef: readingRef,
+      exitRequestedRef: exit.leavingRef,
+    },
+  );
   const {
     line,
     visibleText,
@@ -95,16 +116,7 @@ export default function StoryScreen({
     handleNext,
     handleSelectRoute,
     handleClose,
-  } = useStoryReader(
-    episode,
-    source,
-    (id) =>
-      isEpisodeId(id, catalog) ? markStoryRead(id) : Promise.resolve(),
-    initialRouteId,
-    episodeId && !progress?.firstSelectedRouteId
-      ? (selectedRouteId) => selectInitialStoryRoute(episodeId, selectedRouteId)
-      : undefined,
-  );
+  } = reader;
 
   if (!episode || !isUnlocked || (routeId && (!route || !canPlayDirectRoute))) {
     return (
@@ -121,7 +133,7 @@ export default function StoryScreen({
   if (!line && !isWaitingForChoice) return null;
 
   const lockedRouteIds =
-    source === "memory" && progress?.firstSelectedRouteId
+    progress?.firstSelectedRouteId
       ? (episode.routes ?? [])
           .filter((item) => !isStoryRouteUnlocked(progress, item.id))
           .map((item) => item.id)
@@ -129,6 +141,7 @@ export default function StoryScreen({
   const choiceAnchor = episode.commonBefore[episode.commonBefore.length - 1];
 
   const requestRoute = (selectedRouteId: string) => {
+    if (exit.leavingRef.current || unlockingRef.current) return;
     if (!lockedRouteIds.includes(selectedRouteId)) {
       void handleSelectRoute(selectedRouteId);
       return;
@@ -144,10 +157,11 @@ export default function StoryScreen({
   );
 
   const confirmUnlock = async () => {
-    if (!pendingUnlockRoute || !episodeId || isUnlocking) {
+    if (!pendingUnlockRoute || !episodeId || unlockingRef.current || exit.leavingRef.current) {
       return;
     }
 
+    unlockingRef.current = true;
     setUnlockError(null);
     setIsUnlocking(true);
     try {
@@ -158,12 +172,13 @@ export default function StoryScreen({
         cause instanceof Error ? cause.message : "もう一度お試しください。",
       );
     } finally {
+      unlockingRef.current = false;
       setIsUnlocking(false);
     }
   };
 
   const closeUnlockConfirmation = () => {
-    if (isUnlocking) {
+    if (unlockingRef.current) {
       return;
     }
     setUnlockError(null);
@@ -179,12 +194,12 @@ export default function StoryScreen({
           Episode {String(episode.id).padStart(2, "0")} {episode.title}
         </Text>
         <TouchableOpacity
-          onPress={handleClose}
+          onPress={() => { if (!unlockingRef.current) handleClose(); }}
           style={styles.closeButton}
-          disabled={isProcessing}
+          disabled={isProcessing || isUnlocking}
           accessibilityRole="button"
           accessibilityLabel="ストーリーを閉じる"
-          accessibilityState={{ disabled: isProcessing }}
+          accessibilityState={{ disabled: isProcessing || isUnlocking }}
         >
           <Text style={styles.closeText}>閉じる</Text>
         </TouchableOpacity>
@@ -212,6 +227,7 @@ export default function StoryScreen({
 
       {isWaitingForChoice && pendingUnlockRoute && state ? (
         <StoryUnlockConfirmation
+          priceNt={getAdditionalRoutePriceNt(episode.id)}
           routeLabel={pendingUnlockRoute.label}
           totalNt={state.totalNt}
           isProcessing={isUnlocking}
@@ -221,6 +237,7 @@ export default function StoryScreen({
         />
       ) : isWaitingForChoice && episode.routes ? (
         <StoryChoices
+          priceNt={getAdditionalRoutePriceNt(episode.id)}
           routes={episode.routes}
           onSelect={requestRoute}
           lockedRouteIds={lockedRouteIds}

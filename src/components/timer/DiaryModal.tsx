@@ -11,6 +11,7 @@ import {
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors } from "@/src/constants/theme";
+import { MAX_DIARY_LENGTH } from "@/src/domain/common/types";
 
 type DiaryModalProps = {
   visible: boolean;
@@ -18,6 +19,7 @@ type DiaryModalProps = {
   error: string | null;
   onSave: (diary: string) => Promise<void>;
   onClose: () => void;
+  onRetrySave?: () => void;
 };
 
 export default function DiaryModal({
@@ -26,6 +28,7 @@ export default function DiaryModal({
   error,
   onSave,
   onClose,
+  onRetrySave,
 }: DiaryModalProps) {
   const [diary, setDiary] = React.useState("");
 
@@ -45,7 +48,7 @@ export default function DiaryModal({
             onChangeText={setDiary}
             placeholder="今日のタスクで感じたことを書いてみよう"
             multiline
-            maxLength={1000}
+            maxLength={MAX_DIARY_LENGTH}
             editable={!saving}
             accessibilityLabel="日記"
             style={styles.input}
@@ -53,6 +56,7 @@ export default function DiaryModal({
           {error ? (
             <Text accessibilityRole="alert" style={styles.error}>{error}</Text>
           ) : null}
+          {onRetrySave ? <PrimaryButton title="タイマー保存を再試行" onPress={onRetrySave} disabled={saving} /> : null}
           <PrimaryButton
             title="保存して終了"
             onPress={() => void onSave(diary)}

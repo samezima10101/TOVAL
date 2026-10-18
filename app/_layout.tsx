@@ -1,12 +1,14 @@
 import { Stack, usePathname } from "expo-router";
-import { Image, StyleSheet, Text, View } from "react-native";
+import React from "react";
+import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
-import { getScreenBgm } from "@/src/constants/bgm";
+import { AUDIO_VOLUMES, getScreenBgm } from "@/src/config/audioSettings";
 import { Colors } from "@/src/constants/theme";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
+import { PreservedDataError } from "@/src/storage/appStateRepository";
 
 export default function RootLayout() {
   return (
@@ -20,8 +22,32 @@ export default function RootLayout() {
 
 function AppShell() {
   const pathname = usePathname();
-  const { state, status, hydrationError, retryHydration } = useAppState();
-  useScreenBgm(status === "ready" && state ? getScreenBgm(pathname) : null);
+  const { state, status, hydrationError, retryHydration, initializePreservedData,
+    timerSaveError, retryTimerSave } = useAppState();
+  const [recoveryError, setRecoveryError] = React.useState<string | null>(null);
+  const [isRecovering, setIsRecovering] = React.useState(false);
+  const retryTimer = () => {
+    void retryTimerSave().catch(() => Alert.alert("保存できませんでした", "計測は停止したままです。もう一度再試行してください。"));
+  };
+  const confirmInitialization = () => Alert.alert(
+    "この端末のMy-Juneデータを初期化しますか？",
+    "タスク、集中記録・日記、NT残高、会話の解放・購入状態、進行中のタイマーを初期状態に戻します。元データは端末内の別領域に退避しますが、アプリ内で自動復元する機能はありません。退避に失敗した場合は初期化しません。",
+    [
+      { text: "戻る", style: "cancel" },
+      { text: "退避して初期化する", style: "destructive", onPress: () => {
+        setIsRecovering(true);
+        setRecoveryError(null);
+        void initializePreservedData().catch((error: unknown) => {
+          setRecoveryError(error instanceof Error ? error.message : "初期化できませんでした。");
+        }).finally(() => setIsRecovering(false));
+      } },
+    ],
+  );
+  const bgm = useScreenBgm(
+    status === "ready" && state ? getScreenBgm(pathname) : null,
+    status === "ready" && !!state?.bgmEnabled,
+    AUDIO_VOLUMES.bgm,
+  );
 
   if (status === "loading") {
     return <StatusMessage message="My-Juneを準備しています…" />;
@@ -31,9 +57,12 @@ function AppShell() {
     return (
       <StatusMessage
         message="保存したデータを読み込めませんでした。"
-        detail={hydrationError?.message}
+        detail={recoveryError ?? hydrationError?.message}
         actionLabel="もう一度読み込む"
-        onAction={() => void retryHydration()}
+        onAction={() => { setRecoveryError(null); void retryHydration(); }}
+        disabled={isRecovering}
+        secondaryLabel={hydrationError instanceof PreservedDataError ? "退避と初期化の内容を確認" : undefined}
+        onSecondaryAction={confirmInitialization}
       />
     );
   }
@@ -45,6 +74,20 @@ function AppShell() {
           <Text style={styles.pointText}>{state.totalNt} NT</Text>
         </View>
       </SafeAreaView>
+
+      {timerSaveError ? (
+        <View style={styles.saveError} accessibilityRole="alert">
+          <Text style={styles.statusDetail}>{timerSaveError}</Text>
+          <PrimaryButton title="タイマー保存を再試行" onPress={retryTimer} />
+        </View>
+      ) : null}
+
+      {bgm.error ? (
+        <View style={styles.saveError} accessibilityRole="alert">
+          <Text style={styles.statusDetail}>{bgm.error}</Text>
+          <PrimaryButton title="BGMを再試行" onPress={bgm.retry} />
+        </View>
+      ) : null}
 
       <View style={styles.screenContainer}>
         <Stack screenOptions={{ headerShown: false }}>
@@ -78,11 +121,17 @@ function StatusMessage({
   detail,
   actionLabel,
   onAction,
+  secondaryLabel,
+  onSecondaryAction,
+  disabled,
 }: {
   message: string;
   detail?: string;
   actionLabel?: string;
   onAction?: () => void;
+  secondaryLabel?: string;
+  onSecondaryAction?: () => void;
+  disabled?: boolean;
 }) {
   return (
     <SafeAreaView style={styles.statusContainer}>
@@ -93,13 +142,19 @@ function StatusMessage({
           title={actionLabel}
           onPress={onAction}
           style={styles.retryButton}
+          disabled={disabled}
         />
+      ) : null}
+      {secondaryLabel && onSecondaryAction ? (
+        <PrimaryButton title={secondaryLabel} onPress={onSecondaryAction}
+          disabled={disabled} style={styles.retryButton} />
       ) : null}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  saveError: { backgroundColor: Colors.surface, padding: 12, gap: 8 },
   rootContainer: {
     backgroundColor: Colors.background,
     flex: 1,

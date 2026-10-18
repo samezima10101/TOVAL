@@ -1,3 +1,17 @@
+import { episode01 } from '@/src/content/stories/episode01';
+import { episode02 } from '@/src/content/stories/episode02';
+import { episode03 } from '@/src/content/stories/episode03';
+import { episode04 } from '@/src/content/stories/episode04';
+import { episode05 } from '@/src/content/stories/episode05';
+import { episode06 } from '@/src/content/stories/episode06';
+import { episode07 } from '@/src/content/stories/episode07';
+import { episode08 } from '@/src/content/stories/episode08';
+import { episode09 } from '@/src/content/stories/episode09';
+import { episode10 } from '@/src/content/stories/episode10';
+import { episode11 } from '@/src/content/stories/episode11';
+import { episode12 } from '@/src/content/stories/episode12';
+import { episode13 } from '@/src/content/stories/episode13';
+import { episode14 } from '@/src/content/stories/episode14';
 import {
   EpisodeId,
   Speaker,
@@ -20,145 +34,14 @@ export const STORY_CHARACTER_NAMES: Record<StoryCharacter, string> = {
   alta: "アルタ",
 };
 
-const line = (
-  id: string,
-  speaker: Speaker,
-  text: string,
-  left: StoryLine["left"],
-  right: StoryLine["right"],
-): StoryLine => ({ id, speaker, text, left, right });
-
-const episodes: readonly StoryEpisode[] = [
-  {
-    id: 1,
-    title: "初めてのタスク完了！",
-    commonBefore: [
-      line(
-        "episode-01-01",
-        "sub",
-        "お疲れ様です。\n今日も無事に目標達成しましたね。",
-        "normal",
-        "talk",
-      ),
-      line(
-        "episode-01-02",
-        "boss",
-        "うん、おつかれさま～。\n明日もがんばってね。",
-        "talk",
-        "normal",
-      ),
-    ],
-    routes: [
-      {
-        id: "episode-01-encourage",
-        label: "ありがとうございます！",
-        lines: [
-          line(
-            "episode-01-encourage-01",
-            "sub",
-            "ありがとうございます！\n明日も頑張ります！",
-            "normal",
-            "talk",
-          ),
-          line(
-            "episode-01-encourage-02",
-            "boss",
-            "いい返事だね～。\nでも、頑張りすぎはだめだよ？",
-            "talk",
-            "normal",
-          ),
-          line(
-            "episode-01-encourage-03",
-            "sub",
-            "はい！\nしっかり休んで、また明日に備えます。",
-            "normal",
-            "talk",
-          ),
-        ],
-      },
-      {
-        id: "episode-01-bow",
-        label: "はい、わかりました。",
-        lines: [
-          line(
-            "episode-01-bow-01",
-            "sub",
-            "はい、わかりました。",
-            "normal",
-            "talk",
-          ),
-          line(
-            "episode-01-bow-02",
-            "boss",
-            "あれ、ちょっと疲れてる？\n今日はもうゆっくり休みなね～。",
-            "talk",
-            "normal",
-          ),
-          line(
-            "episode-01-bow-03",
-            "sub",
-            "……お気遣いありがとうございます。\nお言葉に甘えます。",
-            "normal",
-            "talk",
-          ),
-        ],
-      },
-    ],
-    commonAfter: [
-      line("episode-01-03", "sub", "・・・では失礼します。", "normal", "talk"),
-    ],
-  },
-  {
-    id: 2,
-    title: "上司からの労い",
-    commonBefore: [
-      line(
-        "episode-02-01",
-        "sub",
-        "お疲れ様です。\n今日も無事に目標達成しましたね。",
-        "normal",
-        "talk",
-      ),
-      line(
-        "episode-02-02",
-        "boss",
-        "うん、おつかれさま～。\n明日もがんばってね。",
-        "talk",
-        "normal",
-      ),
-      line("episode-02-03", "sub", "・・・あれ？", "normal", "talk"),
-    ],
-    commonAfter: [],
-  },
-  {
-    id: 3,
-    title: "部下の決意",
-    commonBefore: [
-      line(
-        "episode-03-01",
-        "sub",
-        "・・・おかしい、\n同じ一日を繰り返してる。",
-        "normal",
-        "talk",
-      ),
-      line("episode-03-02", "boss", "うん？どした？", "talk", "normal"),
-      line("episode-03-03", "sub", "・・・いえ？", "normal", "talk"),
-    ],
-    commonAfter: [],
-  },
+export const STORY_EPISODES: readonly StoryEpisode[] = [
+  episode01, episode02, episode03, episode04, episode05, episode06, episode07,
+  episode08, episode09, episode10, episode11, episode12, episode13, episode14,
 ];
+export type StoryCatalog = { episodes: readonly StoryEpisode[] };
+export const STORY_CATALOG: StoryCatalog = { episodes: STORY_EPISODES };
 
-export type StoryCatalog = Readonly<{
-  episodes: readonly StoryEpisode[];
-}>;
-
-export const STORY_CATALOG: StoryCatalog = { episodes };
-export const STORY_EPISODES: readonly StoryEpisode[] = STORY_CATALOG.episodes;
-
-export function getStoryEpisode(
-  id: number,
-  catalog: StoryCatalog = STORY_CATALOG,
-): StoryEpisode | undefined {
+export function getStoryEpisode(id: number, catalog: StoryCatalog = STORY_CATALOG): StoryEpisode | undefined {
   return catalog.episodes.find((episode) => episode.id === id);
 }
 
@@ -177,7 +60,11 @@ export function getPlayableStoryLines(
   routeId?: string,
 ): readonly StoryLine[] {
   const route = getStoryRoute(episode, routeId);
-  return [...episode.commonBefore, ...(route?.lines ?? []), ...episode.commonAfter];
+  return [
+    ...episode.commonBefore,
+    ...(route?.lines ?? []),
+    ...episode.commonAfter,
+  ];
 }
 
 export function isStoryRouteUnlocked(
@@ -193,32 +80,11 @@ export function isStoryRouteUnlocked(
 /** The most recently unlocked episode is shown in the home story card. */
 export function getLatestUnlockedEpisode(
   unlockedStories: readonly UnlockedStory[],
-  catalog: StoryCatalog = STORY_CATALOG,
 ): StoryEpisode | undefined {
   const latestStory = unlockedStories[unlockedStories.length - 1];
-  return latestStory ? getStoryEpisode(latestStory.episodeId, catalog) : undefined;
+  return latestStory ? getStoryEpisode(latestStory.episodeId) : undefined;
 }
 
-/** The newest unread episode is the home screen's temporary talk entry. */
-export function getLatestUnreadEpisode(
-  unlockedStories: readonly UnlockedStory[],
-  catalog: StoryCatalog = STORY_CATALOG,
-): StoryEpisode | undefined {
-  for (let index = unlockedStories.length - 1; index >= 0; index -= 1) {
-    const story = unlockedStories[index];
-    if (!story.isRead) {
-      return getStoryEpisode(story.episodeId, catalog);
-    }
-  }
-  return undefined;
-}
-
-export function isEpisodeId(
-  value: number,
-  catalog: StoryCatalog = STORY_CATALOG,
-): value is EpisodeId {
-  return (
-    Number.isInteger(value) &&
-    catalog.episodes.some((episode) => episode.id === value)
-  );
+export function isEpisodeId(value: number, catalog: StoryCatalog = STORY_CATALOG): value is EpisodeId {
+  return Number.isInteger(value) && catalog.episodes.some((episode) => episode.id === value);
 }

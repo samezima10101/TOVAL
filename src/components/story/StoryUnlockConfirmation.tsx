@@ -2,9 +2,9 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Colors } from "@/src/constants/theme";
-import { STORY_ROUTE_UNLOCK_COST_NT } from "@/src/domain/common/types";
 
 type StoryUnlockConfirmationProps = {
+  priceNt: number;
   routeLabel: string;
   totalNt: number;
   isProcessing: boolean;
@@ -14,6 +14,7 @@ type StoryUnlockConfirmationProps = {
 };
 
 export default function StoryUnlockConfirmation({
+  priceNt,
   routeLabel,
   totalNt,
   isProcessing,
@@ -21,7 +22,7 @@ export default function StoryUnlockConfirmation({
   onBack,
   onConfirm,
 }: StoryUnlockConfirmationProps) {
-  const hasEnoughNt = totalNt >= STORY_ROUTE_UNLOCK_COST_NT;
+  const hasEnoughNt = totalNt >= priceNt;
 
   return (
     <View style={styles.messageBox} accessibilityRole="alert">
@@ -30,7 +31,7 @@ export default function StoryUnlockConfirmation({
       </Text>
       <Text style={styles.routeLabel}>「{routeLabel}」</Text>
       <Text style={styles.balance}>
-        必要: {STORY_ROUTE_UNLOCK_COST_NT} NT　所持: {totalNt} NT
+        必要: {priceNt} NT　所持: {totalNt} NT
       </Text>
       {error ? <Text style={styles.error}>{error}</Text> : null}
       <View style={styles.actions}>
@@ -52,7 +53,7 @@ export default function StoryUnlockConfirmation({
             onPress={onConfirm}
             disabled={isProcessing}
             accessibilityRole="button"
-            accessibilityLabel="60 NTで解放する"
+            accessibilityLabel={`${priceNt} NTで解放する`}
             accessibilityState={{ disabled: isProcessing, busy: isProcessing }}
           >
             <Text style={styles.unlockText}>

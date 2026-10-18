@@ -83,3 +83,8 @@ export function formatDuration(totalSeconds: number): string {
     .map((part) => String(part).padStart(2, "0"))
     .join(":");
 }
+
+export function formatFocusDuration(totalSeconds: number): string {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  return `${Math.floor(seconds / 3600)}時間${Math.floor((seconds % 3600) / 60)}分${seconds % 60}秒`;
+}

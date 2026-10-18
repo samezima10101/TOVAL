@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DEFAULT_BGM_ENABLED } from "@/src/config/audioSettings";
 
 import { localDateKey } from "@/src/domain/common/date";
 import {
@@ -12,8 +13,17 @@ import {
   UnlockedStory,
 } from "@/src/domain/common/types";
 import { STORY_CATALOG, StoryCatalog } from "@/src/domain/storyData";
+import { developmentStorage } from "./developmentStorage";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
+export const RECOVERY_STORAGE_PREFIX = "@my-june/recovery/";
+
+export class PreservedDataError extends Error {
+  constructor() {
+    super("保存データの形式を確認できません。元データは変更せず保護しています。再読込するか、元データを退避して初期化してください。");
+    this.name = "PreservedDataError";
+  }
+}
 
 export type StorageLike = {
   getItem: (key: string) => Promise<string | null>;
@@ -36,6 +46,7 @@ export class AppStateStorageError extends Error {
 export function createInitialAppState(): AppState {
   return {
     schemaVersion: APP_SCHEMA_VERSION,
+    bgmEnabled: DEFAULT_BGM_ENABLED,
     userName: "",
     taskName: "",
     totalNt: 0,
@@ -120,6 +131,16 @@ function isNonNegativeSafeInteger(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
 }
 
+function isTimestamp(value: unknown): value is number {
+  return isNonNegativeSafeInteger(value) && !Number.isNaN(new Date(value).getTime());
+}
+
+function isSessionStart(value: unknown): boolean {
+  return value === null || (isRecord(value) &&
+    isTimestamp(value.startedAt) && isDateKey(value.startedDate) &&
+    typeof value.startedTime === "string" && /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(value.startedTime));
+}
+
 function parseDiaryLogs(
   value: unknown,
   catalog: StoryCatalog,
@@ -134,7 +155,10 @@ function parseDiaryLogs(
       typeof log.id !== "string" ||
       log.id.trim().length === 0 ||
       ids.has(log.id) ||
-      !isNonNegativeSafeInteger(log.completedAt) ||
+      !isSessionStart(log.startInfo) ||
+      !isDateKey(log.logDate) ||
+      (isRecord(log.startInfo) && log.logDate !== log.startInfo.startedDate) ||
+      !isTimestamp(log.completedAt) ||
       !isDateKey(log.completedDate) ||
       (log.completedTime !== undefined &&
         (typeof log.completedTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(log.completedTime))) ||
@@ -147,6 +171,8 @@ function parseDiaryLogs(
     }
     ids.add(log.id);
     logs.push({
+      startInfo: log.startInfo as DiaryLog["startInfo"],
+      logDate: log.logDate,
       id: log.id,
       completedAt: log.completedAt,
       completedDate: log.completedDate,
@@ -161,6 +187,7 @@ function parseDiaryLogs(
 
 function parseActiveTimer(
   value: unknown,
+  legacy = false,
 ): AppState["activeTimer"] | null | undefined {
   if (value === null) {
     return null;
@@ -178,9 +205,10 @@ function parseActiveTimer(
   } = value;
   if (
     typeof sessionId !== "string" ||
+    (!legacy && !isSessionStart(value.startInfo)) ||
     sessionId.trim().length === 0 ||
     !isNonNegativeSafeInteger(accumulatedMs) ||
-    (runningSince !== null && !isNonNegativeSafeInteger(runningSince)) ||
+    (runningSince !== null && !isTimestamp(runningSince)) ||
     typeof plannedSeconds !== "number" ||
     !Number.isInteger(plannedSeconds) ||
     plannedSeconds < 0 ||
@@ -191,6 +219,7 @@ function parseActiveTimer(
   }
 
   return {
+    startInfo: legacy ? null : value.startInfo as ActiveTimer["startInfo"],
     sessionId,
     plannedSeconds,
     startedTaskName,
@@ -211,7 +240,7 @@ function parseV1ActiveTimer(value: unknown): ActiveTimer | null | undefined {
   if (
     typeof sessionId !== "string" ||
     sessionId.trim().length === 0 ||
-    !isNonNegativeSafeInteger(startedAt) ||
+    !isTimestamp(startedAt) ||
     typeof plannedSeconds !== "number" ||
     !Number.isInteger(plannedSeconds) ||
     plannedSeconds < 0 ||
@@ -224,6 +253,7 @@ function parseV1ActiveTimer(value: unknown): ActiveTimer | null | undefined {
   // v1 had one wall-clock start and cannot distinguish active from background time.
   // Keep the session, but restart accounting paused so unknown time is never credited.
   return {
+    startInfo: null,
     sessionId,
     plannedSeconds,
     startedTaskName,
@@ -241,13 +271,14 @@ export function validateAppState(
   }
 
   if (
+    typeof value.bgmEnabled !== "boolean" ||
     typeof value.userName !== "string" ||
     typeof value.taskName !== "string" ||
     typeof value.totalNt !== "number" ||
-    !Number.isInteger(value.totalNt) ||
+    !Number.isSafeInteger(value.totalNt) ||
     value.totalNt < 0 ||
     typeof value.totalCompletions !== "number" ||
-    !Number.isInteger(value.totalCompletions) ||
+    !Number.isSafeInteger(value.totalCompletions) ||
     value.totalCompletions < 0 ||
     (value.lastCompletionDate !== null &&
       !isDateKey(value.lastCompletionDate)) ||
@@ -267,7 +298,7 @@ export function validateAppState(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
-      typeof story.isRead !== "boolean" ||
+      "isRead" in story ||
       ids.has(story.episodeId)
     ) {
       return false;
@@ -285,10 +316,10 @@ export function validateAppState(
 function parseLegacyUnlockedStories(
   value: unknown,
   catalog: StoryCatalog,
-  preserveReadState: boolean,
-): UnlockedStory[] {
+  requireOldReadFlag: boolean,
+): UnlockedStory[] | undefined {
   if (!Array.isArray(value) || value.length > catalog.episodes.length) {
-    return [];
+    return undefined;
   }
 
   const ids = new Set<number>();
@@ -298,17 +329,15 @@ function parseLegacyUnlockedStories(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
-      (preserveReadState && typeof story.isRead !== "boolean") ||
+      (requireOldReadFlag && typeof story.isRead !== "boolean") ||
       ids.has(story.episodeId)
     ) {
-      return [];
+      return undefined;
     }
     ids.add(story.episodeId);
     stories.push({
       episodeId: story.episodeId,
       unlockedDate: story.unlockedDate,
-      // Schemas before v3 predate unread tracking and must not appear as new updates.
-      isRead: preserveReadState ? story.isRead === true : true,
     });
   }
   return stories;
@@ -330,10 +359,24 @@ function migrateLegacyState(
   }
 
   const initial = createInitialAppState();
+  // Missing legacy fields can use their historical defaults; invalid fields
+  // must never be silently repaired and then overwrite the source.
+  if (
+    // A random object without a version is not evidence of a legacy save.
+    (value.schemaVersion === undefined &&
+      !["taskName", "userName", "totalNt", "totalCompletions", "unlockedStories"].some((key) => key in value)) ||
+    (value.userName !== undefined && typeof value.userName !== "string") ||
+    (value.taskName !== undefined && typeof value.taskName !== "string") ||
+    (value.totalNt !== undefined && !isNonNegativeSafeInteger(value.totalNt)) ||
+    (value.totalCompletions !== undefined && !isNonNegativeSafeInteger(value.totalCompletions)) ||
+    (value.lastCompletionDate !== undefined && value.lastCompletionDate !== null && !isDateKey(value.lastCompletionDate)) ||
+    (value.unlockedStories !== undefined && parseLegacyUnlockedStories(value.unlockedStories, catalog, Number(value.schemaVersion) >= 3) === undefined)
+  ) return null;
   const activeTimer =
     typeof value.schemaVersion === "number" && value.schemaVersion >= 2
-      ? parseActiveTimer(value.activeTimer)
+      ? parseActiveTimer(value.activeTimer, true)
       : parseV1ActiveTimer(value.activeTimer);
+  if (activeTimer === undefined && value.activeTimer !== undefined) return null;
   const migrated: AppState = {
     ...initial,
     userName: typeof value.userName === "string" ? value.userName : "",
@@ -350,7 +393,7 @@ function migrateLegacyState(
       value.unlockedStories,
       catalog,
       typeof value.schemaVersion === "number" && value.schemaVersion >= 3,
-    ),
+    ) ?? [],
     storyRouteProgress:
       value.schemaVersion === 4
         ? (parseStoryRouteProgress(value.storyRouteProgress, catalog) ?? {})
@@ -359,7 +402,7 @@ function migrateLegacyState(
     activeTimer: activeTimer ?? null,
   };
 
-  return migrated;
+  return validateAppState(migrated, catalog) ? migrated : null;
 }
 
 export function parsePersistedState(
@@ -377,23 +420,50 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
+  // v9 predates BGM preferences. Preserve every other field exactly.
+  if (isRecord(value) && value.schemaVersion === 9) {
+    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, bgmEnabled: DEFAULT_BGM_ENABLED };
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
+  // v8 had read/unread flags. Validate their old types before discarding only
+  // that retired field; do not turn malformed old records into valid saves.
+  if (isRecord(value) && value.schemaVersion === 8) {
+    const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
+    if (!unlockedStories) return null;
+    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, unlockedStories, bgmEnabled: DEFAULT_BGM_ENABLED };
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
   // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
-  if (isRecord(value) && [4, 5, 6].includes(value.schemaVersion as number)) {
+  // v7 has all three arrays as required fields. Missing data is corruption,
+  // not an invitation to silently replace history or purchases with defaults.
+  if (isRecord(value) && [4, 5, 6, 7].includes(value.schemaVersion as number)) {
+    if (value.schemaVersion === 7 &&
+      (value.diaryLogs === undefined || value.purchasedSideStoryIds === undefined || value.announcedSideStoryIds === undefined)) return null;
     if (value.isSideStoryUnlocked !== undefined && typeof value.isSideStoryUnlocked !== "boolean") return null;
+    const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
+    if (!unlockedStories) return null;
     const { isSideStoryUnlocked, ...previous } = value;
     const diaryLogs = value.diaryLogs === undefined ? [] : value.diaryLogs;
+    const purchased = value.purchasedSideStoryIds === undefined ? [] : value.purchasedSideStoryIds;
+    if (!isConversationIds(purchased)) return null;
     const migrated = {
       ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
-      purchasedSideStoryIds: isSideStoryUnlocked === true ? [101] : (value.purchasedSideStoryIds === undefined ? [] : value.purchasedSideStoryIds),
+      bgmEnabled: DEFAULT_BGM_ENABLED,
+      unlockedStories,
+      activeTimer: isRecord(value.activeTimer) ? { ...value.activeTimer, startInfo: null } : value.activeTimer,
+      purchasedSideStoryIds: isSideStoryUnlocked === true ? [...new Set([...purchased, 101])] : purchased,
       announcedSideStoryIds: value.announcedSideStoryIds === undefined ? [] : value.announcedSideStoryIds,
-      diaryLogs: value.schemaVersion === 5 && Array.isArray(diaryLogs)
+      diaryLogs: Array.isArray(diaryLogs)
         ? diaryLogs.map((log) => {
-            if (!isRecord(log) || !isNonNegativeSafeInteger(log.completedAt)) return log;
+            if (!isRecord(log) || !isTimestamp(log.completedAt)) return log;
             return {
               ...log,
+              startInfo: null,
+              logDate: value.schemaVersion === 5 && log.completedDate === undefined
+                ? localDateKey(log.completedAt) : log.completedDate,
               // v5 did not store the original timezone, so only the current local date is recoverable.
-              completedDate: log.completedDate ?? localDateKey(log.completedAt),
+              completedDate: value.schemaVersion === 5 && log.completedDate === undefined ? localDateKey(log.completedAt) : log.completedDate,
             };
           })
         : diaryLogs,
@@ -406,37 +476,57 @@ export function parsePersistedState(
 export type AppStateRepository = {
   load: () => Promise<AppState>;
   save: (state: AppState) => Promise<void>;
+  initializePreservedData: () => Promise<void>;
 };
 
 export function createAppStateRepository(
   storage: StorageLike = AsyncStorage,
   catalog: StoryCatalog = STORY_CATALOG,
 ): AppStateRepository {
+  let writable = false;
+  let preservedRaw: string | null = null;
+
+  const readRaw = async () => {
+    try {
+      return await storage.getItem(APP_STATE_STORAGE_KEY);
+    } catch (error) {
+      throw new AppStateStorageError("read", "アプリ状態を読み込めませんでした。", error);
+    }
+  };
+  const writeRaw = async (key: string, raw: string) => {
+    try {
+      await storage.setItem(key, raw);
+    } catch (error) {
+      throw new AppStateStorageError("write", "保存できませんでした。内容は確定していません。もう一度お試しください。", error);
+    }
+  };
+  const preserve = (raw: string) => {
+    writable = false;
+    preservedRaw = raw;
+    return new PreservedDataError();
+  };
   const repository: AppStateRepository = {
     async load() {
-      let raw: string | null;
-      try {
-        raw = await storage.getItem(APP_STATE_STORAGE_KEY);
-      } catch (error) {
-        throw new AppStateStorageError(
-          "read",
-          "アプリ状態を読み込めませんでした。",
-          error,
-        );
-      }
+      writable = false;
+      preservedRaw = null;
+      const raw = await readRaw();
 
       if (raw === null) {
+        writable = true;
         return createInitialAppState();
       }
 
       const state = parsePersistedState(raw, catalog);
-      if (state && JSON.parse(raw).schemaVersion !== APP_SCHEMA_VERSION) {
+      if (!state) throw preserve(raw);
+      writable = true;
+      if (JSON.parse(raw).schemaVersion !== APP_SCHEMA_VERSION) {
         await repository.save(state);
       }
-      return state ?? createInitialAppState();
+      return state;
     },
 
     async save(state) {
+      if (!writable) throw new PreservedDataError();
       if (!validateAppState(state, catalog)) {
         throw new AppStateStorageError(
           "write",
@@ -444,18 +534,29 @@ export function createAppStateRepository(
         );
       }
 
-      try {
-        await storage.setItem(APP_STATE_STORAGE_KEY, JSON.stringify(state));
-      } catch (error) {
-        throw new AppStateStorageError(
-          "write",
-          "アプリ状態を保存できませんでした。",
-          error,
-        );
-      }
+      const raw = await readRaw();
+      if (raw !== null && !parsePersistedState(raw, catalog)) throw preserve(raw);
+      await writeRaw(APP_STATE_STORAGE_KEY, JSON.stringify(state));
+    },
+
+    async initializePreservedData() {
+      if (writable || preservedRaw === null) throw new Error("初期化対象を再読込してください。");
+      const raw = await readRaw();
+      if (raw !== preservedRaw) throw new Error("保存データが変わりました。再読込して確認してください。");
+      // Keep the exact bytes under a new key, even after successful initialization.
+      const backupKey = `${RECOVERY_STORAGE_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      if (await storage.getItem(backupKey) !== null) throw new Error("退避先が使用中のため初期化を中止しました。もう一度お試しください。");
+      await writeRaw(backupKey, raw);
+      if (await storage.getItem(backupKey) !== raw) throw new Error("退避データを確認できないため初期化を中止しました。");
+      if (await readRaw() !== raw) throw new Error("保存データが変わったため初期化を中止しました。");
+      await writeRaw(APP_STATE_STORAGE_KEY, JSON.stringify(createInitialAppState()));
+      preservedRaw = null;
+      writable = true;
     },
   };
   return repository;
 }
 
-export const appStateRepository = createAppStateRepository();
+export const appStateRepository = createAppStateRepository(
+  __DEV__ ? developmentStorage(AsyncStorage, APP_STATE_STORAGE_KEY) : AsyncStorage,
+);

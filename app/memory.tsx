@@ -1,4 +1,4 @@
-import { router } from "expo-router";
+import useGuardedPush from "@/src/hooks/useGuardedPush";
 import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
@@ -10,6 +10,7 @@ import { STORY_EPISODES } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function MemoryScreen() {
+  const push = useGuardedPush();
   const { state } = useAppState();
 
   if (!state) {
@@ -52,7 +53,7 @@ export default function MemoryScreen() {
               actionLabel={isUnlocked ? `${episode.title}を再生` : "未解放"}
               disabled={!isUnlocked}
               onPress={() =>
-                router.push({
+                push({
                   pathname: "/story",
                   params: { episode: String(episode.id), source: "memory" },
                 })
