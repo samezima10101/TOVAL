@@ -161,7 +161,6 @@ Q01の根拠は[開発環境比較](development-operations.md)。Q02〜04/06〜0
 - `Fonts`は定義のみ、`userName`は保持/移行のみ。不要か将来の利用予定かは未確定。[theme](../../src/constants/theme.ts)、[Repository](../../src/storage/appStateRepository.ts)。
 - Reactロゴ3画像は追跡されているがアプリで参照なし。[assets/images](../../assets/images/)。
 - expo-haptics、expo-symbols、expo-linking、expo-system-ui、react-native-reanimated等はアプリソースに直接importなし。ただしRouter等の間接依存・ネイティブ設定上の必要性を調べず不要とは断定しない。[package](../../package.json)、[app.json](../../app.json)。
-- `reset-project`はテンプレート初期化用として残る。通常作業で誤実行すると画面ソースを移動/削除する。[スクリプト](../../scripts/reset-project.js)。
 - themeの「light and dark mode」コメントに対してColorsは1種類。リリース要件の「ショップ機能」に「1秒1NT」とある一方、画面要件には「実装なし」が残る。原文の編集意図は要確認。[theme](../../src/constants/theme.ts)、[リリース要件](../リリース版要件定義.md)。
 
 ## テストの不足

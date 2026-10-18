@@ -111,9 +111,8 @@ expo export --platform ios --output-dir dist/iosを実行する。1510モジュ�
 | doctor | 固定したexpo-doctor |
 | deps:check | SDK推奨依存の照合 |
 | bundle:ios | iOS向けJS・アセット・Hermesバンドルの生成 |
-| reset-project | テンプレート初期化用の破壊的操作。開発準備には使わない |
 
-android/iosは製品ビルドを生成するコマンドではない。reset-projectはルートのapp/components/hooks/constants/scriptsを移動または削除し、テンプレートを生成する。端末内保存データのリセットではなく、今回実行していない。
+android/iosは製品ビルドを生成するコマンドではない。
 
 ## 検証結果
 
