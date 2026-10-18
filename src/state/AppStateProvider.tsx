@@ -62,6 +62,7 @@ type AppStateContextValue = {
   timerSaveError: string | null;
   retryTimerSave: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
+  setBgmEnabled: (enabled: boolean) => Promise<void>;
   updateDiary: (logId: string, diary: string) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
@@ -292,6 +293,16 @@ export function AppStateProvider({
     [enqueue, requireState, saveAndCommit],
   );
 
+  const setBgmEnabled = useCallback(
+    (enabled: boolean) => enqueue(async () => {
+      const current = requireState();
+      if (current.bgmEnabled !== enabled) {
+        await saveAndCommit({ ...current, bgmEnabled: enabled });
+      }
+    }),
+    [enqueue, requireState, saveAndCommit],
+  );
+
   const updateDiary = useCallback(
     (logId: string, diary: string) => enqueue(async () => {
       await saveAndCommit(editDiary(requireState(), logId, diary));
@@ -418,6 +429,7 @@ export function AppStateProvider({
       timerSaveError,
       retryTimerSave,
       setTaskName,
+      setBgmEnabled,
       updateDiary,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
@@ -441,6 +453,7 @@ export function AppStateProvider({
       unlockSideStory,
       announceSideStories,
       setTaskName,
+      setBgmEnabled,
       updateDiary,
       setTimerRouteFocused,
       startTimer,

@@ -22,7 +22,7 @@
 | メイン会話 | 全3話。文字送り、途中タップで全文表示、第1話に2分岐。初回選択は無料、別分岐は60 NT | [本文](../../src/domain/storyData.ts)、[読取フック](../../src/hooks/useStoryReader.ts)、[Provider](../../src/state/AppStateProvider.tsx) |
 | メモリー | 解放したメイン会話を再生。タイトル・話数・解放日を表示 | [メモリー](../../app/memory.tsx) |
 | ショップ | 店員の挨拶・退店会話、サイド会話3件を各60 NTで購入・再生。うち2件は第2話の読了後に入荷 | [ショップ](../../app/shop.tsx)、[商品](../../src/content/shop.ts)、[入荷条件](../../src/domain/sideStory.ts) |
-| BGM | 全7ルートに同一ローカル音源を割当、音量0.3、ループ。消音スイッチ下での再生設定あり | [BGM定義](../../src/constants/bgm.ts)、[再生](../../src/hooks/useScreenBgm.ts) |
+| BGM | 7画面の割当を専用設定で管理、現在は1曲。ショップ/サイドはnon（無音）、他5画面はdefault。共通音量0.3・ループ、ホームでオン/オフ保存、消音遵守・非active停止。音声失敗は共通通知/再試行。変更後の実機操作は未検証 | [設定・編集方法](../bgm-settings.md)、[再生](../../src/hooks/useScreenBgm.ts)、[検証](../verification/bgm-2026-10-17.md) |
 | 省電力表示 | タイマー上の黒画面モーダル。タップで復帰し、画面フォーカスを維持して計測を続ける | [タイマー画面](../../app/timer.tsx) |
 
 ## 構成と責務
@@ -53,6 +53,6 @@
 | 話数 | α3話、β14話、リリース60話 | メイン3話、サイド3件。第2・3話に分岐なし | [本文](../../src/domain/storyData.ts)、[商品](../../src/content/shop.ts) |
 | ユーザー名 | 要件に名前とヘッダー表示あり | 保存項目はあるが初期値空。入力・更新・表示UIなし | [型](../../src/domain/common/types.ts)、[保存](../../src/storage/appStateRepository.ts)、[レイアウト](../../app/_layout.tsx) |
 | ログの時刻 | β要件は「タイマー起動時間」 | 開始ボタンの時刻・日付を保存し、開始日へ所属。終了情報は完了/解放用に保持。旧開始情報を推定しない。タスク名はログに残さない | [開始処理](../../src/state/AppStateProvider.tsx)、[完了](../../src/domain/completion.ts)、[ログ表示](../../src/components/log/LogModal.tsx) |
-| リリース機能 | 休憩・BGM/環境音/背景の設定と購入・会話オート | 固定BGM/背景のみ。休憩・設定/購入・会話オートは未実装 | [タイマー](../../app/timer.tsx)、[BGM](../../src/constants/bgm.ts)、[読取フック](../../src/hooks/useStoryReader.ts) |
+| リリース機能 | 休憩・BGM/環境音/背景の設定と購入・会話オート | BGMは画面別割当とオン/オフ保存を実装。背景は固定。休憩・環境音/背景購入・音量UI・会話オートは未実装 | [タイマー](../../app/timer.tsx)、[BGM](../../src/config/audioSettings.ts)、[読取フック](../../src/hooks/useStoryReader.ts) |
 
 **要確認**: α・β・リリースのどれが現在の受け入れ基準か。「β未完了」は妥当でも、どの未実装が必要かは計画の決定が必要。[未解決事項](open-questions.md)で整理する。

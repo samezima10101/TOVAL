@@ -1,4 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DEFAULT_BGM_ENABLED } from "@/src/config/audioSettings";
 
 import { localDateKey } from "@/src/domain/common/date";
 import {
@@ -45,6 +46,7 @@ export class AppStateStorageError extends Error {
 export function createInitialAppState(): AppState {
   return {
     schemaVersion: APP_SCHEMA_VERSION,
+    bgmEnabled: DEFAULT_BGM_ENABLED,
     userName: "",
     taskName: "",
     totalNt: 0,
@@ -269,6 +271,7 @@ export function validateAppState(
   }
 
   if (
+    typeof value.bgmEnabled !== "boolean" ||
     typeof value.userName !== "string" ||
     typeof value.taskName !== "string" ||
     typeof value.totalNt !== "number" ||
@@ -417,12 +420,17 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
+  // v9 predates BGM preferences. Preserve every other field exactly.
+  if (isRecord(value) && value.schemaVersion === 9) {
+    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, bgmEnabled: DEFAULT_BGM_ENABLED };
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
   // v8 had read/unread flags. Validate their old types before discarding only
   // that retired field; do not turn malformed old records into valid saves.
   if (isRecord(value) && value.schemaVersion === 8) {
     const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
     if (!unlockedStories) return null;
-    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, unlockedStories };
+    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, unlockedStories, bgmEnabled: DEFAULT_BGM_ENABLED };
     return validateAppState(migrated, catalog) ? migrated : null;
   }
   // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
@@ -441,6 +449,7 @@ export function parsePersistedState(
     const migrated = {
       ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
+      bgmEnabled: DEFAULT_BGM_ENABLED,
       unlockedStories,
       activeTimer: isRecord(value.activeTimer) ? { ...value.activeTimer, startInfo: null } : value.activeTimer,
       purchasedSideStoryIds: isSideStoryUnlocked === true ? [...new Set([...purchased, 101])] : purchased,

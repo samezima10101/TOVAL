@@ -1,4 +1,4 @@
-export const APP_SCHEMA_VERSION = 9;
+export const APP_SCHEMA_VERSION = 10;
 export const MAX_DIARY_LENGTH = 1000;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 
@@ -70,6 +70,7 @@ export type DiaryLog = {
 
 export type AppState = {
   schemaVersion: typeof APP_SCHEMA_VERSION;
+  bgmEnabled: boolean;
   userName: string;
   taskName: string;
   totalNt: number;

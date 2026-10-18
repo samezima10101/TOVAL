@@ -4,7 +4,7 @@ import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
-import { getScreenBgm } from "@/src/constants/bgm";
+import { AUDIO_VOLUMES, getScreenBgm } from "@/src/config/audioSettings";
 import { Colors } from "@/src/constants/theme";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
@@ -43,7 +43,11 @@ function AppShell() {
       } },
     ],
   );
-  useScreenBgm(status === "ready" && state ? getScreenBgm(pathname) : null);
+  const bgm = useScreenBgm(
+    status === "ready" && state ? getScreenBgm(pathname) : null,
+    status === "ready" && !!state?.bgmEnabled,
+    AUDIO_VOLUMES.bgm,
+  );
 
   if (status === "loading") {
     return <StatusMessage message="My-Juneを準備しています…" />;
@@ -75,6 +79,13 @@ function AppShell() {
         <View style={styles.saveError} accessibilityRole="alert">
           <Text style={styles.statusDetail}>{timerSaveError}</Text>
           <PrimaryButton title="タイマー保存を再試行" onPress={retryTimer} />
+        </View>
+      ) : null}
+
+      {bgm.error ? (
+        <View style={styles.saveError} accessibilityRole="alert">
+          <Text style={styles.statusDetail}>{bgm.error}</Text>
+          <PrimaryButton title="BGMを再試行" onPress={bgm.retry} />
         </View>
       ) : null}
 

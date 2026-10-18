@@ -9,6 +9,8 @@
 
 2026-10-15追記: 調査後にA01/A04とA03/A05の実装を行い、関係するデータ・画面・フローを更新した。以下の調査時点の診断結果と最新結果は区別する。最新の[記録・計測保護](../manual-acceptance-checklist.md#record-protection)と[日付・ログ](../manual-acceptance-checklist.md#date-record-alignment)の記録を参照。iPhone実機は未検証。
 
+2026-10-17追記: 工程4後半のBGM実装・保存v10・録音/背景設定無効化を反映。[BGM編集方法](../bgm-settings.md)と[最新の検証結果](../verification/bgm-2026-10-17.md)を参照。UI/iPhone回帰と仮素材段階の機能完成は未合格。
+
 ## 読む順序
 
 | 文書 | 内容 |

@@ -10,6 +10,7 @@ import {
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
+import BgmToggle from "@/src/components/home/BgmToggle";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Colors } from "@/src/constants/theme";
@@ -132,6 +133,8 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>📅 ログを見る</Text>
           </TouchableOpacity>
         </View>
+
+        <BgmToggle />
 
         <View style={styles.storyProgress}>
           <Text style={styles.storyProgressTitle}>STORY PROGRESS</Text>
