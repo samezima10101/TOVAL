@@ -13,7 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import DiaryModal from "@/src/components/timer/DiaryModal";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
@@ -140,7 +140,7 @@ export default function TimerScreen() {
         />
         {timerSaveError ? (
           <View style={styles.blackScreenError} accessibilityRole="alert">
-            <Text style={{ color: "white" }}>{timerSaveError}</Text>
+            <Text style={{ color: "white", fontFamily: Fonts.regular }}>{timerSaveError}</Text>
             <PrimaryButton title="タイマー保存を再試行" onPress={() => void retrySave()} disabled={isProcessing} />
           </View>
         ) : null}
@@ -179,12 +179,12 @@ const styles = StyleSheet.create({
   cancelText: {
     color: Colors.surface,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   overtimeLabel: {
     color: Colors.surface,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     padding: 10,
   },
   timerWrapper: {
@@ -196,13 +196,13 @@ const styles = StyleSheet.create({
   taskLabel: {
     color: "rgba(255,255,255,0.75)",
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     letterSpacing: 1,
   },
   taskName: {
     color: Colors.surface,
     fontSize: 22,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginTop: 8,
     textAlign: "center",
   },
@@ -210,16 +210,17 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     fontSize: 66,
     fontVariant: ["tabular-nums"],
-    fontWeight: "800",
+    fontFamily: Fonts.timer,
     marginTop: 42,
   },
   statusText: {
     color: Colors.surface,
     fontSize: 16,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     marginTop: 16,
   },
   earnedText: {
+    fontFamily: Fonts.regular,
     color: "rgba(255,255,255,0.8)",
     fontSize: 13,
     marginTop: 10,
@@ -240,12 +241,14 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   finishHint: {
+    fontFamily: Fonts.regular,
     color: "rgba(255,255,255,0.8)",
     fontSize: 12,
     marginTop: 10,
     textAlign: "center",
   },
   error: {
+    fontFamily: Fonts.regular,
     backgroundColor: "rgba(255,255,255,0.9)",
     borderRadius: 8,
     color: Colors.warning,

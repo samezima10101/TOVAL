@@ -7,7 +7,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import StoryListCard from "@/src/components/common/StoryListCard";
 import StoryListHeader from "@/src/components/common/StoryListHeader";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { StoryEpisode } from "@/src/domain/common/types";
 import { getSideStorySetting } from "@/src/config/conversationSettings";
 import {
@@ -142,7 +142,7 @@ function ShopGreeting({ episode, onFinish, onClose }: {
 const styles = StyleSheet.create({
   container: { backgroundColor: Colors.background, flex: 1 },
   scrollContainer: { padding: 20, paddingBottom: 34 },
-  intro: { color: Colors.textSub, fontSize: 14, lineHeight: 22, marginBottom: 16 },
+  intro: { fontFamily: Fonts.regular, color: Colors.textSub, fontSize: 14, lineHeight: 22, marginBottom: 16 },
   character: { flex: 1, alignItems: "center", justifyContent: "center" },
-  error: { color: Colors.warning, textAlign: "center", marginHorizontal: 18 },
+  error: { fontFamily: Fonts.regular, color: Colors.warning, textAlign: "center", marginHorizontal: 18 },
 });

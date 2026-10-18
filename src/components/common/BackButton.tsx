@@ -1,4 +1,4 @@
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { router } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
@@ -31,6 +31,6 @@ const styles = StyleSheet.create({
   backText: {
     color: Colors.textSub,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
 });

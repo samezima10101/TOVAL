@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import StoryListCard from "@/src/components/common/StoryListCard";
 import StoryListHeader from "@/src/components/common/StoryListHeader";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { formatLocalDate } from "@/src/domain/common/date";
 import { STORY_EPISODES } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
@@ -70,6 +70,7 @@ const styles = StyleSheet.create({
   container: { backgroundColor: Colors.background, flex: 1 },
   scrollContainer: { padding: 20, paddingBottom: 34 },
   intro: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 14,
     lineHeight: 22,
@@ -86,7 +87,7 @@ const styles = StyleSheet.create({
   completeText: {
     color: Colors.accent,
     fontSize: 14,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
 });

@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View } from "react-native";
 
 import BackButton from "@/src/components/common/BackButton";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 
 export default function StoryListHeader({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
@@ -23,6 +23,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 13,
   },
-  title: { color: Colors.text, fontSize: 19, fontWeight: "800" },
+  title: { color: Colors.text, fontSize: 19, fontFamily: Fonts.medium },
   spacer: { width: 62 },
 });

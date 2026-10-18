@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 
 type Props = {
   label: string;
@@ -57,10 +57,10 @@ const styles = StyleSheet.create({
   unlockedCard: { backgroundColor: Colors.surface, borderColor: Colors.primary },
   lockedCard: { backgroundColor: "#EEF1F5", borderColor: Colors.border },
   content: { flex: 1, paddingRight: 12 },
-  label: { color: Colors.primary, fontSize: 13, fontWeight: "800", marginBottom: 5 },
-  title: { color: Colors.text, fontSize: 17, fontWeight: "800", lineHeight: 24 },
+  label: { color: Colors.primary, fontSize: 13, fontFamily: Fonts.regular, marginBottom: 5 },
+  title: { color: Colors.text, fontSize: 17, fontFamily: Fonts.medium, lineHeight: 24 },
   lockedText: { color: Colors.textSub },
-  detail: { color: Colors.textSub, fontSize: 12, marginTop: 7 },
+  detail: { fontFamily: Fonts.regular, color: Colors.textSub, fontSize: 12, marginTop: 7 },
   actionButton: {
     alignItems: "center",
     backgroundColor: Colors.primary,
@@ -70,5 +70,5 @@ const styles = StyleSheet.create({
     width: 64,
   },
   disabledButton: { backgroundColor: Colors.border },
-  actionText: { color: Colors.surface, fontSize: 12, fontWeight: "800" },
+  actionText: { color: Colors.surface, fontSize: 12, fontFamily: Fonts.bold },
 });

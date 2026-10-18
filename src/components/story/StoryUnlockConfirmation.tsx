@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 
 type StoryUnlockConfirmationProps = {
   priceNt: number;
@@ -84,15 +84,16 @@ const styles = StyleSheet.create({
   title: {
     color: Colors.primary,
     fontSize: 17,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
   },
   routeLabel: {
     color: Colors.text,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     marginTop: 12,
   },
   balance: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 13,
     marginTop: 8,
@@ -100,7 +101,7 @@ const styles = StyleSheet.create({
   error: {
     color: Colors.warning,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     marginTop: 8,
   },
   actions: {
@@ -117,7 +118,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     minHeight: 48,
   },
-  backText: { color: Colors.textSub, fontSize: 14, fontWeight: "700" },
+  backText: { color: Colors.textSub, fontSize: 14, fontFamily: Fonts.bold },
   unlockButton: {
     alignItems: "center",
     backgroundColor: Colors.primary,
@@ -127,5 +128,5 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   disabled: { opacity: 0.6 },
-  unlockText: { color: Colors.surface, fontSize: 14, fontWeight: "800" },
+  unlockText: { color: Colors.surface, fontSize: 14, fontFamily: Fonts.bold },
 });

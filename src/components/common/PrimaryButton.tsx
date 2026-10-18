@@ -1,4 +1,4 @@
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import {
     ActivityIndicator,
     StyleSheet,
@@ -62,6 +62,6 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.surface,
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: Fonts.bold,
   },
 });

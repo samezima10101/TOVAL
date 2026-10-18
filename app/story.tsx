@@ -8,7 +8,7 @@ import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmation";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { EpisodeId } from "@/src/domain/common/types";
 import {
   STORY_CATALOG,
@@ -261,7 +261,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
     fontSize: 16,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginRight: 10,
   },
   closeButton: {
@@ -271,8 +271,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  closeText: { color: Colors.textSub, fontSize: 13, fontWeight: "700" },
+  closeText: { color: Colors.textSub, fontSize: 13, fontFamily: Fonts.bold },
   error: {
+    fontFamily: Fonts.regular,
     backgroundColor: "#FFF1F0",
     borderColor: Colors.warning,
     borderRadius: 8,
@@ -295,10 +296,11 @@ const styles = StyleSheet.create({
   invalidTitle: {
     color: Colors.text,
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
   invalidDescription: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 14,
     lineHeight: 22,

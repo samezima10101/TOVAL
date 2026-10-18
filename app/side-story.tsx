@@ -6,7 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import BackButton from "@/src/components/common/BackButton";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { SHOP_CONVERSATIONS, SIDE_STORY } from "@/src/domain/sideStory";
 import useConversationExit from "@/src/hooks/useConversationExit";
 import useStoryReader from "@/src/hooks/useStoryReader";
@@ -77,8 +77,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 8,
   },
-  title: { color: Colors.text, fontSize: 18, fontWeight: "800" },
-  close: { color: Colors.textSub, fontSize: 14, fontWeight: "700", padding: 8 },
-  invalid: { color: Colors.text, fontSize: 18, fontWeight: "800", textAlign: "center", marginTop: 100 },
-  error: { color: Colors.warning, textAlign: "center", marginTop: 12 },
+  title: { color: Colors.text, fontSize: 18, fontFamily: Fonts.bold },
+  close: { color: Colors.textSub, fontSize: 14, fontFamily: Fonts.bold, padding: 8 },
+  invalid: { color: Colors.text, fontSize: 18, fontFamily: Fonts.bold, textAlign: "center", marginTop: 100 },
+  error: { fontFamily: Fonts.regular, color: Colors.warning, textAlign: "center", marginTop: 12 },
 });

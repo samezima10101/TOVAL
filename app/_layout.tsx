@@ -3,9 +3,10 @@ import React from "react";
 import { Alert, Image, StyleSheet, Text, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 
+import AppFontLoader from "@/src/components/common/AppFontLoader";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { AUDIO_VOLUMES, getScreenBgm } from "@/src/config/audioSettings";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 import { PreservedDataError } from "@/src/storage/appStateRepository";
@@ -13,9 +14,11 @@ import { PreservedDataError } from "@/src/storage/appStateRepository";
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
-      <AppStateProvider>
-        <AppShell />
-      </AppStateProvider>
+      <AppFontLoader>
+        <AppStateProvider>
+          <AppShell />
+        </AppStateProvider>
+      </AppFontLoader>
     </SafeAreaProvider>
   );
 }
@@ -177,7 +180,7 @@ const styles = StyleSheet.create({
   pointText: {
     color: Colors.text,
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily: Fonts.medium,
     marginRight: 14,
   },
   screenContainer: {
@@ -203,7 +206,7 @@ const styles = StyleSheet.create({
   logoText: {
     color: Colors.textSub,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   statusContainer: {
     alignItems: "center",
@@ -215,10 +218,11 @@ const styles = StyleSheet.create({
   statusTitle: {
     color: Colors.text,
     fontSize: 18,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
   statusDetail: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 13,
     marginTop: 10,

@@ -13,7 +13,7 @@ import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import BgmToggle from "@/src/components/home/BgmToggle";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import {
   getLatestUnlockedEpisode,
@@ -193,13 +193,13 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: Colors.textSub,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     letterSpacing: 1.4,
   },
   taskName: {
     color: Colors.primary,
     fontSize: 30,
-    fontWeight: "800",
+    fontFamily: Fonts.pixel,
     marginTop: 8,
   },
   statusRow: {
@@ -220,7 +220,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: Colors.textSub,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.pixel,
   },
   statsCard: {
     backgroundColor: Colors.surface,
@@ -240,9 +240,10 @@ const styles = StyleSheet.create({
   statValue: {
     color: Colors.text,
     fontSize: 17,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
   },
   statLabel: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 12,
     marginTop: 4,
@@ -265,14 +266,16 @@ const styles = StyleSheet.create({
   activeTitle: {
     color: Colors.text,
     fontSize: 15,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
   },
   activeDescription: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 13,
     marginTop: 3,
   },
   activeArrow: {
+    fontFamily: Fonts.regular,
     color: Colors.accent,
     fontSize: 30,
     marginLeft: 10,
@@ -294,7 +297,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: Colors.textSub,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   storyProgress: {
     borderTopColor: Colors.border,
@@ -305,10 +308,11 @@ const styles = StyleSheet.create({
   storyProgressTitle: {
     color: Colors.textSub,
     fontSize: 12,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
   },
   storyProgressText: {
+    fontFamily: Fonts.pixel,
     color: Colors.text,
     fontSize: 15,
     marginTop: 7,
