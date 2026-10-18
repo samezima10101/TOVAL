@@ -1,4 +1,4 @@
-// 仮本文: docs/story-drafts/episode11.md。話ID・分岐IDは購入記録の識別子。
+// 仮本文。編集方法: docs/conversation-settings.md。話ID・分岐IDは購入記録の識別子。
 import type { StoryEpisode } from '@/src/domain/common/types';
 
 export const episode11: StoryEpisode = {
