@@ -1,7 +1,7 @@
 import Ionicons from "@expo/vector-icons/Ionicons";
 import { router, useFocusEffect } from "expo-router";
 import { useIsFocused, usePreventRemove } from "expo-router/react-navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import StoryListCard from "@/src/components/common/StoryListCard";
@@ -18,34 +18,57 @@ import {
 } from "@/src/content/shop";
 import { listAvailableConversations, ShopConversation } from "@/src/domain/sideStory";
 import useStoryReader from "@/src/hooks/useStoryReader";
+import useShopTabExit from "@/src/hooks/useShopTabExit";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function ShopScreen() {
   const { state, unlockSideStory, announceSideStories } = useAppState();
+  const stateRef = useRef(state);
+  useLayoutEffect(() => { stateRef.current = state; }, [state]);
   const [phase, setPhase] = useState<"greeting" | "list" | "farewell" | "closed">("greeting");
   const [isPurchasing, setIsPurchasing] = useState(false);
   const busyRef = useRef(false);
   const phaseRef = useRef(phase);
   const replayingRef = useRef(false);
   const exitDispatchedRef = useRef(false);
+  const pendingExitRef = useRef<(() => void) | null>(null);
+  const shopTabExitRef = useShopTabExit();
   const isFocused = useIsFocused();
-  const changePhase = (next: typeof phase) => { phaseRef.current = next; setPhase(next); };
+  const changePhase = useCallback((next: typeof phase) => { phaseRef.current = next; setPhase(next); }, []);
   const setBusy = (next: boolean) => { busyRef.current = next; setIsPurchasing(next); };
-  useFocusEffect(useCallback(() => { replayingRef.current = false; }, []));
-  const [newConversationIds] = useState(() => state
+  const [newConversationIds, setNewConversationIds] = useState(() => state
     ? listAvailableConversations(state).filter((item) => !state.announcedSideStoryIds.includes(item.id)).map((item) => item.id)
     : []);
 
-  const handleBack = () => {
-    if (busyRef.current || replayingRef.current) return;
-    if (phaseRef.current === "greeting" || phaseRef.current === "list") changePhase("farewell");
-    // Repeated back/swipe cannot skip or restart the farewell.
-  };
+  useFocusEffect(useCallback(() => {
+    replayingRef.current = false;
+    // A new tab visit starts a greeting; returning from playback keeps the list.
+    if (phaseRef.current !== "closed") return;
+    pendingExitRef.current = null;
+    exitDispatchedRef.current = false;
+    const current = stateRef.current;
+    setNewConversationIds(current
+      ? listAvailableConversations(current).filter((item) => !current.announcedSideStoryIds.includes(item.id)).map((item) => item.id)
+      : []);
+    changePhase("greeting");
+  }, [changePhase]));
+
+  const requestExit = useCallback((leave: () => void) => {
+    if (busyRef.current || replayingRef.current || pendingExitRef.current) return;
+    pendingExitRef.current = leave;
+    changePhase("farewell");
+  }, [changePhase]);
+  useEffect(() => {
+    shopTabExitRef.current = requestExit;
+    return () => { shopTabExitRef.current = null; };
+  }, [requestExit, shopTabExitRef]);
+
+  const handleBack = () => requestExit(() => router.navigate("/"));
   usePreventRemove(isFocused && phase !== "closed", handleBack);
   useEffect(() => {
     if (phase === "closed" && !exitDispatchedRef.current) {
       exitDispatchedRef.current = true;
-      router.dismissTo("/");
+      pendingExitRef.current?.();
     }
   }, [phase]);
 

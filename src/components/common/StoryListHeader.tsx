@@ -6,7 +6,7 @@ import { Colors, Fonts } from "@/src/constants/theme";
 export default function StoryListHeader({ title, onBack }: { title: string; onBack?: () => void }) {
   return (
     <View style={styles.header}>
-      <BackButton onPress={onBack} />
+      {onBack ? <BackButton onPress={onBack} /> : <View style={styles.spacer} />}
       <Text style={styles.title}>{title}</Text>
       <View style={styles.spacer} />
     </View>

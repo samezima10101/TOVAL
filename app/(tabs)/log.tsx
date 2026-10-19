@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
 
-import BackButton from "@/src/components/common/BackButton";
+import StoryListHeader from "@/src/components/common/StoryListHeader";
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
 import { Colors } from "@/src/constants/theme";
@@ -29,7 +29,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <BackButton />
+      <StoryListHeader title="ログ" />
       <CustomCalendar
         selectedDate={selectedDate}
         recordedDates={recordedDates}

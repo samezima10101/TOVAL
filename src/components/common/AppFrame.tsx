@@ -10,9 +10,11 @@ export default function AppFrame({
   children,
   bgmError,
   onRetryBgm,
+  showFooter = true,
 }: React.PropsWithChildren<{
   bgmError: string | null;
   onRetryBgm: () => void;
+  showFooter?: boolean;
 }>) {
   const { state, timerSaveError, retryTimerSave } = useAppState();
   const retryTimer = () => {
@@ -50,17 +52,19 @@ export default function AppFrame({
 
       <View style={styles.screenContainer}>{children}</View>
 
-      <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
-        <View style={styles.footer}>
-          <Image
-            source={require("@/assets/images/icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-            accessibilityLabel="My-Juneロゴ"
-          />
-          <Text style={styles.logoText}>My-June</Text>
-        </View>
-      </SafeAreaView>
+      {showFooter ? (
+        <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
+          <View style={styles.footer}>
+            <Image
+              source={require("@/assets/images/icon.png")}
+              style={styles.logo}
+              resizeMode="contain"
+              accessibilityLabel="My-Juneロゴ"
+            />
+            <Text style={styles.logoText}>My-June</Text>
+          </View>
+        </SafeAreaView>
+      ) : null}
     </View>
   );
 }

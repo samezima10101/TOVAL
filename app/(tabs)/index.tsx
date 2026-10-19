@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import useGuardedPush from "@/src/hooks/useGuardedPush";
 import React from "react";
 import {
@@ -58,7 +59,7 @@ export default function HomeScreen() {
       >
         <HomeStoryCard
           latestUnlockedEpisode={latestUnlockedEpisode}
-          onOpenShop={() => push("/shop")}
+          onOpenShop={() => router.navigate("/shop")}
         />
 
         <View style={styles.intro}>
@@ -117,7 +118,7 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>タスクを編集</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => push("/memory")}
+            onPress={() => router.navigate("/memory")}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="メモリーを開く"
@@ -125,7 +126,7 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>📖 メモリーを見る</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => push("/log")}
+            onPress={() => router.navigate("/log")}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="ログを開く"
