@@ -1,4 +1,4 @@
-import { Stack, usePathname, useSegments } from "expo-router";
+import { Stack, usePathname } from "expo-router";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import AppFontLoader from "@/src/components/common/AppFontLoader";
@@ -24,7 +24,6 @@ export default function RootLayout() {
 
 function AppShell() {
   const pathname = usePathname();
-  const segments = useSegments();
   const { state, status } = useAppState();
   const bgm = useScreenBgm(
     status === "ready" && state ? getScreenBgm(pathname) : null,
@@ -37,7 +36,6 @@ function AppShell() {
       <AppFrame
         bgmError={bgm.error}
         onRetryBgm={bgm.retry}
-        showFooter={segments[0] !== "(tabs)"}
       >
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" />

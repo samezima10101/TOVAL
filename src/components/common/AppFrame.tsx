@@ -10,11 +10,9 @@ export default function AppFrame({
   children,
   bgmError,
   onRetryBgm,
-  showFooter = true,
 }: React.PropsWithChildren<{
   bgmError: string | null;
   onRetryBgm: () => void;
-  showFooter?: boolean;
 }>) {
   const { state, timerSaveError, retryTimerSave } = useAppState();
   const retryTimer = () => {
@@ -52,19 +50,16 @@ export default function AppFrame({
 
       <View style={styles.screenContainer}>{children}</View>
 
-      {showFooter ? (
-        <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
-          <View style={styles.footer}>
-            <Image
-              source={require("@/assets/images/icon.png")}
-              style={styles.logo}
-              resizeMode="contain"
-              accessibilityLabel="My-Juneロゴ"
-            />
-            <Text style={styles.logoText}>My-June</Text>
-          </View>
-        </SafeAreaView>
-      ) : null}
+      <SafeAreaView edges={["bottom"]} style={styles.safeAreaBottom}>
+        <View style={styles.footer}>
+          <Image
+            source={require("@/assets/images/logo.png")}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel="TOVALロゴ"
+          />
+        </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -108,18 +103,12 @@ const styles = StyleSheet.create({
     borderTopWidth: StyleSheet.hairlineWidth,
     flexDirection: "row",
     justifyContent: "center",
-    minHeight: 60,
-    paddingVertical: 6,
+    height: 60,
   },
   logo: {
-    height: 30,
-    marginRight: 8,
-    width: 30,
-  },
-  logoText: {
-    color: Colors.textSub,
-    fontSize: 13,
-    fontFamily: Fonts.bold,
+    height: 25,
+    alignItems: "center",
+    opacity: 0.5,
   },
   statusDetail: {
     fontFamily: Fonts.regular,
