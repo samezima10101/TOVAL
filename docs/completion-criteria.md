@@ -151,6 +151,7 @@ D02の対象として、現在の機能と回答で追加された機能を扱�
 - UI・壁紙はユーザーがFigmaで開発している。完成後に、そのデザインをアプリへ反映する。
 - 2026-10-20のユーザー指示で背景画像を反映。ショップ（挨拶・商品一覧・退店会話）とサイドストーリーは`assets/bg/shop-bg.png`、ホーム・メモリー・ログ・タイマー・メインストーリー・メニューは`assets/bg/primary-bg.png`を使用する。画像定義と表示は`src/components/common/AppFrame.tsx`へ共通化し、共通フレームでヘッダー背後まで連続して中央配置・縦横比維持のcoverで表示する。iPhoneでの表示・操作は未検証（[確認記録・手順](manual-acceptance-checklist.md#screen-backgrounds)）。
 - 2026-10-18にユーザー提供の[MyJune / UI-v3](https://www.figma.com/design/omePA4nHN8O6RyGVg4sh7M/MyJune?node-id=329-204)を確定デザインとして受領。フォントから反映する指示を受け、Zen Kaku Gothic New（Regular/Medium/Bold/Black）、Bebas Neue、DotGothic16を同梱し、現行画面の対応箇所へ適用した。適用・読み込みは[フォント設定](font-settings.md)、確認結果は[検証記録](verification/fonts-2026-10-18.md)を参照。iPhoneでの表示・オフライン起動は未検証。画面レイアウト・色・素材・ツールバー・設定画面等は未反映であり、A07全体の合格を意味しない。
+- 2026-10-20の追加指示により、共通`PrimaryButton`は提供されたタイマー画面の「スタート」を参考に`assets/images/hex_button.svg`の青い六角形・二重輪郭と白い太字で表示する。標準幅222・最小高さ65とし、長いラベルは折り返す。ホーム・タイマーもこの標準幅を使う。無効・処理中の操作抑止と読み上げを維持する。iPhoneでの表示・操作は未検証（[確認手順](manual-acceptance-checklist.md#primary-button)）。
 - 現在の画面・背景を最終デザインとして自動的に確定しない。
 - 仮素材と正式素材の完成判定は下記の2段階に分ける。対象Figmaファイルと正式素材は第2段階で受け取り、反映対象を記録する。
 

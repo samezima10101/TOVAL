@@ -99,7 +99,6 @@ export default function TimerScreen() {
             onPress={() => void openDiary()}
             disabled={!snapshot.isComplete || isProcessing}
             loading={isProcessing}
-            style={styles.finishButton}
             accessibilityLabel="タイマーを終了して記録"
           />
           <Text style={styles.finishHint}>
@@ -222,9 +221,6 @@ const styles = StyleSheet.create({
   blackScreen: {
     backgroundColor: "#000000",
     flex: 1,
-  },
-  finishButton: {
-    width: "100%",
   },
   finishHint: {
     fontFamily: Fonts.regular,

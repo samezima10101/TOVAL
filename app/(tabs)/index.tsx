@@ -270,7 +270,6 @@ const styles = StyleSheet.create({
   },
   startButton: {
     marginTop: 26,
-    width: "100%",
   },
   links: {
     alignItems: "center",
