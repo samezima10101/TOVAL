@@ -126,7 +126,7 @@ const styles = StyleSheet.create({
   },
   tabBackground: {
     flex: 1,
-    opacity: 0.7,
+    opacity: 0.8,
   },
   tabBarLabel: {
     fontFamily: Fonts.medium,
@@ -139,6 +139,7 @@ const styles = StyleSheet.create({
     height: 70,
     alignItems: "center",
     position: "absolute",
+    borderTopWidth: 0,
   },
   icon: {
     height: 50,

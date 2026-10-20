@@ -1,10 +1,10 @@
 import React, { useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryListHeader from "@/src/components/common/StoryListHeader";
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
-import { Colors } from "@/src/constants/theme";
 import { DiaryLog } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -28,7 +28,7 @@ export default function CalendarScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenBackground style={styles.container}>
       <StoryListHeader title="ログ" />
       <CustomCalendar
         selectedDate={selectedDate}
@@ -44,10 +44,10 @@ export default function CalendarScreen() {
         onChangeDate={setSelectedDate}
         onSaveDiary={updateDiary}
       /> : null}
-    </View>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: Colors.background, flex: 1, padding: 16 },
+  container: { padding: 16 },
 });

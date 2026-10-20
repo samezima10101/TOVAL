@@ -1,7 +1,6 @@
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
-  ImageBackground,
   Modal,
   Pressable,
   StyleSheet,
@@ -12,6 +11,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import DiaryModal from "@/src/components/timer/DiaryModal";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
@@ -35,15 +35,11 @@ export default function TimerScreen() {
   } = useTimerLogic();
 
   if (!activeTimer || !snapshot) {
-    return <View style={styles.emptyContainer} />;
+    return <ScreenBackground />;
   }
 
   return (
-    <ImageBackground
-      source={require("@/assets/bg/bg-timer.jpg")}
-      style={styles.backgroundImage}
-      resizeMode="cover"
-    >
+    <ScreenBackground>
       <SafeAreaView
         style={styles.safeArea}
         edges={["top", "bottom"]}
@@ -153,15 +149,12 @@ export default function TimerScreen() {
         onClose={closeDiary}
         onSave={handleFinish}
       />
-    </ImageBackground>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
   blackScreenError: { position: "absolute", top: 80, left: 24, right: 24, gap: 16 },
-  backgroundImage: {
-    flex: 1,
-  },
   safeArea: {
     flex: 1,
   },
@@ -258,9 +251,5 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     textAlign: "center",
     width: "100%",
-  },
-  emptyContainer: {
-    backgroundColor: Colors.background,
-    flex: 1,
   },
 });

@@ -5,6 +5,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 
 import StoryListCard from "@/src/components/common/StoryListCard";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryListHeader from "@/src/components/common/StoryListHeader";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors, Fonts } from "@/src/constants/theme";
@@ -96,7 +97,7 @@ export default function ShopScreen() {
   const opening = newConversationIds.length ? SHOP_GREETING_WITH_ARRIVALS : SHOP_GREETING;
 
   return (
-    <View style={styles.container}>
+    <ScreenBackground background="shop">
       <StoryListHeader title="ショップ" onBack={handleBack} />
       {phase === "list" ? (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -133,7 +134,7 @@ export default function ShopScreen() {
           }}
         />
       ) : null}
-    </View>
+    </ScreenBackground>
   );
 }
 
@@ -163,7 +164,7 @@ function ShopGreeting({ episode, onFinish, onClose }: {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: Colors.background, flex: 1 },
+  container: { flex: 1 },
   scrollContainer: { padding: 20, paddingBottom: 34 },
   intro: { fontFamily: Fonts.regular, color: Colors.textSub, fontSize: 14, lineHeight: 22, marginBottom: 16 },
   character: { flex: 1, alignItems: "center", justifyContent: "center" },

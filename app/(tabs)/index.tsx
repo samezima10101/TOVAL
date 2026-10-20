@@ -10,6 +10,7 @@ import {
 } from "react-native";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import BgmToggle from "@/src/components/home/BgmToggle";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
@@ -52,7 +53,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <View style={styles.container}>
+    <ScreenBackground>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -166,7 +167,7 @@ export default function HomeScreen() {
         onStart={handleStartTimer}
         onResume={handleResumeTimer}
       />
-    </View>
+    </ScreenBackground>
   );
 }
 
@@ -180,10 +181,6 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.background,
-    flex: 1,
-  },
   content: {
     padding: 20,
     paddingBottom: 32,

@@ -4,6 +4,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
@@ -44,7 +45,11 @@ export default function StoryScreen({
   catalog?: StoryCatalog;
 }) {
   const params = useLocalSearchParams<{ episode?: string; source?: string; route?: string }>();
-  return <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />;
+  return (
+    <ScreenBackground>
+      <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />
+    </ScreenBackground>
+  );
 }
 
 function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
@@ -249,7 +254,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: Colors.background, flex: 1 },
+  container: { flex: 1 },
   header: {
     alignItems: "center",
     flexDirection: "row",
@@ -288,7 +293,6 @@ const styles = StyleSheet.create({
   },
   invalidContainer: {
     alignItems: "center",
-    backgroundColor: Colors.background,
     flex: 1,
     justifyContent: "center",
     padding: 24,
