@@ -1,10 +1,8 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
-import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
@@ -45,11 +43,7 @@ export default function StoryScreen({
   catalog?: StoryCatalog;
 }) {
   const params = useLocalSearchParams<{ episode?: string; source?: string; route?: string }>();
-  return (
-    <ScreenBackground>
-      <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />
-    </ScreenBackground>
-  );
+  return <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />;
 }
 
 function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
@@ -125,13 +119,13 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
 
   if (!episode || !isUnlocked || (routeId && (!route || !canPlayDirectRoute))) {
     return (
-      <SafeAreaView style={styles.invalidContainer} edges={["top", "bottom"]}>
+      <View style={styles.invalidContainer}>
         <Text style={styles.invalidTitle}>このストーリーはまだ読めません</Text>
         <Text style={styles.invalidDescription}>
           メモリーから解放済みのストーリーを選んでください。
         </Text>
-        <BackButton label="戻る" onPress={handleClose} />
-      </SafeAreaView>
+        <BackButton onPress={handleClose} />
+      </View>
     );
   }
 
@@ -193,7 +187,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const characterLine = line ?? choiceAnchor;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.episodeTitle} numberOfLines={2}>
           Episode {String(episode.id).padStart(2, "0")} {episode.title}
@@ -249,7 +243,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
           disabled={isProcessing}
         />
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 

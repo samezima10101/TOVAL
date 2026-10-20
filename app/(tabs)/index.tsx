@@ -1,5 +1,5 @@
-import { router } from "expo-router";
 import useGuardedPush from "@/src/hooks/useGuardedPush";
+import { router } from "expo-router";
 import React from "react";
 import {
   ScrollView,
@@ -10,23 +10,20 @@ import {
 } from "react-native";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
-import ScreenBackground from "@/src/components/common/ScreenBackground";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
-import BgmToggle from "@/src/components/home/BgmToggle";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Colors, Fonts } from "@/src/constants/theme";
-import useLocalToday from "@/src/hooks/useLocalToday";
 import {
   getLatestUnlockedEpisode,
   STORY_CATALOG,
 } from "@/src/domain/storyData";
+import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function HomeScreen() {
   const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
-  const [isEditingTask, setIsEditingTask] = React.useState(false);
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
   const today = useLocalToday();
 
@@ -36,8 +33,10 @@ export default function HomeScreen() {
 
   const completedToday = state.lastCompletionDate === today;
   const unlockedCount = state.unlockedStories.length;
-  const nextEpisode = STORY_CATALOG.episodes.find((episode) =>
-    !state.unlockedStories.some((story) => story.episodeId === episode.id));
+  const nextEpisode = STORY_CATALOG.episodes.find(
+    (episode) =>
+      !state.unlockedStories.some((story) => story.episodeId === episode.id),
+  );
   const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
   const needsTask = state.taskName.trim().length === 0;
 
@@ -53,7 +52,7 @@ export default function HomeScreen() {
   };
 
   return (
-    <ScreenBackground>
+    <View style={styles.container}>
       <ScrollView
         contentContainerStyle={styles.content}
         keyboardShouldPersistTaps="handled"
@@ -80,7 +79,10 @@ export default function HomeScreen() {
 
         <View style={styles.statsCard}>
           <Stat label="累計完了" value={`${state.totalCompletions}回`} />
-          <Stat label="ストーリー" value={`${unlockedCount} / ${STORY_CATALOG.episodes.length}話`} />
+          <Stat
+            label="ストーリー"
+            value={`${unlockedCount} / ${STORY_CATALOG.episodes.length}話`}
+          />
           <Stat label="現在のNT" value={`${state.totalNt} NT`} />
         </View>
 
@@ -111,14 +113,6 @@ export default function HomeScreen() {
 
         <View style={styles.links}>
           <TouchableOpacity
-            onPress={() => setIsEditingTask(true)}
-            style={styles.linkButton}
-            accessibilityRole="button"
-            accessibilityLabel="タスク名を編集"
-          >
-            <Text style={styles.linkText}>タスクを編集</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
             onPress={() => router.navigate("/memory")}
             style={styles.linkButton}
             accessibilityRole="button"
@@ -136,8 +130,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        <BgmToggle />
-
         <View style={styles.storyProgress}>
           <Text style={styles.storyProgressTitle}>STORY PROGRESS</Text>
           <Text style={styles.storyProgressText}>
@@ -151,14 +143,11 @@ export default function HomeScreen() {
       </ScrollView>
 
       <TaskNameModal
-        visible={needsTask || isEditingTask}
-        required={needsTask}
+        visible={needsTask}
+        required
         initialValue={state.taskName}
-        onClose={() => setIsEditingTask(false)}
-        onSave={async (taskName) => {
-          await setTaskName(taskName);
-          setIsEditingTask(false);
-        }}
+        onClose={() => undefined}
+        onSave={setTaskName}
       />
       <TimerSetupModal
         visible={isTimerSetupOpen}
@@ -167,7 +156,7 @@ export default function HomeScreen() {
         onStart={handleStartTimer}
         onResume={handleResumeTimer}
       />
-    </ScreenBackground>
+    </View>
   );
 }
 
@@ -181,6 +170,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   content: {
     padding: 20,
     paddingBottom: 32,

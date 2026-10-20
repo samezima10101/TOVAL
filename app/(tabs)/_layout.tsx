@@ -1,7 +1,6 @@
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs } from "expo-router";
-import { PlatformPressable } from "expo-router/react-navigation";
 import { useRef } from "react";
 import { StyleSheet } from "react-native";
 
@@ -16,7 +15,6 @@ export default function TabLayout() {
   return (
     <ShopTabExitContext.Provider value={shopExit}>
       <Tabs
-        initialRouteName="index"
         // AppFrame's footer handles the bottom safe area below this bar.
         safeAreaInsets={{ bottom: 0 }}
         screenListeners={({ navigation, route }) => ({
@@ -33,23 +31,11 @@ export default function TabLayout() {
         })}
         screenOptions={{
           headerShown: false,
+          sceneStyle: { backgroundColor: "transparent" },
+          tabBarActiveTintColor: Colors.primary,
+          tabBarInactiveTintColor: Colors.textSub,
           tabBarLabelStyle: styles.tabBarLabel,
           tabBarStyle: styles.tabBar,
-          tabBarButton: (props) => (
-            <PlatformPressable {...props}>
-              {props["aria-selected"] ? (
-                <LinearGradient
-                  colors={["#FFFFFF00", "#FFFFFF", "#FFFFFF00"]}
-                  start={{ x: 0, y: 0.5 }}
-                  end={{ x: 1, y: 0.5 }}
-                  style={styles.activeTabLine}
-                  pointerEvents="none"
-                  accessible={false}
-                />
-              ) : null}
-              {props.children}
-            </PlatformPressable>
-          ),
           tabBarBackground: () => (
             <LinearGradient
               colors={[Colors.text, Colors.background]}
@@ -116,14 +102,6 @@ export default function TabLayout() {
 }
 
 const styles = StyleSheet.create({
-  activeTabLine: {
-    position: "absolute",
-    // Offset the tab bar's top padding to place the line at its upper edge.
-    top: -8,
-    left: "4%",
-    right: "4%",
-    height: 2,
-  },
   tabBackground: {
     flex: 1,
     opacity: 0.8,
@@ -138,7 +116,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     height: 70,
     alignItems: "center",
-    position: "absolute",
     borderTopWidth: 0,
   },
   icon: {

@@ -1,10 +1,7 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
-import React from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 
 import StoryListCard from "@/src/components/common/StoryListCard";
-import ScreenBackground from "@/src/components/common/ScreenBackground";
-import StoryListHeader from "@/src/components/common/StoryListHeader";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { formatLocalDate } from "@/src/domain/common/date";
 import { STORY_EPISODES } from "@/src/domain/storyData";
@@ -24,9 +21,7 @@ export default function MemoryScreen() {
   const allUnlocked = unlocked.size === STORY_EPISODES.length;
 
   return (
-    <ScreenBackground>
-      <StoryListHeader title="メモリー" />
-
+    <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.intro}>
           解放したストーリーを、いつでも読み返せます。
@@ -63,11 +58,12 @@ export default function MemoryScreen() {
           );
         })}
       </ScrollView>
-    </ScreenBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  container: { flex: 1 },
   scrollContainer: { padding: 20, paddingBottom: 34 },
   intro: {
     fontFamily: Fonts.regular,

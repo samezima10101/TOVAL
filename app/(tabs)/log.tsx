@@ -1,12 +1,9 @@
-import React, { useMemo, useState } from "react";
-import { StyleSheet } from "react-native";
-
-import ScreenBackground from "@/src/components/common/ScreenBackground";
-import StoryListHeader from "@/src/components/common/StoryListHeader";
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
 import { DiaryLog } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
+import { useMemo, useState } from "react";
+import { StyleSheet, View } from "react-native";
 
 export default function CalendarScreen() {
   const { state, updateDiary } = useAppState();
@@ -14,13 +11,19 @@ export default function CalendarScreen() {
   const [modalVisible, setModalVisible] = useState(false);
   const logsByDate = useMemo(
     () =>
-      (state?.diaryLogs ?? []).reduce<Record<string, DiaryLog[]>>((groups, log) => {
-        (groups[log.logDate] ??= []).push(log);
-        return groups;
-      }, {}),
+      (state?.diaryLogs ?? []).reduce<Record<string, DiaryLog[]>>(
+        (groups, log) => {
+          (groups[log.logDate] ??= []).push(log);
+          return groups;
+        },
+        {},
+      ),
     [state?.diaryLogs],
   );
-  const recordedDates = useMemo(() => new Set(Object.keys(logsByDate)), [logsByDate]);
+  const recordedDates = useMemo(
+    () => new Set(Object.keys(logsByDate)),
+    [logsByDate],
+  );
 
   const handleDayPress = (dayString: string) => {
     setSelectedDate(dayString);
@@ -28,26 +31,27 @@ export default function CalendarScreen() {
   };
 
   return (
-    <ScreenBackground style={styles.container}>
-      <StoryListHeader title="ログ" />
+    <View style={styles.container}>
       <CustomCalendar
         selectedDate={selectedDate}
         recordedDates={recordedDates}
         onDayPress={handleDayPress}
       />
-      {modalVisible ? <LogModal
-        key={selectedDate}
-        visible={modalVisible}
-        selectedDate={selectedDate}
-        logsByDate={logsByDate}
-        onClose={() => setModalVisible(false)}
-        onChangeDate={setSelectedDate}
-        onSaveDiary={updateDiary}
-      /> : null}
-    </ScreenBackground>
+      {modalVisible ? (
+        <LogModal
+          key={selectedDate}
+          visible={modalVisible}
+          selectedDate={selectedDate}
+          logsByDate={logsByDate}
+          onClose={() => setModalVisible(false)}
+          onChangeDate={setSelectedDate}
+          onSaveDiary={updateDiary}
+        />
+      ) : null}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { padding: 16 },
+  container: { flex: 1, padding: 16 },
 });

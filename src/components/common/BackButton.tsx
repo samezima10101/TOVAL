@@ -1,24 +1,15 @@
 import { Colors, Fonts } from "@/src/constants/theme";
-import { router } from "expo-router";
-import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
-type Props = {
-  label?: string;
-  onPress?: () => void;
-};
-
-export default function BackButton({ label = "＜ ホーム", onPress }: Props) {
-  const handlePress = onPress || (() => router.dismissTo("/"));
-
+export default function BackButton({ onPress }: { onPress: () => void }) {
   return (
     <TouchableOpacity
-      onPress={handlePress}
+      onPress={onPress}
       style={styles.backButton}
       accessibilityRole="button"
-      accessibilityLabel={label.replace("＜ ", "") + "へ戻る"}
+      accessibilityLabel="戻る"
     >
-      <Text style={styles.backText}>{label}</Text>
+      <Text style={styles.backText}>戻る</Text>
     </TouchableOpacity>
   );
 }

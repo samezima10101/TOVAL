@@ -1,10 +1,8 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
-import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors, Fonts } from "@/src/constants/theme";
@@ -15,11 +13,7 @@ import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function SideStoryScreen() {
   const { conversation } = useLocalSearchParams<{ conversation?: string }>();
-  return (
-    <ScreenBackground background="shop">
-      <SideStoryPlayback key={String(conversation)} />
-    </ScreenBackground>
-  );
+  return <SideStoryPlayback key={String(conversation)} />;
 }
 
 function SideStoryPlayback() {
@@ -38,16 +32,16 @@ function SideStoryPlayback() {
 
   if (!isUnlocked) {
     return (
-      <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+      <View style={styles.container}>
         <Text style={styles.invalid}>このストーリーはまだ読めません</Text>
-        <BackButton label="戻る" onPress={handleClose} />
-      </SafeAreaView>
+        <BackButton onPress={handleClose} />
+      </View>
     );
   }
   if (!line || !episode) return null;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>{episode.title}</Text>
         <TouchableOpacity onPress={handleClose} accessibilityRole="button" accessibilityLabel="ストーリーを閉じる">
@@ -69,7 +63,7 @@ function SideStoryPlayback() {
         isProcessing={isProcessing}
         onNext={() => void handleNext()}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 

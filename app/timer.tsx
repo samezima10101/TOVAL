@@ -8,10 +8,8 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
-import ScreenBackground from "@/src/components/common/ScreenBackground";
 import DiaryModal from "@/src/components/timer/DiaryModal";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
@@ -35,85 +33,82 @@ export default function TimerScreen() {
   } = useTimerLogic();
 
   if (!activeTimer || !snapshot) {
-    return <ScreenBackground />;
+    return <View style={styles.screen} />;
   }
 
   return (
-    <ScreenBackground>
-      <SafeAreaView
-        style={styles.safeArea}
-        edges={["top", "bottom"]}
+    <View style={styles.screen}>
+      <View
+        style={styles.container}
         accessibilityElementsHidden={isPowerSaving}
         importantForAccessibility={isPowerSaving ? "no-hide-descendants" : "auto"}
       >
-        <View style={styles.container}>
-          <View style={styles.header}>
-            {!snapshot.isComplete ? (
-              <TouchableOpacity
-                onPress={handleCancel}
-                style={styles.cancelButton}
-                disabled={isProcessing}
-                accessibilityRole="button"
-                accessibilityLabel="タイマーをキャンセル"
-                accessibilityState={{ disabled: isProcessing }}
-              >
-                <Text style={styles.cancelText}>✕ キャンセル</Text>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.overtimeLabel}>終了可能</Text>
-            )}
-          </View>
-
-          <View style={styles.timerWrapper}>
-            <Text style={styles.taskLabel}>集中タスク</Text>
-            <Text style={styles.taskName} numberOfLines={3}>
-              {activeTimer.startedTaskName}
-            </Text>
-            <Text
-              style={styles.timerText}
-              accessibilityLabel={
-                snapshot.isComplete ? `延長 ${timerText}` : `残り ${timerText}`
-              }
-            >
-              {timerText}
-            </Text>
-            <Text style={styles.statusText}>
-              {timerSaveError ? "保存待ち・計測停止中" : snapshot.isComplete
-                ? "予定時間を終えました"
-                : "集中モード実行中…"}
-            </Text>
-            <Text style={styles.earnedText}>
-              終了時に {snapshot.earnedNt} NT を獲得
-            </Text>
-          </View>
-
-          <View style={styles.footer}>
+        <View style={styles.header}>
+          {!snapshot.isComplete ? (
             <TouchableOpacity
-              onPress={() => setIsPowerSaving(true)}
-              style={styles.powerSavingButton}
+              onPress={handleCancel}
+              style={styles.cancelButton}
+              disabled={isProcessing}
               accessibilityRole="button"
-              accessibilityLabel="省電力モード"
-              accessibilityHint="画面を黒くします。黒画面をタップするとタイマー画面に戻ります。計測は継続します。"
+              accessibilityLabel="タイマーをキャンセル"
+              accessibilityState={{ disabled: isProcessing }}
             >
-              <Text style={styles.cancelText}>省電力モード</Text>
+              <Text style={styles.cancelText}>✕ キャンセル</Text>
             </TouchableOpacity>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
-            <PrimaryButton
-              title="終了して記録"
-              onPress={() => void openDiary()}
-              disabled={!snapshot.isComplete || isProcessing}
-              loading={isProcessing}
-              style={styles.finishButton}
-              accessibilityLabel="タイマーを終了して記録"
-            />
-            <Text style={styles.finishHint}>
-              {snapshot.isComplete
-                ? "押した時刻までを集中時間として記録します"
-                : "予定時間が終わると終了できます"}
-            </Text>
-          </View>
+          ) : (
+            <Text style={styles.overtimeLabel}>終了可能</Text>
+          )}
         </View>
-      </SafeAreaView>
+
+        <View style={styles.timerWrapper}>
+          <Text style={styles.taskLabel}>集中タスク</Text>
+          <Text style={styles.taskName} numberOfLines={3}>
+            {activeTimer.startedTaskName}
+          </Text>
+          <Text
+            style={styles.timerText}
+            accessibilityLabel={
+              snapshot.isComplete ? `延長 ${timerText}` : `残り ${timerText}`
+            }
+          >
+            {timerText}
+          </Text>
+          <Text style={styles.statusText}>
+            {timerSaveError ? "保存待ち・計測停止中" : snapshot.isComplete
+              ? "予定時間を終えました"
+              : "集中モード実行中…"}
+          </Text>
+          <Text style={styles.earnedText}>
+            終了時に {snapshot.earnedNt} NT を獲得
+          </Text>
+        </View>
+
+        <View style={styles.footer}>
+          <TouchableOpacity
+            onPress={() => setIsPowerSaving(true)}
+            style={styles.powerSavingButton}
+            accessibilityRole="button"
+            accessibilityLabel="省電力モード"
+            accessibilityHint="画面を黒くします。黒画面をタップするとタイマー画面に戻ります。計測は継続します。"
+          >
+            <Text style={styles.cancelText}>省電力モード</Text>
+          </TouchableOpacity>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+          <PrimaryButton
+            title="終了して記録"
+            onPress={() => void openDiary()}
+            disabled={!snapshot.isComplete || isProcessing}
+            loading={isProcessing}
+            style={styles.finishButton}
+            accessibilityLabel="タイマーを終了して記録"
+          />
+          <Text style={styles.finishHint}>
+            {snapshot.isComplete
+              ? "押した時刻までを集中時間として記録します"
+              : "予定時間が終わると終了できます"}
+          </Text>
+        </View>
+      </View>
       {/* 別ルートにするとフォーカスを失い計測が止まるため、標準Modalで共通ヘッダー・フッターごと覆う。 */}
       <Modal
         visible={isPowerSaving}
@@ -149,15 +144,13 @@ export default function TimerScreen() {
         onClose={closeDiary}
         onSave={handleFinish}
       />
-    </ScreenBackground>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  screen: { flex: 1 },
   blackScreenError: { position: "absolute", top: 80, left: 24, right: 24, gap: 16 },
-  safeArea: {
-    flex: 1,
-  },
   container: {
     flex: 1,
     padding: 20,
