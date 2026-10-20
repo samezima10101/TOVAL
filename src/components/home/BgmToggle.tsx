@@ -2,7 +2,7 @@ import React from "react";
 import { StyleSheet, Switch, Text, View } from "react-native";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function BgmToggle() {
@@ -48,6 +48,6 @@ export default function BgmToggle() {
 const styles = StyleSheet.create({
   container: { marginTop: 18, gap: 8 },
   row: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  label: { color: Colors.text, fontSize: 15 },
-  error: { color: Colors.textSub, fontSize: 13, marginBottom: 8 },
+  label: { fontFamily: Fonts.regular, color: Colors.text, fontSize: 15 },
+  error: { fontFamily: Fonts.regular, color: Colors.textSub, fontSize: 13, marginBottom: 8 },
 });

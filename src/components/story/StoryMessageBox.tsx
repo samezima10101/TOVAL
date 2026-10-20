@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
 
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import type { Speaker } from "@/src/domain/common/types";
 import {
     STORY_CHARACTER_BY_SPEAKER,
@@ -82,10 +82,11 @@ const styles = StyleSheet.create({
   speakerName: {
     color: Colors.primary,
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginBottom: 10,
   },
   messageText: {
+    fontFamily: Fonts.medium,
     color: Colors.text,
     fontSize: 18,
     lineHeight: 30,
@@ -94,7 +95,7 @@ const styles = StyleSheet.create({
     bottom: 14,
     color: Colors.textSub,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     position: "absolute",
     right: 18,
   },

@@ -1,6 +1,6 @@
 # データ・連携仕様
 
-更新日: 2026-10-18（日本時間）。現行の保存形式はv10。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
+更新日: 2026-10-19（日本時間）。現行の保存形式はv10。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
 
 ## 永続化の単位と更新順序
 
@@ -66,7 +66,7 @@
 | `diary` | trim済み日記文字列。空文字可 |
 | `unlockedEpisodeId` | その完了で解放した話ID、解放なしはnull |
 
-**事実**: カレンダーの印・一覧・選択日の合計は`logDate`を使う。正常完了の実集中秒数を開始日の合計に全量加算し、日付境界で分割しない。キャンセルではログを作らない。各記録に開始時刻（旧記録は「記録なし」）・集中時間・日記を表示し、開始日は個別項目として表示しない。時間と合計は「0時間0分0秒」形式。`completedAt/completedDate/completedTime`は終了情報として維持するが、開始時刻の代用にしない。タスク名、予定秒数、獲得NT、日記更新時刻、タイムゾーンID、キャンセル履歴はログに保存しない。根拠: [completeTimer](../src/domain/completion.ts)、[ログ](../app/log.tsx)、[LogModal](../src/components/log/LogModal.tsx)。
+**事実**: カレンダーの印・一覧・選択日の合計は`logDate`を使う。正常完了の実集中秒数を開始日の合計に全量加算し、日付境界で分割しない。キャンセルではログを作らない。各記録に開始時刻（旧記録は「記録なし」）・集中時間・日記を表示し、開始日は個別項目として表示しない。時間と合計は「0時間0分0秒」形式。`completedAt/completedDate/completedTime`は終了情報として維持するが、開始時刻の代用にしない。タスク名、予定秒数、獲得NT、日記更新時刻、タイムゾーンID、キャンセル履歴はログに保存しない。根拠: [completeTimer](../src/domain/completion.ts)、[ログ](../app/(tabs)/log.tsx)、[LogModal](../src/components/log/LogModal.tsx)。
 
 ## 作成・更新・削除の一覧
 
@@ -83,7 +83,7 @@
 | サイド購入 | 残高から設定価格を減算、`purchasedSideStoryIds`追加 | [unlockSideStory](../src/state/AppStateProvider.tsx) |
 | 入荷告知読了 | `announcedSideStoryIds`に未告知ID追加 | [announceSideStories](../src/state/AppStateProvider.tsx) |
 | 旧データ読込 | 移行後に現行形式を保存 | [load/parsePersistedState](../src/storage/appStateRepository.ts) |
-| 破損データの明示的初期化 | 対象・影響を確認後、原文をrecoveryキーへ退避・照合してから主キーを初期化 | [initializePreservedData](../src/storage/appStateRepository.ts)、[確認UI](../app/_layout.tsx) |
+| 破損データの明示的初期化 | 対象・影響を確認後、原文をrecoveryキーへ退避・照合してから主キーを初期化 | [initializePreservedData](../src/storage/appStateRepository.ts)、[確認UI](../src/components/common/AppStartupGate.tsx) |
 
 **事実**: 日記編集は既存の保存キューとsaveAndCommitを使い、集中時間・NT・完了回数・会話解放を変更しない。失敗時は元の状態と入力下書きを維持してエラーを表示し、保存を再試行できる。編集キャンセルは下書きの破棄のみ。旧ログの長い日記は読込時に切り捨てず保持するが、編集保存時には1000文字以下にする。
 
@@ -91,7 +91,7 @@
 
 ## 日付と日次制約
 
-**事実**: 日付キーは端末のローカル暦。今日の完了=`lastCompletionDate === today`。完了・日次解放は終了ボタンの時刻を使い、日記保存が翌日でも終了日を維持する。ログ所属日は開始日と別管理。ホームは次のローカル0時のタイマー、active復帰、30秒ごとの時計再確認で当日表示を更新する。保存状態のリセットは行わない。案内は未解放あり・本日完了済み・全話解放済みを分岐し、話数はカタログを参照する。根拠: [useLocalToday](../src/hooks/useLocalToday.ts)、[ホーム](../app/index.tsx)、[isFirstCompletionOnDate](../src/domain/completion.ts)。
+**事実**: 日付キーは端末のローカル暦。今日の完了=`lastCompletionDate === today`。完了・日次解放は終了ボタンの時刻を使い、日記保存が翌日でも終了日を維持する。ログ所属日は開始日と別管理。ホームは次のローカル0時のタイマー、active復帰、30秒ごとの時計再確認で当日表示を更新する。保存状態のリセットは行わない。案内は未解放あり・本日完了済み・全話解放済みを分岐し、話数はカタログを参照する。根拠: [useLocalToday](../src/hooks/useLocalToday.ts)、[ホーム](../app/(tabs)/index.tsx)、[isFirstCompletionOnDate](../src/domain/completion.ts)。
 
 **限界**: 時計やタイムゾーンを変えると「その日」の判定や実行区間の時間に影響し得る。最後の日付だけを持つため、日付を往復した際に暦日単位の履歴制約は保証しない。0時の表示更新と復帰時の挙動はiPhone実機未検証。
 

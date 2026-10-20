@@ -3,7 +3,7 @@ import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import StoryCharacters from "@/src/components/story/StoryCharacters";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { StoryEpisode } from "@/src/domain/common/types";
 
 type HomeStoryCardProps = {
@@ -72,13 +72,13 @@ const styles = StyleSheet.create({
   storyCardEyebrow: {
     color: Colors.textSub,
     fontSize: 12,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
   },
   storyCardTitle: {
     color: Colors.text,
     fontSize: 18,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginTop: 5,
   },
   secret: {
@@ -104,6 +104,6 @@ const styles = StyleSheet.create({
   storyCardDescription: {
     color: Colors.text,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
 });

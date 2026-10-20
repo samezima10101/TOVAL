@@ -1,14 +1,13 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmation";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { EpisodeId } from "@/src/domain/common/types";
 import {
   STORY_CATALOG,
@@ -120,13 +119,13 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
 
   if (!episode || !isUnlocked || (routeId && (!route || !canPlayDirectRoute))) {
     return (
-      <SafeAreaView style={styles.invalidContainer} edges={["top", "bottom"]}>
+      <View style={styles.invalidContainer}>
         <Text style={styles.invalidTitle}>このストーリーはまだ読めません</Text>
         <Text style={styles.invalidDescription}>
           メモリーから解放済みのストーリーを選んでください。
         </Text>
-        <BackButton label="戻る" onPress={handleClose} />
-      </SafeAreaView>
+        <BackButton onPress={handleClose} />
+      </View>
     );
   }
 
@@ -188,7 +187,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const characterLine = line ?? choiceAnchor;
 
   return (
-    <SafeAreaView style={styles.container} edges={["top", "bottom"]}>
+    <View style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.episodeTitle} numberOfLines={2}>
           Episode {String(episode.id).padStart(2, "0")} {episode.title}
@@ -244,12 +243,12 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
           disabled={isProcessing}
         />
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { backgroundColor: Colors.background, flex: 1 },
+  container: { flex: 1 },
   header: {
     alignItems: "center",
     flexDirection: "row",
@@ -261,7 +260,7 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flex: 1,
     fontSize: 16,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginRight: 10,
   },
   closeButton: {
@@ -271,8 +270,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
-  closeText: { color: Colors.textSub, fontSize: 13, fontWeight: "700" },
+  closeText: { color: Colors.textSub, fontSize: 13, fontFamily: Fonts.bold },
   error: {
+    fontFamily: Fonts.regular,
     backgroundColor: "#FFF1F0",
     borderColor: Colors.warning,
     borderRadius: 8,
@@ -287,7 +287,6 @@ const styles = StyleSheet.create({
   },
   invalidContainer: {
     alignItems: "center",
-    backgroundColor: Colors.background,
     flex: 1,
     justifyContent: "center",
     padding: 24,
@@ -295,10 +294,11 @@ const styles = StyleSheet.create({
   invalidTitle: {
     color: Colors.text,
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
   invalidDescription: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 14,
     lineHeight: 22,

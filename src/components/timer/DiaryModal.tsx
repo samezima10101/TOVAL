@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import { MAX_DIARY_LENGTH } from "@/src/domain/common/types";
 
 type DiaryModalProps = {
@@ -96,10 +96,11 @@ const styles = StyleSheet.create({
   title: {
     color: Colors.text,
     fontSize: 20,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
   input: {
+    fontFamily: Fonts.regular,
     borderColor: Colors.border,
     borderRadius: 12,
     borderWidth: 1,
@@ -108,7 +109,7 @@ const styles = StyleSheet.create({
     padding: 14,
     textAlignVertical: "top",
   },
-  error: { color: Colors.warning, fontSize: 13, textAlign: "center" },
+  error: { fontFamily: Fonts.regular, color: Colors.warning, fontSize: 13, textAlign: "center" },
   closeButton: { alignItems: "center", padding: 8 },
-  closeText: { color: Colors.textSub, fontWeight: "700" },
+  closeText: { color: Colors.textSub, fontFamily: Fonts.bold },
 });

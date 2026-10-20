@@ -1,7 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import {
   StoryRoute,
 } from "@/src/domain/common/types";
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   prompt: {
     color: Colors.primary,
     fontSize: 15,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginBottom: 6,
   },
   choice: {
@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     color: Colors.surface,
     flex: 1,
     fontSize: 15,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   lockedText: {
     color: Colors.textSub,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
   cost: {
     color: Colors.textSub,
     fontSize: 12,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     marginLeft: 8,
   },
 });

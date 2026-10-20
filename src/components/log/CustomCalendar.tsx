@@ -1,3 +1,4 @@
+import { Fonts } from "@/src/constants/theme";
 import { todayKey } from "@/src/domain/common/date";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity } from "react-native";
@@ -17,6 +18,12 @@ export default function CustomCalendar({
   return (
     <Calendar
       current={todayKey()}
+      theme={{
+        textMonthFontFamily: Fonts.bold,
+        textMonthFontWeight: "normal",
+        textDayHeaderFontFamily: Fonts.regular,
+        textDayHeaderFontWeight: "normal",
+      }}
       dayComponent={({ date, state }: { date?: DateData; state?: string }) => {
         if (!date) return null;
 
@@ -59,8 +66,8 @@ const styles = StyleSheet.create({
     width: 40,
   },
   selectedDayContainer: { backgroundColor: "#00adf5" },
-  dayText: { color: "#2d4150", fontSize: 16 },
+  dayText: { fontFamily: Fonts.regular, color: "#2d4150", fontSize: 16 },
   disabledDayText: { color: "#d9e1e8" },
-  selectedDayText: { color: "#ffffff", fontWeight: "bold" },
-  starText: { color: "#ffa500", fontSize: 12, minHeight: 16 },
+  selectedDayText: { color: "#ffffff", fontFamily: Fonts.bold },
+  starText: { fontFamily: Fonts.regular, color: "#ffa500", fontSize: 12, minHeight: 16 },
 });

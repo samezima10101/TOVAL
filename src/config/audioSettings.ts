@@ -21,6 +21,7 @@ export type AppRoute =
   | "/story"
   | "/log"
   | "/shop"
+  | "/menu"
   | "/side-story";
 
 /** Each screen can select a different registered track without its own player. */
@@ -31,6 +32,7 @@ export const SCREEN_BGM: Record<AppRoute, BgmTrackId> = {
   "/story": "default",
   "/log": "default",
   "/shop": "non",
+  "/menu": "default",
   "/side-story": "non",
 };
 

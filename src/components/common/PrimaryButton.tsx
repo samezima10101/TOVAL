@@ -1,10 +1,11 @@
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
+import { Image } from "expo-image";
 import {
-    ActivityIndicator,
-    StyleSheet,
-    Text,
-    TouchableOpacity,
-    ViewStyle,
+  ActivityIndicator,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  type ViewStyle,
 } from "react-native";
 
 export default function PrimaryButton({
@@ -33,11 +34,15 @@ export default function PrimaryButton({
       accessibilityLabel={accessibilityLabel ?? title}
       accessibilityState={{ disabled: unavailable, busy: loading }}
     >
-      {loading ? (
-        <ActivityIndicator color={Colors.surface} />
-      ) : (
-        <Text style={styles.text}>{title}</Text>
-      )}
+      <Image
+        source={require("@/assets/images/hex_button.svg")}
+        style={StyleSheet.absoluteFill}
+        contentFit="fill"
+        pointerEvents="none"
+        accessible={false}
+      />
+      <Text style={[styles.text, loading && styles.loadingText]}>{title}</Text>
+      {loading ? <ActivityIndicator color={Colors.surface} style={StyleSheet.absoluteFill} /> : null}
     </TouchableOpacity>
   );
 }
@@ -45,16 +50,13 @@ export default function PrimaryButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: "center",
-    backgroundColor: Colors.accent,
-    borderRadius: 30,
-    elevation: 3,
+    alignSelf: "center",
     justifyContent: "center",
-    paddingHorizontal: 32,
+    width: 222,
+    maxWidth: "100%",
+    minHeight: 65,
+    paddingHorizontal: 28,
     paddingVertical: 16,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
   },
   disabled: {
     opacity: 0.5,
@@ -62,6 +64,10 @@ const styles = StyleSheet.create({
   text: {
     color: Colors.surface,
     fontSize: 18,
-    fontWeight: "bold",
+    fontFamily: Fonts.bold,
+    letterSpacing: 2,
+    lineHeight: 26,
+    textAlign: "center",
   },
+  loadingText: { opacity: 0 },
 });

@@ -10,7 +10,7 @@ import {
     View,
 } from "react-native";
 
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 
 export default function TaskNameModal({
   visible,
@@ -133,10 +133,11 @@ const styles = StyleSheet.create({
   title: {
     color: Colors.text,
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
   description: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 14,
     lineHeight: 22,
@@ -144,6 +145,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
+    fontFamily: Fonts.regular,
     borderColor: Colors.border,
     borderRadius: 10,
     borderWidth: 1,
@@ -154,6 +156,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   error: {
+    fontFamily: Fonts.regular,
     color: Colors.warning,
     fontSize: 13,
     marginTop: 8,
@@ -171,7 +174,7 @@ const styles = StyleSheet.create({
   saveText: {
     color: Colors.surface,
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   cancelButton: {
     alignItems: "center",
@@ -181,6 +184,6 @@ const styles = StyleSheet.create({
   cancelText: {
     color: Colors.textSub,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.medium,
   },
 });

@@ -1,4 +1,5 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
+import { router } from "expo-router";
 import React from "react";
 import {
   ScrollView,
@@ -10,21 +11,19 @@ import {
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
-import BgmToggle from "@/src/components/home/BgmToggle";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
-import { Colors } from "@/src/constants/theme";
-import useLocalToday from "@/src/hooks/useLocalToday";
+import { Colors, Fonts } from "@/src/constants/theme";
 import {
   getLatestUnlockedEpisode,
   STORY_CATALOG,
 } from "@/src/domain/storyData";
+import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function HomeScreen() {
   const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
-  const [isEditingTask, setIsEditingTask] = React.useState(false);
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
   const today = useLocalToday();
 
@@ -34,8 +33,10 @@ export default function HomeScreen() {
 
   const completedToday = state.lastCompletionDate === today;
   const unlockedCount = state.unlockedStories.length;
-  const nextEpisode = STORY_CATALOG.episodes.find((episode) =>
-    !state.unlockedStories.some((story) => story.episodeId === episode.id));
+  const nextEpisode = STORY_CATALOG.episodes.find(
+    (episode) =>
+      !state.unlockedStories.some((story) => story.episodeId === episode.id),
+  );
   const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
   const needsTask = state.taskName.trim().length === 0;
 
@@ -58,7 +59,7 @@ export default function HomeScreen() {
       >
         <HomeStoryCard
           latestUnlockedEpisode={latestUnlockedEpisode}
-          onOpenShop={() => push("/shop")}
+          onOpenShop={() => router.navigate("/shop")}
         />
 
         <View style={styles.intro}>
@@ -78,7 +79,10 @@ export default function HomeScreen() {
 
         <View style={styles.statsCard}>
           <Stat label="累計完了" value={`${state.totalCompletions}回`} />
-          <Stat label="ストーリー" value={`${unlockedCount} / ${STORY_CATALOG.episodes.length}話`} />
+          <Stat
+            label="ストーリー"
+            value={`${unlockedCount} / ${STORY_CATALOG.episodes.length}話`}
+          />
           <Stat label="現在のNT" value={`${state.totalNt} NT`} />
         </View>
 
@@ -109,15 +113,7 @@ export default function HomeScreen() {
 
         <View style={styles.links}>
           <TouchableOpacity
-            onPress={() => setIsEditingTask(true)}
-            style={styles.linkButton}
-            accessibilityRole="button"
-            accessibilityLabel="タスク名を編集"
-          >
-            <Text style={styles.linkText}>タスクを編集</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => push("/memory")}
+            onPress={() => router.navigate("/memory")}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="メモリーを開く"
@@ -125,7 +121,7 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>📖 メモリーを見る</Text>
           </TouchableOpacity>
           <TouchableOpacity
-            onPress={() => push("/log")}
+            onPress={() => router.navigate("/log")}
             style={styles.linkButton}
             accessibilityRole="button"
             accessibilityLabel="ログを開く"
@@ -133,8 +129,6 @@ export default function HomeScreen() {
             <Text style={styles.linkText}>📅 ログを見る</Text>
           </TouchableOpacity>
         </View>
-
-        <BgmToggle />
 
         <View style={styles.storyProgress}>
           <Text style={styles.storyProgressTitle}>STORY PROGRESS</Text>
@@ -149,14 +143,11 @@ export default function HomeScreen() {
       </ScrollView>
 
       <TaskNameModal
-        visible={needsTask || isEditingTask}
-        required={needsTask}
+        visible={needsTask}
+        required
         initialValue={state.taskName}
-        onClose={() => setIsEditingTask(false)}
-        onSave={async (taskName) => {
-          await setTaskName(taskName);
-          setIsEditingTask(false);
-        }}
+        onClose={() => undefined}
+        onSave={setTaskName}
       />
       <TimerSetupModal
         visible={isTimerSetupOpen}
@@ -179,10 +170,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.background,
-    flex: 1,
-  },
+  container: { flex: 1 },
   content: {
     padding: 20,
     paddingBottom: 32,
@@ -193,13 +181,13 @@ const styles = StyleSheet.create({
   eyebrow: {
     color: Colors.textSub,
     fontSize: 13,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     letterSpacing: 1.4,
   },
   taskName: {
     color: Colors.primary,
     fontSize: 30,
-    fontWeight: "800",
+    fontFamily: Fonts.pixel,
     marginTop: 8,
   },
   statusRow: {
@@ -220,7 +208,7 @@ const styles = StyleSheet.create({
   statusText: {
     color: Colors.textSub,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.pixel,
   },
   statsCard: {
     backgroundColor: Colors.surface,
@@ -240,9 +228,10 @@ const styles = StyleSheet.create({
   statValue: {
     color: Colors.text,
     fontSize: 17,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
   },
   statLabel: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 12,
     marginTop: 4,
@@ -265,21 +254,22 @@ const styles = StyleSheet.create({
   activeTitle: {
     color: Colors.text,
     fontSize: 15,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
   },
   activeDescription: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 13,
     marginTop: 3,
   },
   activeArrow: {
+    fontFamily: Fonts.regular,
     color: Colors.accent,
     fontSize: 30,
     marginLeft: 10,
   },
   startButton: {
     marginTop: 26,
-    width: "100%",
   },
   links: {
     alignItems: "center",
@@ -294,7 +284,7 @@ const styles = StyleSheet.create({
   linkText: {
     color: Colors.textSub,
     fontSize: 14,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   storyProgress: {
     borderTopColor: Colors.border,
@@ -305,10 +295,11 @@ const styles = StyleSheet.create({
   storyProgressTitle: {
     color: Colors.textSub,
     fontSize: 12,
-    fontWeight: "800",
+    fontFamily: Fonts.bold,
     letterSpacing: 1.2,
   },
   storyProgressText: {
+    fontFamily: Fonts.pixel,
     color: Colors.text,
     fontSize: 15,
     marginTop: 7,

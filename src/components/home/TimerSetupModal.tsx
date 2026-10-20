@@ -1,7 +1,7 @@
 import React from "react";
 import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-import { Colors } from "@/src/constants/theme";
+import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
 
 type Props = {
@@ -160,10 +160,11 @@ const styles = StyleSheet.create({
   title: {
     color: Colors.text,
     fontSize: 22,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
     textAlign: "center",
   },
   description: {
+    fontFamily: Fonts.regular,
     color: Colors.textSub,
     fontSize: 14,
     lineHeight: 22,
@@ -189,21 +190,22 @@ const styles = StyleSheet.create({
   arrowText: {
     fontSize: 24,
     color: Colors.border,
-    fontWeight: "bold",
+    fontFamily: Fonts.bold,
   },
   numberText: {
     fontSize: 48,
-    fontWeight: "bold",
+    fontFamily: Fonts.bold,
     marginVertical: 10,
     fontVariant: ["tabular-nums"],
   },
   unitText: {
+    fontFamily: Fonts.regular,
     fontSize: 16,
     marginTop: 5,
   },
   colon: {
     fontSize: 36,
-    fontWeight: "bold",
+    fontFamily: Fonts.bold,
     marginHorizontal: 10,
     marginBottom: 25, // 「hour/min」のテキスト分だけ少し上にズラして中央を合わせるための余白
   },
@@ -221,7 +223,7 @@ const styles = StyleSheet.create({
   primaryActionText: {
     color: Colors.surface,
     fontSize: 17,
-    fontWeight: "700",
+    fontFamily: Fonts.bold,
   },
   closeAction: {
     alignItems: "center",
@@ -231,9 +233,10 @@ const styles = StyleSheet.create({
   closeText: {
     color: Colors.textSub,
     fontSize: 15,
-    fontWeight: "600",
+    fontFamily: Fonts.medium,
   },
   error: {
+    fontFamily: Fonts.regular,
     color: Colors.warning,
     fontSize: 13,
     marginTop: 12,
