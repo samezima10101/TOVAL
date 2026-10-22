@@ -1,4 +1,3 @@
-import React from "react";
 import {
   Image,
   ImageSourcePropType,
@@ -84,6 +83,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     minHeight: 240,
+    marginTop: -30,
   },
   characterImage: {
     height: "88%",

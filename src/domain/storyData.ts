@@ -85,6 +85,23 @@ export function getLatestUnlockedEpisode(
   return latestStory ? getStoryEpisode(latestStory.episodeId) : undefined;
 }
 
+/** Keep today's unlocked episode visible; otherwise show the next daily unlock. */
+export function getTodaysStoryEpisode(
+  unlockedStories: readonly UnlockedStory[],
+  today: string,
+  catalog: StoryCatalog = STORY_CATALOG,
+): StoryEpisode | undefined {
+  const unlockedToday = catalog.episodes.find((episode) =>
+    unlockedStories.some(
+      (story) => story.episodeId === episode.id && story.unlockedDate === today,
+    ),
+  );
+  const nextEpisode = catalog.episodes.find((episode) =>
+    !unlockedStories.some((story) => story.episodeId === episode.id),
+  );
+  return unlockedToday ?? nextEpisode ?? catalog.episodes[catalog.episodes.length - 1];
+}
+
 export function isEpisodeId(value: number, catalog: StoryCatalog = STORY_CATALOG): value is EpisodeId {
   return Number.isInteger(value) && catalog.episodes.some((episode) => episode.id === value);
 }

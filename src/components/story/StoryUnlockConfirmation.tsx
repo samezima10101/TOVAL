@@ -67,20 +67,7 @@ export default function StoryUnlockConfirmation({
 }
 
 const styles = StyleSheet.create({
-  messageBox: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderRadius: 16,
-    borderWidth: 2,
-    elevation: 4,
-    margin: 18,
-    minHeight: 190,
-    padding: 18,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.08,
-    shadowRadius: 6,
-  },
+  messageBox: { flexGrow: 1 },
   title: {
     color: Colors.primary,
     fontSize: 17,

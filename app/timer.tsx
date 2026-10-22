@@ -8,13 +8,25 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import DiaryModal from "@/src/components/timer/DiaryModal";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
+  const { top } = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, paddingTop: top + 76 }}>
+      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <TimerContent />
+    </View>
+  );
+}
+
+function TimerContent() {
   const [isPowerSaving, setIsPowerSaving] = React.useState(false);
   const restoreTimerScreen = () => setIsPowerSaving(false);
   const {

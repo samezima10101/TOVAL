@@ -15,7 +15,7 @@ export default function useLocalToday(): string {
       const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
       midnight = setTimeout(refresh, Math.max(1, next.getTime() - now.getTime()));
     };
-    // Reconcile time since the render, then keep listening while home is mounted.
+    // Reconcile time since the render, then keep listening while mounted.
     refresh();
     const clockCheck = setInterval(refresh, 30_000);
     const subscription = AppState.addEventListener("change", (state) => {

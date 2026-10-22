@@ -1,5 +1,5 @@
-import Ionicons from "@expo/vector-icons/Ionicons";
-import { router, useFocusEffect } from "expo-router";
+import { Image } from "expo-image";
+import { router } from "expo-router";
 import { useIsFocused, usePreventRemove } from "expo-router/react-navigation";
 import {
   useCallback,
@@ -8,11 +8,23 @@ import {
   useRef,
   useState,
 } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import StoryListCard from "@/src/components/common/StoryListCard";
-import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import BackButton from "@/src/components/common/BackButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
+import StoryArchive, {
+  type StoryArchiveChapter,
+} from "@/src/components/common/StoryArchive";
+import StoryMessageBox, { StoryMessage } from "@/src/components/story/StoryMessageBox";
 import { getSideStorySetting } from "@/src/config/conversationSettings";
+import { SHOP_CHAPTERS } from "@/src/config/storyArchive";
 import { Colors, Fonts } from "@/src/constants/theme";
 import {
   SHOP_FAREWELL,
@@ -25,16 +37,13 @@ import {
   listAvailableConversations,
   ShopConversation,
 } from "@/src/domain/sideStory";
-import useShopTabExit from "@/src/hooks/useShopTabExit";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function ShopScreen() {
+  const { top } = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
   const { state, unlockSideStory, announceSideStories } = useAppState();
-  const stateRef = useRef(state);
-  useLayoutEffect(() => {
-    stateRef.current = state;
-  }, [state]);
   const [phase, setPhase] = useState<
     "greeting" | "list" | "farewell" | "closed"
   >("greeting");
@@ -44,7 +53,6 @@ export default function ShopScreen() {
   const replayingRef = useRef(false);
   const exitDispatchedRef = useRef(false);
   const pendingExitRef = useRef<(() => void) | null>(null);
-  const shopTabExitRef = useShopTabExit();
   const isFocused = useIsFocused();
   const changePhase = useCallback((next: typeof phase) => {
     phaseRef.current = next;
@@ -54,7 +62,7 @@ export default function ShopScreen() {
     busyRef.current = next;
     setIsPurchasing(next);
   };
-  const [newConversationIds, setNewConversationIds] = useState(() =>
+  const [newConversationIds] = useState(() =>
     state
       ? listAvailableConversations(state)
           .filter((item) => !state.announcedSideStoryIds.includes(item.id))
@@ -62,26 +70,9 @@ export default function ShopScreen() {
       : [],
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      replayingRef.current = false;
-      // A new tab visit starts a greeting; returning from playback keeps the list.
-      if (phaseRef.current !== "closed") return;
-      pendingExitRef.current = null;
-      exitDispatchedRef.current = false;
-      const current = stateRef.current;
-      setNewConversationIds(
-        current
-          ? listAvailableConversations(current)
-              .filter(
-                (item) => !current.announcedSideStoryIds.includes(item.id),
-              )
-              .map((item) => item.id)
-          : [],
-      );
-      changePhase("greeting");
-    }, [changePhase]),
-  );
+  useLayoutEffect(() => {
+    if (isFocused) replayingRef.current = false;
+  }, [isFocused]);
 
   const requestExit = useCallback(
     (leave: () => void) => {
@@ -92,14 +83,11 @@ export default function ShopScreen() {
     },
     [changePhase],
   );
-  useEffect(() => {
-    shopTabExitRef.current = requestExit;
-    return () => {
-      shopTabExitRef.current = null;
-    };
-  }, [requestExit, shopTabExitRef]);
-
-  const handleBack = () => requestExit(() => router.navigate("/"));
+  const handleBack = () =>
+    requestExit(() => {
+      if (router.canGoBack()) router.back();
+      else router.replace("/menu");
+    });
   usePreventRemove(isFocused && phase !== "closed", handleBack);
   useEffect(() => {
     if (phase === "closed" && !exitDispatchedRef.current) {
@@ -152,44 +140,83 @@ export default function ShopScreen() {
   const opening = newConversationIds.length
     ? SHOP_GREETING_WITH_ARRIVALS
     : SHOP_GREETING;
+  const availableConversations = listAvailableConversations(state);
+  const chapters: StoryArchiveChapter[] = SHOP_CHAPTERS.map((chapter) => ({
+    id: chapter.id,
+    title: chapter.title,
+    emptyLabel: chapter.storyIds.length ? "未入荷" : "準備中",
+    items: chapter.storyIds.flatMap((id, index) => {
+      const conversation = availableConversations.find(
+        (entry) => entry.id === id,
+      );
+      if (!conversation) return [];
+      const isUnlocked = state.purchasedSideStoryIds.includes(id);
+      const { priceNt } = getSideStorySetting(id);
+      const insufficient = !isUnlocked && state.totalNt < priceNt;
+      return [
+        {
+          id,
+          number: index + 1,
+          title: conversation.title,
+          description: conversation.commonBefore[0]?.text ?? "",
+          status: isUnlocked
+            ? "解放済み・いつでも再生できます"
+            : insufficient
+              ? `NTが不足しています（必要: ${priceNt.toLocaleString("ja-JP")} NT）`
+              : `${priceNt.toLocaleString("ja-JP")} NTで解放できます`,
+          metadata: [
+            `RECORD: ${String(index + 1).padStart(2, "0")}`,
+            isUnlocked ? "STATUS: UNLOCKED" : `PRICE: ${priceNt} NT`,
+          ],
+          isUnlocked,
+          action: isUnlocked
+            ? "再生する"
+            : `${priceNt.toLocaleString("ja-JP")} NTで解放`,
+          actionLabel: isUnlocked
+            ? `${conversation.title}を再生`
+            : `${conversation.title}を${priceNt} NTで解放`,
+          disabled: isPurchasing || insufficient,
+          onPress: isUnlocked
+            ? () => replay(id)
+            : () => confirmPurchase(conversation),
+        },
+      ];
+    }),
+  }));
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: phase === "list" ? 0 : top + 76 },
+      ]}
+    >
+      <ScreenBackground source={require("@/assets/bg/shop-bg.png")} />
+      {phase === "greeting" || phase === "farewell" ? (
+        <Image
+          source={require("@/assets/images/they.png")}
+          style={[styles.character, { top: 0, height: screenHeight }]}
+          contentFit="cover"
+          contentPosition="center"
+          pointerEvents="none"
+          accessible
+          accessibilityLabel={`${SHOP_KEEPER_NAME}の立ち絵`}
+        />
+      ) : null}
+      {phase !== "list" ? <BackButton onPress={handleBack} /> : null}
       {phase === "list" ? (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          <Text style={styles.intro}>
-            解放した会話は、いつでも読み返せます。
-          </Text>
-          {listAvailableConversations(state).map((conversation) => {
-            const isUnlocked = state.purchasedSideStoryIds.includes(
-              conversation.id,
-            );
-            const { priceNt } = getSideStorySetting(conversation.id);
-            return (
-              <StoryListCard
-                key={conversation.id}
-                label="Record"
-                title={conversation.title}
-                detail={isUnlocked ? "解放済み" : `${priceNt} NTで解放`}
-                isUnlocked={isUnlocked}
-                action={isUnlocked ? "▶ 再生" : "解放"}
-                actionLabel={
-                  isUnlocked
-                    ? `${conversation.title}を再生`
-                    : `${conversation.title}を${priceNt} NTで解放`
-                }
-                disabled={
-                  isPurchasing || (!isUnlocked && state.totalNt < priceNt)
-                }
-                onPress={
-                  isUnlocked
-                    ? () => replay(conversation.id)
-                    : () => confirmPurchase(conversation)
-                }
-              />
-            );
-          })}
-        </ScrollView>
+        <StoryArchive
+          chapters={chapters}
+          variant="shop"
+          topInset={top + 76}
+          selectionDisabled={isPurchasing}
+          loading={isPurchasing}
+          footer={
+            <View style={styles.archiveBack}>
+              <BackButton onPress={handleBack} />
+            </View>
+          }
+        />
       ) : phase !== "closed" ? (
         <ShopGreeting
           key={phase}
@@ -225,25 +252,11 @@ function ShopGreeting({
   const reader = useStoryReader(episode, { source: "shop", onFinish, onClose });
   return (
     <View style={styles.container}>
-      <View
-        style={styles.character}
-        accessibilityLabel={`${SHOP_KEEPER_NAME}（仮の立ち絵）`}
-      >
-        <Ionicons name="person-outline" size={130} color={Colors.textSub} />
-        <Text style={styles.intro}>{SHOP_KEEPER_NAME}</Text>
-      </View>
       {reader.error ? <Text style={styles.error}>{reader.error}</Text> : null}
       {reader.line ? (
-        <StoryMessageBox
-          speaker={reader.line.speaker}
-          speakerName={SHOP_KEEPER_NAME}
-          text={reader.visibleText}
-          fullText={reader.line.text}
-          isTyping={reader.isTyping}
-          isLastLine={reader.isLastLine}
-          isProcessing={reader.isProcessing}
-          onNext={() => void reader.handleNext()}
-        />
+        <StoryMessageBox contentKey={reader.line.id}>
+          <StoryMessage {...reader} speakerName={SHOP_KEEPER_NAME} />
+        </StoryMessageBox>
       ) : null}
     </View>
   );
@@ -251,15 +264,8 @@ function ShopGreeting({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContainer: { padding: 20, paddingBottom: 34 },
-  intro: {
-    fontFamily: Fonts.regular,
-    color: Colors.textSub,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  character: { flex: 1, alignItems: "center", justifyContent: "center" },
+  archiveBack: { alignSelf: "flex-start", marginLeft: 24, marginBottom: 24 },
+  character: { position: "absolute", left: 0, right: 0 },
   error: {
     fontFamily: Fonts.regular,
     color: Colors.warning,

@@ -1,110 +1,108 @@
-import { Image } from "expo-image";
+import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs } from "expo-router";
-import { useRef } from "react";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Colors, Fonts } from "@/src/constants/theme";
-import {
-  ShopTabExitContext,
-  type ShopTabExitHandler,
-} from "@/src/hooks/useShopTabExit";
+
+function TabIcon({
+  source,
+  focused,
+}: {
+  source: ImageSource;
+  focused: boolean;
+}) {
+  return (
+    <View style={styles.icon}>
+      {focused ? (
+        <LinearGradient
+          colors={["rgba(255,255,255,0)", "#FFFFFF", "rgba(255,255,255,0)"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.selectedLine}
+          pointerEvents="none"
+        />
+      ) : null}
+      <Image source={source} style={styles.icon} contentFit="contain" />
+    </View>
+  );
+}
 
 export default function TabLayout() {
-  const shopExit = useRef<ShopTabExitHandler | null>(null);
   return (
-    <ShopTabExitContext.Provider value={shopExit}>
-      <Tabs
-        // AppFrame's footer handles the bottom safe area below this bar.
-        safeAreaInsets={{ bottom: 0 }}
-        screenListeners={({ navigation, route }) => ({
-          tabPress: (event) => {
-            const tabs = navigation.getState();
-            if (
-              tabs.routes[tabs.index].name !== "shop" ||
-              route.name === "shop"
-            )
-              return;
-            event.preventDefault();
-            shopExit.current?.(() => navigation.navigate(route.name));
-          },
-        })}
-        screenOptions={{
-          headerShown: false,
-          sceneStyle: { backgroundColor: "transparent" },
-          tabBarActiveTintColor: Colors.primary,
-          tabBarInactiveTintColor: Colors.textSub,
-          tabBarLabelStyle: styles.tabBarLabel,
-          tabBarStyle: styles.tabBar,
-          tabBarBackground: () => (
-            <LinearGradient
-              colors={[Colors.text, Colors.background]}
-              style={styles.tabBackground}
+    <Tabs
+      // AppFrame's footer handles the bottom safe area below this bar.
+      safeAreaInsets={{ bottom: 0 }}
+      screenOptions={{
+        headerShown: false,
+        sceneStyle: { backgroundColor: "transparent" },
+        tabBarActiveTintColor: Colors.surface,
+        tabBarInactiveTintColor: Colors.background,
+        tabBarLabelStyle: styles.tabBarLabel,
+        tabBarStyle: styles.tabBar,
+        tabBarBackground: () => (
+          <LinearGradient
+            colors={["rgba(209, 215, 227, 0.45)", "rgba(49, 52, 56, 0.94)"]}
+            style={styles.tabBackground}
+          />
+        ),
+      }}
+    >
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: "ホーム",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              source={require("@/assets/images/footer_home.svg")}
+              focused={focused}
             />
           ),
         }}
-      >
-        <Tabs.Screen
-          name="index"
-          options={{
-            title: "ホーム",
-            tabBarIcon: () => (
-              <Image
-                source={require("@/assets/images/footer_home.svg")}
-                style={styles.icon}
-                contentFit="contain"
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="memory"
-          options={{
-            title: "メモリー",
-            tabBarIcon: () => (
-              <Image
-                source={require("@/assets/images/footer_story.svg")}
-                style={styles.icon}
-                contentFit="contain"
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="log"
-          options={{
-            title: "ログ",
-            tabBarIcon: () => (
-              <Image
-                source={require("@/assets/images/footer_calendar.svg")}
-                style={styles.icon}
-                contentFit="contain"
-              />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="shop"
-          options={{
-            title: "ショップ",
-            tabBarIcon: () => (
-              <Image
-                source={require("@/assets/images/footer_unknown.svg")}
-                style={styles.icon}
-                contentFit="contain"
-              />
-            ),
-          }}
-        />
-      </Tabs>
-    </ShopTabExitContext.Provider>
+      />
+      <Tabs.Screen
+        name="memory"
+        options={{
+          title: "メモリー",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              source={require("@/assets/images/footer_story.svg")}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="log"
+        options={{
+          title: "ログ",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              source={require("@/assets/images/footer_calendar.svg")}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="menu"
+        options={{
+          title: "メニュー",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
+              source={require("@/assets/images/footer_unknown.svg")}
+              focused={focused}
+            />
+          ),
+        }}
+      />
+    </Tabs>
   );
 }
 
 const styles = StyleSheet.create({
   tabBackground: {
     flex: 1,
-    opacity: 0.8,
   },
   tabBarLabel: {
     fontFamily: Fonts.medium,
@@ -112,14 +110,26 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   tabBar: {
+    position: "absolute",
+    bottom: 0,
     paddingHorizontal: 20,
-    paddingTop: 10,
-    height: 70,
+    paddingTop: 5,
+    height: 60,
     alignItems: "center",
     borderTopWidth: 0,
+    backgroundColor: "transparent",
+    elevation: 0,
+    shadowOpacity: 0,
+  },
+  selectedLine: {
+    position: "absolute",
+    top: -3,
+    left: -20,
+    width: 80,
+    height: 2,
   },
   icon: {
-    height: 50,
-    width: 50,
+    height: 40,
+    width: 40,
   },
 });
