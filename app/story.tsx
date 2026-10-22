@@ -1,8 +1,10 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
@@ -42,8 +44,14 @@ export default function StoryScreen({
 }: {
   catalog?: StoryCatalog;
 }) {
+  const { top } = useSafeAreaInsets();
   const params = useLocalSearchParams<{ episode?: string; source?: string; route?: string }>();
-  return <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />;
+  return (
+    <View style={{ flex: 1, paddingTop: top + 76 }}>
+      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />
+    </View>
+  );
 }
 
 function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {

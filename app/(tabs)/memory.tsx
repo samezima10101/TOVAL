@@ -1,13 +1,18 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import StoryListCard from "@/src/components/common/StoryListCard";
-import { Colors, Fonts } from "@/src/constants/theme";
+import StoryArchive, { type StoryArchiveChapter } from "@/src/components/common/StoryArchive";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
+import { MEMORY_CHAPTERS } from "@/src/config/storyArchive";
 import { formatLocalDate } from "@/src/domain/common/date";
-import { STORY_EPISODES } from "@/src/domain/storyData";
+import { isStoryRouteUnlocked, STORY_EPISODES } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function MemoryScreen() {
+  const { top } = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const push = useGuardedPush();
   const { state } = useAppState();
 
@@ -19,71 +24,58 @@ export default function MemoryScreen() {
     state.unlockedStories.map((story) => [story.episodeId, story.unlockedDate]),
   );
   const allUnlocked = unlocked.size === STORY_EPISODES.length;
+  const chapters: StoryArchiveChapter[] = MEMORY_CHAPTERS.map((chapter) => ({
+    id: chapter.id,
+    title: chapter.title,
+    emptyLabel: "準備中",
+    items: chapter.storyIds.flatMap((id, index) => {
+      const episode = STORY_EPISODES.find((entry) => entry.id === id);
+      if (!episode) return [];
+      const unlockedDate = unlocked.get(id);
+      const isUnlocked = Boolean(unlockedDate);
+      const unlockedRoutes = episode.routes?.filter((route) =>
+        isStoryRouteUnlocked(state.storyRouteProgress[id], route.id),
+      ).length ?? 0;
+      return [{
+        id,
+        number: index + 1,
+        title: isUnlocked ? episode.title : "未解放のストーリー",
+        description: isUnlocked
+          ? episode.commonBefore[0]?.text ?? ""
+          : "その日の最初のタスクを完了すると、次のストーリーが解放されます。",
+        status: unlockedDate
+          ? `解放日: ${formatLocalDate(unlockedDate)}`
+          : "タスク完了で解放",
+        metadata: [
+          `ROUTE UNLOCK: ${unlockedRoutes}/${episode.routes?.length ?? 0}`,
+          `OPEN: ${unlockedDate?.replaceAll("-", ".") ?? "--"}`,
+        ],
+        isUnlocked,
+        action: isUnlocked ? "再生する" : "未解放",
+        actionLabel: isUnlocked ? `${episode.title}を再生` : "未解放のストーリー",
+        disabled: !isUnlocked,
+        onPress: () => push({
+          pathname: "/story",
+          params: { episode: String(id), source: "memory" },
+        }),
+      }];
+    }),
+  }));
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.intro}>
-          解放したストーリーを、いつでも読み返せます。
-        </Text>
-        {allUnlocked ? (
-          <View style={styles.completeBanner}>
-            <Text style={styles.completeText}>すべて解放済み</Text>
-          </View>
-        ) : null}
-        {STORY_EPISODES.map((episode) => {
-          const unlockedDate = unlocked.get(episode.id);
-          const isUnlocked = Boolean(unlockedDate);
-          return (
-            <StoryListCard
-              key={episode.id}
-              label={`Episode ${String(episode.id).padStart(2, "0")}`}
-              title={isUnlocked ? episode.title : "未解放のストーリー"}
-              detail={
-                isUnlocked && unlockedDate
-                  ? `解放日: ${formatLocalDate(unlockedDate)}`
-                  : "タスク完了で解放"
-              }
-              isUnlocked={isUnlocked}
-              action={isUnlocked ? "▶ 再生" : "🔒"}
-              actionLabel={isUnlocked ? `${episode.title}を再生` : "未解放"}
-              disabled={!isUnlocked}
-              onPress={() =>
-                push({
-                  pathname: "/story",
-                  params: { episode: String(episode.id), source: "memory" },
-                })
-              }
-            />
-          );
-        })}
-      </ScrollView>
+      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <StoryArchive
+        chapters={chapters}
+        variant="memory"
+        topInset={top + 76}
+        bottomInset={tabBarHeight}
+        completeLabel={allUnlocked ? "すべて解放済み" : undefined}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContainer: { padding: 20, paddingBottom: 34 },
-  intro: {
-    fontFamily: Fonts.regular,
-    color: Colors.textSub,
-    fontSize: 14,
-    lineHeight: 22,
-    marginBottom: 16,
-  },
-  completeBanner: {
-    backgroundColor: "#E7F7ED",
-    borderColor: Colors.accent,
-    borderRadius: 10,
-    borderWidth: 1,
-    marginBottom: 14,
-    padding: 12,
-  },
-  completeText: {
-    color: Colors.accent,
-    fontSize: 14,
-    fontFamily: Fonts.bold,
-    textAlign: "center",
-  },
 });

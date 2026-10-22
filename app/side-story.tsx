@@ -1,8 +1,10 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors, Fonts } from "@/src/constants/theme";
@@ -12,8 +14,14 @@ import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function SideStoryScreen() {
+  const { top } = useSafeAreaInsets();
   const { conversation } = useLocalSearchParams<{ conversation?: string }>();
-  return <SideStoryPlayback key={String(conversation)} />;
+  return (
+    <View style={{ flex: 1, paddingTop: top + 76 }}>
+      <ScreenBackground source={require("@/assets/bg/shop-bg.png")} />
+      <SideStoryPlayback key={String(conversation)} />
+    </View>
+  );
 }
 
 function SideStoryPlayback() {

@@ -1,11 +1,16 @@
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
 import { DiaryLog } from "@/src/domain/common/types";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { useMemo, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CalendarScreen() {
+  const { top } = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const { state, updateDiary } = useAppState();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -32,11 +37,21 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <CustomCalendar
-        selectedDate={selectedDate}
-        recordedDates={recordedDates}
-        onDayPress={handleDayPress}
-      />
+      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <ScrollView
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: top + 76 + 16, paddingBottom: tabBarHeight + 16 },
+        ]}
+        contentInsetAdjustmentBehavior="never"
+        scrollIndicatorInsets={{ top: top + 76, bottom: tabBarHeight }}
+      >
+        <CustomCalendar
+          selectedDate={selectedDate}
+          recordedDates={recordedDates}
+          onDayPress={handleDayPress}
+        />
+      </ScrollView>
       {modalVisible ? (
         <LogModal
           key={selectedDate}
@@ -53,5 +68,6 @@ export default function CalendarScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 16 },
+  container: { flex: 1 },
+  content: { flexGrow: 1, paddingHorizontal: 16 },
 });

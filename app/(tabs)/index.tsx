@@ -1,5 +1,6 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
 import { router } from "expo-router";
+import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import React from "react";
 import {
   ScrollView,
@@ -8,8 +9,10 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
@@ -22,6 +25,8 @@ import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function HomeScreen() {
+  const { top } = useSafeAreaInsets();
+  const tabBarHeight = useBottomTabBarHeight();
   const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
@@ -53,13 +58,19 @@ export default function HomeScreen() {
 
   return (
     <View style={styles.container}>
+      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[
+          styles.content,
+          { paddingTop: top + 76 + 20, paddingBottom: tabBarHeight + 32 },
+        ]}
+        contentInsetAdjustmentBehavior="never"
+        scrollIndicatorInsets={{ top: top + 76, bottom: tabBarHeight }}
         keyboardShouldPersistTaps="handled"
       >
         <HomeStoryCard
           latestUnlockedEpisode={latestUnlockedEpisode}
-          onOpenShop={() => router.navigate("/shop")}
+          onOpenShop={() => push("/shop")}
         />
 
         <View style={styles.intro}>

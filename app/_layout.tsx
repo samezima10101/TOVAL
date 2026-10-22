@@ -1,5 +1,5 @@
 import { Stack, usePathname } from "expo-router";
-import { getFocusedRouteNameFromRoute } from "expo-router/react-navigation";
+import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import AppFontLoader from "@/src/components/common/AppFontLoader";
@@ -14,6 +14,7 @@ export const unstable_settings = { initialRouteName: "(tabs)" };
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
+      <StatusBar hidden />
       <AppFontLoader>
         <AppStateProvider>
           <AppShell />
@@ -36,22 +37,14 @@ function AppShell() {
     <AppStartupGate>
       <Stack
         screenOptions={{ headerShown: false }}
-        screenLayout={({ children, route }) => {
-          const tabName = getFocusedRouteNameFromRoute(route);
-          const isShopTab = route.name === "(tabs)" && (
-            tabName === undefined ? pathname === "/shop" : tabName === "shop"
-          );
-          return (
-            <AppFrame
-              background={route.name === "side-story" || isShopTab ? "shop" : "primary"}
-              bgmError={bgm.error}
-              onRetryBgm={bgm.retry}
-              isMenuOpen={route.name === "menu"}
-            >
-              {children}
-            </AppFrame>
-          );
-        }}
+        screenLayout={({ children }) => (
+          <AppFrame
+            bgmError={bgm.error}
+            onRetryBgm={bgm.retry}
+          >
+            {children}
+          </AppFrame>
+        )}
       />
     </AppStartupGate>
   );
