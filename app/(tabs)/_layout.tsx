@@ -1,9 +1,32 @@
-import { Image } from "expo-image";
+import { Image, type ImageSource } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { Tabs } from "expo-router";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View } from "react-native";
 
 import { Colors, Fonts } from "@/src/constants/theme";
+
+function TabIcon({
+  source,
+  focused,
+}: {
+  source: ImageSource;
+  focused: boolean;
+}) {
+  return (
+    <View style={styles.icon}>
+      {focused ? (
+        <LinearGradient
+          colors={["rgba(255,255,255,0)", "#FFFFFF", "rgba(255,255,255,0)"]}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={styles.selectedLine}
+          pointerEvents="none"
+        />
+      ) : null}
+      <Image source={source} style={styles.icon} contentFit="contain" />
+    </View>
+  );
+}
 
 export default function TabLayout() {
   return (
@@ -13,13 +36,13 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: "transparent" },
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textSub,
+        tabBarActiveTintColor: Colors.surface,
+        tabBarInactiveTintColor: Colors.background,
         tabBarLabelStyle: styles.tabBarLabel,
         tabBarStyle: styles.tabBar,
         tabBarBackground: () => (
           <LinearGradient
-            colors={["rgba(45,55,72,0.45)", "rgba(247,249,252,0.2)"]}
+            colors={["rgba(209, 215, 227, 0.45)", "rgba(49, 52, 56, 0.94)"]}
             style={styles.tabBackground}
           />
         ),
@@ -29,11 +52,10 @@ export default function TabLayout() {
         name="index"
         options={{
           title: "ホーム",
-          tabBarIcon: () => (
-            <Image
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               source={require("@/assets/images/footer_home.svg")}
-              style={styles.icon}
-              contentFit="contain"
+              focused={focused}
             />
           ),
         }}
@@ -42,11 +64,10 @@ export default function TabLayout() {
         name="memory"
         options={{
           title: "メモリー",
-          tabBarIcon: () => (
-            <Image
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               source={require("@/assets/images/footer_story.svg")}
-              style={styles.icon}
-              contentFit="contain"
+              focused={focused}
             />
           ),
         }}
@@ -55,11 +76,10 @@ export default function TabLayout() {
         name="log"
         options={{
           title: "ログ",
-          tabBarIcon: () => (
-            <Image
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               source={require("@/assets/images/footer_calendar.svg")}
-              style={styles.icon}
-              contentFit="contain"
+              focused={focused}
             />
           ),
         }}
@@ -68,11 +88,10 @@ export default function TabLayout() {
         name="menu"
         options={{
           title: "メニュー",
-          tabBarIcon: () => (
-            <Image
+          tabBarIcon: ({ focused }) => (
+            <TabIcon
               source={require("@/assets/images/footer_unknown.svg")}
-              style={styles.icon}
-              contentFit="contain"
+              focused={focused}
             />
           ),
         }}
@@ -101,6 +120,13 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
     elevation: 0,
     shadowOpacity: 0,
+  },
+  selectedLine: {
+    position: "absolute",
+    top: -3,
+    left: -20,
+    width: 80,
+    height: 2,
   },
   icon: {
     height: 40,
