@@ -13,13 +13,14 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import DiaryModal from "@/src/components/timer/DiaryModal";
+import TimerDial from "@/src/components/timer/TimerDial";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
 
 export default function TimerScreen() {
   const { top } = useSafeAreaInsets();
   return (
-    <View style={{ flex: 1, paddingTop: top + 76 }}>
+    <View style={[styles.screen, { paddingTop: top + 76 }]}>
       <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
       <TimerContent />
     </View>
@@ -48,12 +49,26 @@ function TimerContent() {
     return <View style={styles.screen} />;
   }
 
+  const remainingProgress =
+    activeTimer.plannedSeconds > 0 && !snapshot.isComplete
+      ? Math.max(0, 1 - snapshot.elapsedMs / (activeTimer.plannedSeconds * 1000))
+      : 0;
+
   return (
     <View style={styles.screen}>
       <View
+        style={styles.backgroundCircle}
+        pointerEvents="none"
+        accessible={false}
+      >
+        <View style={styles.backgroundCircleInner} />
+      </View>
+      <View
         style={styles.container}
         accessibilityElementsHidden={isPowerSaving}
-        importantForAccessibility={isPowerSaving ? "no-hide-descendants" : "auto"}
+        importantForAccessibility={
+          isPowerSaving ? "no-hide-descendants" : "auto"
+        }
       >
         <View style={styles.header}>
           {!snapshot.isComplete ? (
@@ -67,35 +82,31 @@ function TimerContent() {
             >
               <Text style={styles.cancelText}>✕ キャンセル</Text>
             </TouchableOpacity>
-          ) : (
-            <Text style={styles.overtimeLabel}>終了可能</Text>
-          )}
+          ) : null}
         </View>
 
         <View style={styles.timerWrapper}>
-          <Text style={styles.taskLabel}>集中タスク</Text>
-          <Text style={styles.taskName} numberOfLines={3}>
-            {activeTimer.startedTaskName}
-          </Text>
-          <Text
-            style={styles.timerText}
+          <TimerDial
+            progress={remainingProgress}
+            timerText={timerText}
             accessibilityLabel={
               snapshot.isComplete ? `延長 ${timerText}` : `残り ${timerText}`
             }
-          >
-            {timerText}
-          </Text>
-          <Text style={styles.statusText}>
-            {timerSaveError ? "保存待ち・計測停止中" : snapshot.isComplete
-              ? "予定時間を終えました"
-              : "集中モード実行中…"}
-          </Text>
-          <Text style={styles.earnedText}>
-            終了時に {snapshot.earnedNt} NT を獲得
-          </Text>
+          />
         </View>
 
         <View style={styles.footer}>
+          {error ? (
+            <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+          ) : null}
+          <PrimaryButton
+            title="終了"
+            onPress={() => void openDiary()}
+            disabled={!snapshot.isComplete || isProcessing}
+            loading={isProcessing}
+            accessibilityLabel="タイマーを終了して記録"
+            maxFontSizeMultiplier={1.3}
+          />
           <TouchableOpacity
             onPress={() => setIsPowerSaving(true)}
             style={styles.powerSavingButton}
@@ -103,17 +114,15 @@ function TimerContent() {
             accessibilityLabel="省電力モード"
             accessibilityHint="画面を黒くします。黒画面をタップするとタイマー画面に戻ります。計測は継続します。"
           >
-            <Text style={styles.cancelText}>省電力モード</Text>
+            <Text style={styles.powerSavingText} maxFontSizeMultiplier={1.3}>
+              省電力モード
+            </Text>
           </TouchableOpacity>
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton
-            title="終了して記録"
-            onPress={() => void openDiary()}
-            disabled={!snapshot.isComplete || isProcessing}
-            loading={isProcessing}
-            accessibilityLabel="タイマーを終了して記録"
-          />
-          <Text style={styles.finishHint}>
+          <Text
+            style={styles.finishHint}
+            numberOfLines={2}
+            maxFontSizeMultiplier={1.3}
+          >
             {snapshot.isComplete
               ? "押した時刻までを集中時間として記録します"
               : "予定時間が終わると終了できます"}
@@ -142,8 +151,14 @@ function TimerContent() {
         />
         {timerSaveError ? (
           <View style={styles.blackScreenError} accessibilityRole="alert">
-            <Text style={{ color: "white", fontFamily: Fonts.regular }}>{timerSaveError}</Text>
-            <PrimaryButton title="タイマー保存を再試行" onPress={() => void retrySave()} disabled={isProcessing} />
+            <Text style={{ color: "white", fontFamily: Fonts.regular }}>
+              {timerSaveError}
+            </Text>
+            <PrimaryButton
+              title="タイマー保存を再試行"
+              onPress={() => void retrySave()}
+              disabled={isProcessing}
+            />
           </View>
         ) : null}
       </Modal>
@@ -160,15 +175,41 @@ function TimerContent() {
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1 },
-  blackScreenError: { position: "absolute", top: 80, left: 24, right: 24, gap: 16 },
+  screen: { flex: 1, overflow: "hidden" },
+  backgroundCircle: {
+    position: "absolute",
+    top: "8%",
+    left: "-40%",
+    width: "180%",
+    aspectRatio: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.6)",
+    backgroundColor: "rgba(255,255,255,0.18)",
+    padding: 28,
+  },
+  backgroundCircleInner: {
+    flex: 1,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.5)",
+    backgroundColor: "rgba(255,255,255,0.16)",
+  },
+  blackScreenError: {
+    position: "absolute",
+    top: 80,
+    left: 24,
+    right: 24,
+    gap: 16,
+  },
   container: {
     flex: 1,
-    padding: 20,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
   header: {
     alignItems: "flex-start",
-    minHeight: 48,
+    height: 44,
   },
   cancelButton: {
     padding: 10,
@@ -178,57 +219,31 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontFamily: Fonts.bold,
   },
-  overtimeLabel: {
-    color: Colors.surface,
-    fontSize: 15,
-    fontFamily: Fonts.bold,
-    padding: 10,
-  },
   timerWrapper: {
     alignItems: "center",
     flex: 1,
     justifyContent: "center",
-    paddingHorizontal: 8,
-  },
-  taskLabel: {
-    color: "rgba(255,255,255,0.75)",
-    fontSize: 13,
-    fontFamily: Fonts.bold,
-    letterSpacing: 1,
-  },
-  taskName: {
-    color: Colors.surface,
-    fontSize: 22,
-    fontFamily: Fonts.bold,
-    marginTop: 8,
-    textAlign: "center",
-  },
-  timerText: {
-    color: Colors.surface,
-    fontSize: 66,
-    fontVariant: ["tabular-nums"],
-    fontFamily: Fonts.timer,
-    marginTop: 42,
-  },
-  statusText: {
-    color: Colors.surface,
-    fontSize: 16,
-    fontFamily: Fonts.bold,
-    marginTop: 16,
-  },
-  earnedText: {
-    fontFamily: Fonts.regular,
-    color: "rgba(255,255,255,0.8)",
-    fontSize: 13,
-    marginTop: 10,
+    minHeight: 0,
   },
   footer: {
     alignItems: "center",
-    paddingBottom: 14,
+    paddingTop: 8,
+    paddingBottom: 16,
   },
   powerSavingButton: {
-    padding: 14,
-    marginBottom: 10,
+    minHeight: 44,
+    justifyContent: "center",
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    marginTop: 8,
+  },
+  powerSavingText: {
+    color: Colors.surface,
+    fontSize: 14,
+    fontFamily: Fonts.bold,
+    textShadowColor: "rgba(0,0,0,0.35)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   blackScreen: {
     backgroundColor: "#000000",
@@ -238,7 +253,7 @@ const styles = StyleSheet.create({
     fontFamily: Fonts.regular,
     color: "rgba(255,255,255,0.8)",
     fontSize: 12,
-    marginTop: 10,
+    marginTop: 4,
     textAlign: "center",
   },
   error: {
