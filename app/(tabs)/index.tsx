@@ -1,26 +1,16 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
-import { router } from "expo-router";
+import { Image } from "expo-image";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import React from "react";
-import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from "react-native";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import HomeStoryCard from "@/src/components/home/HomeStoryCard";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Colors, Fonts } from "@/src/constants/theme";
-import {
-  getLatestUnlockedEpisode,
-  STORY_CATALOG,
-} from "@/src/domain/storyData";
+import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -37,12 +27,17 @@ export default function HomeScreen() {
   }
 
   const completedToday = state.lastCompletionDate === today;
-  const unlockedCount = state.unlockedStories.length;
-  const nextEpisode = STORY_CATALOG.episodes.find(
-    (episode) =>
-      !state.unlockedStories.some((story) => story.episodeId === episode.id),
+  const todaysEpisode = getTodaysStoryEpisode(state.unlockedStories, today);
+  const episodeUnlocked = state.unlockedStories.some(
+    (story) => story.episodeId === todaysEpisode?.id,
   );
-  const latestUnlockedEpisode = getLatestUnlockedEpisode(state.unlockedStories);
+  const episodeLabel = episodeUnlocked
+    ? STORY_CATALOG.episodes.every((episode) =>
+        state.unlockedStories.some((story) => story.episodeId === episode.id),
+      )
+      ? "全話解放済み"
+      : "今日解放したエピソード"
+    : "今日解放できるエピソード";
   const needsTask = state.taskName.trim().length === 0;
 
   const handleStartTimer = async (plannedSeconds: number) => {
@@ -59,42 +54,71 @@ export default function HomeScreen() {
   return (
     <View style={styles.container}>
       <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
-      <ScrollView
-        contentContainerStyle={[
+      <View
+        style={[
           styles.content,
-          { paddingTop: top + 76 + 20, paddingBottom: tabBarHeight + 32 },
+          { paddingTop: top + 76 + 12, paddingBottom: tabBarHeight + 12 },
         ]}
-        contentInsetAdjustmentBehavior="never"
-        scrollIndicatorInsets={{ top: top + 76, bottom: tabBarHeight }}
-        keyboardShouldPersistTaps="handled"
       >
-        <HomeStoryCard
-          latestUnlockedEpisode={latestUnlockedEpisode}
-          onOpenShop={() => push("/shop")}
-        />
-
-        <View style={styles.intro}>
-          <Text style={styles.eyebrow}>TODAY&apos;S TASK</Text>
-          <Text style={styles.taskName}>
-            {state.taskName || "タスクを設定してください"}
-          </Text>
-          <View style={styles.statusRow}>
-            <View
-              style={[styles.statusDot, completedToday && styles.statusDotDone]}
-            />
-            <Text style={styles.statusText}>
-              {completedToday ? "今日のタスクは完了" : "今日は未完了"}
-            </Text>
+        <View style={styles.details}>
+          <View style={styles.taskRow}>
+            <View style={styles.intro}>
+              <Text style={styles.eyebrow} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                TODAY&apos;S TASK
+              </Text>
+              <Text
+                style={styles.taskName}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.65}
+                maxFontSizeMultiplier={1.2}
+              >
+                {state.taskName || "タスクを設定してください"}
+              </Text>
+              <View style={styles.statusRow}>
+                <View
+                  style={[styles.statusDot, completedToday && styles.statusDotDone]}
+                />
+                <Text
+                  style={styles.statusText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  maxFontSizeMultiplier={1.2}
+                >
+                  {completedToday ? "今日のタスクは完了" : "今日は未完了"}
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={styles.shopButton}
+              onPress={() => push("/shop")}
+              accessibilityRole="button"
+              accessibilityLabel="ショップを開く"
+            >
+              <Image
+                source={require("@/assets/images/footer_unknown.svg")}
+                style={styles.shopIcon}
+                contentFit="contain"
+              />
+            </TouchableOpacity>
           </View>
-        </View>
 
-        <View style={styles.statsCard}>
-          <Stat label="累計完了" value={`${state.totalCompletions}回`} />
-          <Stat
-            label="ストーリー"
-            value={`${unlockedCount} / ${STORY_CATALOG.episodes.length}話`}
-          />
-          <Stat label="現在のNT" value={`${state.totalNt} NT`} />
+          {todaysEpisode ? (
+            <View accessible>
+              <Text style={styles.episodeLabel} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                {episodeLabel}
+              </Text>
+              <Text
+                style={styles.episodeTitle}
+                numberOfLines={2}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                maxFontSizeMultiplier={1.2}
+              >
+                第{todaysEpisode.id}話　{todaysEpisode.title}
+              </Text>
+            </View>
+          ) : null}
         </View>
 
         {state.activeTimer ? (
@@ -105,12 +129,14 @@ export default function HomeScreen() {
             accessibilityLabel="進行中のタイマーを再開"
           >
             <View style={styles.activeCopy}>
-              <Text style={styles.activeTitle}>タイマー進行中</Text>
-              <Text style={styles.activeDescription} numberOfLines={2}>
+              <Text style={styles.activeTitle} numberOfLines={1} maxFontSizeMultiplier={1.2}>
+                タイマー進行中
+              </Text>
+              <Text style={styles.activeDescription} numberOfLines={1} maxFontSizeMultiplier={1.2}>
                 {state.activeTimer.startedTaskName} — タップして再開
               </Text>
             </View>
-            <Text style={styles.activeArrow}>›</Text>
+            <Text style={styles.activeArrow} maxFontSizeMultiplier={1.2}>›</Text>
           </TouchableOpacity>
         ) : null}
 
@@ -120,38 +146,9 @@ export default function HomeScreen() {
           disabled={needsTask}
           style={styles.startButton}
           accessibilityLabel="集中モードの時間を設定"
+          maxFontSizeMultiplier={1}
         />
-
-        <View style={styles.links}>
-          <TouchableOpacity
-            onPress={() => router.navigate("/memory")}
-            style={styles.linkButton}
-            accessibilityRole="button"
-            accessibilityLabel="メモリーを開く"
-          >
-            <Text style={styles.linkText}>📖 メモリーを見る</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => router.navigate("/log")}
-            style={styles.linkButton}
-            accessibilityRole="button"
-            accessibilityLabel="ログを開く"
-          >
-            <Text style={styles.linkText}>📅 ログを見る</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.storyProgress}>
-          <Text style={styles.storyProgressTitle}>STORY PROGRESS</Text>
-          <Text style={styles.storyProgressText}>
-            {!nextEpisode
-              ? "すべて解放済み"
-              : completedToday
-                ? "今日は解放済みです。明日の初回完了で次の会話を解放できます"
-                : `今日の初回完了で ${nextEpisode.id}話目を解放できます`}
-          </Text>
-        </View>
-      </ScrollView>
+      </View>
 
       <TaskNameModal
         visible={needsTask}
@@ -171,23 +168,33 @@ export default function HomeScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
-  );
-}
-
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  shopButton: {
+    padding: 12,
+    marginRight: -12,
+  },
+  shopIcon: {
+    width: 47,
+    height: 47,
+  },
   content: {
-    padding: 20,
-    paddingBottom: 32,
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  details: {
+    flex: 1,
+    justifyContent: "center",
+    gap: 16,
+    minHeight: 0,
+  },
+  taskRow: {
+    alignItems: "center",
+    flexDirection: "row",
+    gap: 12,
   },
   intro: {
-    paddingTop: 20,
+    flex: 1,
   },
   eyebrow: {
     color: Colors.textSub,
@@ -198,13 +205,14 @@ const styles = StyleSheet.create({
   taskName: {
     color: Colors.primary,
     fontSize: 30,
+    lineHeight: 38,
     fontFamily: Fonts.pixel,
     marginTop: 8,
   },
   statusRow: {
     alignItems: "center",
     flexDirection: "row",
-    marginTop: 14,
+    marginTop: 10,
   },
   statusDot: {
     backgroundColor: Colors.border,
@@ -217,35 +225,10 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.accent,
   },
   statusText: {
+    flexShrink: 1,
     color: Colors.textSub,
     fontSize: 15,
     fontFamily: Fonts.pixel,
-  },
-  statsCard: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-    borderRadius: 16,
-    borderWidth: 1,
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 30,
-    paddingHorizontal: 14,
-    paddingVertical: 18,
-  },
-  stat: {
-    alignItems: "center",
-    flex: 1,
-  },
-  statValue: {
-    color: Colors.text,
-    fontSize: 17,
-    fontFamily: Fonts.bold,
-  },
-  statLabel: {
-    fontFamily: Fonts.regular,
-    color: Colors.textSub,
-    fontSize: 12,
-    marginTop: 4,
   },
   activeBanner: {
     alignItems: "center",
@@ -255,9 +238,9 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 18,
+    marginTop: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 12,
   },
   activeCopy: {
     flex: 1,
@@ -280,39 +263,18 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   startButton: {
-    marginTop: 26,
+    marginTop: 16,
   },
-  links: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 18,
-  },
-  linkButton: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
-  },
-  linkText: {
-    color: Colors.textSub,
-    fontSize: 14,
-    fontFamily: Fonts.bold,
-  },
-  storyProgress: {
-    borderTopColor: Colors.border,
-    borderTopWidth: 1,
-    marginTop: 26,
-    paddingTop: 20,
-  },
-  storyProgressTitle: {
+  episodeLabel: {
     color: Colors.textSub,
     fontSize: 12,
     fontFamily: Fonts.bold,
-    letterSpacing: 1.2,
   },
-  storyProgressText: {
+  episodeTitle: {
     fontFamily: Fonts.pixel,
     color: Colors.text,
-    fontSize: 15,
-    marginTop: 7,
+    fontSize: 20,
+    lineHeight: 28,
+    marginTop: 8,
   },
 });

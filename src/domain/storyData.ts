@@ -77,14 +77,6 @@ export function isStoryRouteUnlocked(
   );
 }
 
-/** The most recently unlocked episode is shown in the home story card. */
-export function getLatestUnlockedEpisode(
-  unlockedStories: readonly UnlockedStory[],
-): StoryEpisode | undefined {
-  const latestStory = unlockedStories[unlockedStories.length - 1];
-  return latestStory ? getStoryEpisode(latestStory.episodeId) : undefined;
-}
-
 /** Keep today's unlocked episode visible; otherwise show the next daily unlock. */
 export function getTodaysStoryEpisode(
   unlockedStories: readonly UnlockedStory[],
@@ -96,10 +88,9 @@ export function getTodaysStoryEpisode(
       (story) => story.episodeId === episode.id && story.unlockedDate === today,
     ),
   );
-  const nextEpisode = catalog.episodes.find((episode) =>
+  return unlockedToday ?? catalog.episodes.find((episode) =>
     !unlockedStories.some((story) => story.episodeId === episode.id),
-  );
-  return unlockedToday ?? nextEpisode ?? catalog.episodes[catalog.episodes.length - 1];
+  ) ?? catalog.episodes[catalog.episodes.length - 1];
 }
 
 export function isEpisodeId(value: number, catalog: StoryCatalog = STORY_CATALOG): value is EpisodeId {

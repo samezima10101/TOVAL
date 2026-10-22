@@ -1,12 +1,12 @@
 import type { FontSource } from "expo-font";
 
 export const Colors = {
-  primary: "#254aa5",
+  primary: "#009de0",
   accent: "#a78fb1",
   background: "#F7F9FC",
   surface: "#FFFFFF",
-  text: "#2D3748",
-  textSub: "#718096",
+  text: "#050505",
+  textSub: "#000000",
   border: "#E2E8F0",
   warning: "#cc4e65",
 };

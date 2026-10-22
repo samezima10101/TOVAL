@@ -10,7 +10,13 @@ export default function ScreenBackground({
   return (
     <Image
       source={source}
-      style={{ position: "absolute", top: 0, left: 0, right: 0, height }}
+      style={{
+        position: "absolute",
+        top: 0,
+        left: 0,
+        right: 0,
+        height,
+      }}
       contentFit="cover"
       contentPosition="center"
       pointerEvents="none"
