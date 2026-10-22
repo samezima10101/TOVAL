@@ -1,12 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import StoryCharacters from "@/src/components/story/StoryCharacters";
-import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import StoryScene from "@/src/components/story/StoryScene";
+import { StoryMessage } from "@/src/components/story/StoryMessageBox";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { SHOP_CONVERSATIONS, SIDE_STORY } from "@/src/domain/sideStory";
 import useConversationExit from "@/src/hooks/useConversationExit";
@@ -27,16 +27,22 @@ export default function SideStoryScreen() {
 function SideStoryPlayback() {
   const { state } = useAppState();
   const { conversation } = useLocalSearchParams<{ conversation?: string }>();
-  const episode = conversation === undefined ? SIDE_STORY : SHOP_CONVERSATIONS.find((item) => item.id === Number(conversation));
-  const isUnlocked = Boolean(episode && state?.purchasedSideStoryIds.includes(episode.id));
+  const episode =
+    conversation === undefined
+      ? SIDE_STORY
+      : SHOP_CONVERSATIONS.find((item) => item.id === Number(conversation));
+  const isUnlocked = Boolean(
+    episode && state?.purchasedSideStoryIds.includes(episode.id),
+  );
   const readingRef = React.useRef(false);
   const exit = useConversationExit("/shop", () => readingRef.current);
   const reader = useStoryReader(isUnlocked ? episode : undefined, {
-    source: "shop", onClose: exit.requestExit,
-    processingRef: readingRef, exitRequestedRef: exit.leavingRef,
+    source: "shop",
+    onClose: exit.requestExit,
+    processingRef: readingRef,
+    exitRequestedRef: exit.leavingRef,
   });
-  const { line, visibleText, isTyping, isLastLine, isProcessing, error, handleNext, handleClose } =
-    reader;
+  const { line, isProcessing, error, handleClose } = reader;
 
   if (!isUnlocked) {
     return (
@@ -49,43 +55,19 @@ function SideStoryPlayback() {
   if (!line || !episode) return null;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{episode.title}</Text>
-        <TouchableOpacity onPress={handleClose} accessibilityRole="button" accessibilityLabel="ストーリーを閉じる">
-          <Text style={styles.close}>閉じる</Text>
-        </TouchableOpacity>
-      </View>
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-      <StoryCharacters
-        leftExpression={line.left}
-        rightExpression={line.right}
-        activeSpeaker={line.speaker}
-      />
-      <StoryMessageBox
-        speaker={line.speaker}
-        text={visibleText}
-        fullText={line.text}
-        isTyping={isTyping}
-        isLastLine={isLastLine}
-        isProcessing={isProcessing}
-        onNext={() => void handleNext()}
-      />
-    </View>
+    <StoryScene title={episode.title} onClose={handleClose} disabled={isProcessing} error={error} contentKey={line.id}>
+      <StoryMessage {...reader} />
+    </StoryScene>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingTop: 8,
+  invalid: {
+    color: Colors.text,
+    fontSize: 18,
+    fontFamily: Fonts.bold,
+    textAlign: "center",
+    marginTop: 100,
   },
-  title: { color: Colors.text, fontSize: 18, fontFamily: Fonts.bold },
-  close: { color: Colors.textSub, fontSize: 14, fontFamily: Fonts.bold, padding: 8 },
-  invalid: { color: Colors.text, fontSize: 18, fontFamily: Fonts.bold, textAlign: "center", marginTop: 100 },
-  error: { fontFamily: Fonts.regular, color: Colors.warning, textAlign: "center", marginTop: 12 },
 });

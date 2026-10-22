@@ -1,14 +1,16 @@
 import { useLocalSearchParams } from "expo-router";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
-import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import StoryScene from "@/src/components/story/StoryScene";
+import { StoryMessage } from "@/src/components/story/StoryMessageBox";
 import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmation";
+import { getAdditionalRoutePriceNt } from "@/src/config/conversationSettings";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { EpisodeId } from "@/src/domain/common/types";
 import {
@@ -19,7 +21,6 @@ import {
   isEpisodeId,
   isStoryRouteUnlocked,
 } from "@/src/domain/storyData";
-import { getAdditionalRoutePriceNt } from "@/src/config/conversationSettings";
 import useConversationExit from "@/src/hooks/useConversationExit";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
@@ -45,21 +46,25 @@ export default function StoryScreen({
   catalog?: StoryCatalog;
 }) {
   const { top } = useSafeAreaInsets();
-  const params = useLocalSearchParams<{ episode?: string; source?: string; route?: string }>();
+  const params = useLocalSearchParams<{
+    episode?: string;
+    source?: string;
+    route?: string;
+  }>();
   return (
     <View style={{ flex: 1, paddingTop: top + 76 }}>
       <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
-      <StoryPlayback key={JSON.stringify([params.episode, params.source, params.route])} catalog={catalog} />
+      <StoryPlayback
+        key={JSON.stringify([params.episode, params.source, params.route])}
+        catalog={catalog}
+      />
     </View>
   );
 }
 
 function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
-  const {
-    state,
-    selectInitialStoryRoute,
-    unlockAdditionalStoryRoute,
-  } = useAppState();
+  const { state, selectInitialStoryRoute, unlockAdditionalStoryRoute } =
+    useAppState();
   const [pendingUnlockRouteId, setPendingUnlockRouteId] = React.useState<
     string | null
   >(null);
@@ -99,14 +104,19 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
     !routeId || !episode?.routes?.length || routeIsUnlocked;
 
   const readingRef = React.useRef(false);
-  const exit = useConversationExit(source === "memory" ? "/memory" : "/",
-    () => unlockingRef.current || readingRef.current);
+  const exit = useConversationExit(
+    source === "memory" ? "/memory" : "/",
+    () => unlockingRef.current || readingRef.current,
+  );
   const reader = useStoryReader(
     isUnlocked && canPlayDirectRoute ? episode : undefined,
     {
       source,
       initialRouteId,
-      selectInitialRoute: episodeId ? (selectedRouteId) => selectInitialStoryRoute(episodeId, selectedRouteId) : undefined,
+      selectInitialRoute: episodeId
+        ? (selectedRouteId) =>
+            selectInitialStoryRoute(episodeId, selectedRouteId)
+        : undefined,
       onClose: exit.requestExit,
       processingRef: readingRef,
       exitRequestedRef: exit.leavingRef,
@@ -114,13 +124,9 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   );
   const {
     line,
-    visibleText,
-    isTyping,
-    isLastLine,
     isWaitingForChoice,
     isProcessing,
     error,
-    handleNext,
     handleSelectRoute,
     handleClose,
   } = reader;
@@ -139,12 +145,11 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
 
   if (!line && !isWaitingForChoice) return null;
 
-  const lockedRouteIds =
-    progress?.firstSelectedRouteId
-      ? (episode.routes ?? [])
-          .filter((item) => !isStoryRouteUnlocked(progress, item.id))
-          .map((item) => item.id)
-      : [];
+  const lockedRouteIds = progress?.firstSelectedRouteId
+    ? (episode.routes ?? [])
+        .filter((item) => !isStoryRouteUnlocked(progress, item.id))
+        .map((item) => item.id)
+    : [];
   const choiceAnchor = episode.commonBefore[episode.commonBefore.length - 1];
 
   const requestRoute = (selectedRouteId: string) => {
@@ -164,7 +169,12 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   );
 
   const confirmUnlock = async () => {
-    if (!pendingUnlockRoute || !episodeId || unlockingRef.current || exit.leavingRef.current) {
+    if (
+      !pendingUnlockRoute ||
+      !episodeId ||
+      unlockingRef.current ||
+      exit.leavingRef.current
+    ) {
       return;
     }
 
@@ -195,42 +205,19 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const characterLine = line ?? choiceAnchor;
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.episodeTitle} numberOfLines={2}>
-          Episode {String(episode.id).padStart(2, "0")} {episode.title}
-        </Text>
-        <TouchableOpacity
-          onPress={() => { if (!unlockingRef.current) handleClose(); }}
-          style={styles.closeButton}
-          disabled={isProcessing || isUnlocking}
-          accessibilityRole="button"
-          accessibilityLabel="ストーリーを閉じる"
-          accessibilityState={{ disabled: isProcessing || isUnlocking }}
-        >
-          <Text style={styles.closeText}>閉じる</Text>
-        </TouchableOpacity>
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <StoryCharacters
+    <StoryScene
+      title={`Episode ${String(episode.id).padStart(2, "0")} ${episode.title}`}
+      onClose={() => { if (!unlockingRef.current) handleClose(); }}
+      disabled={isProcessing || isUnlocking}
+      error={error}
+      contentKey={isWaitingForChoice ? pendingUnlockRoute ? `unlock:${pendingUnlockRoute.id}` : "choices" : line?.id}
+      characters={<StoryCharacters
         leftExpression={characterLine?.left}
         rightExpression={characterLine?.right}
         activeSpeaker={isWaitingForChoice ? undefined : characterLine?.speaker}
-      />
-
-      {line ? (
-        <StoryMessageBox
-          speaker={line.speaker}
-          text={visibleText}
-          fullText={line.text}
-          isTyping={isTyping}
-          isLastLine={isLastLine}
-          isProcessing={isProcessing}
-          onNext={handleNext}
-        />
-      ) : null}
+      />}
+    >
+      <StoryMessage {...reader} />
 
       {isWaitingForChoice && pendingUnlockRoute && state ? (
         <StoryUnlockConfirmation
@@ -251,48 +238,11 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
           disabled={isProcessing}
         />
       ) : null}
-    </View>
+    </StoryScene>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1 },
-  header: {
-    alignItems: "center",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 18,
-    paddingTop: 8,
-  },
-  episodeTitle: {
-    color: Colors.text,
-    flex: 1,
-    fontSize: 16,
-    fontFamily: Fonts.bold,
-    marginRight: 10,
-  },
-  closeButton: {
-    borderColor: Colors.border,
-    borderRadius: 18,
-    borderWidth: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  closeText: { color: Colors.textSub, fontSize: 13, fontFamily: Fonts.bold },
-  error: {
-    fontFamily: Fonts.regular,
-    backgroundColor: "#FFF1F0",
-    borderColor: Colors.warning,
-    borderRadius: 8,
-    borderWidth: 1,
-    color: Colors.warning,
-    fontSize: 13,
-    marginHorizontal: 18,
-    marginTop: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    textAlign: "center",
-  },
   invalidContainer: {
     alignItems: "center",
     flex: 1,

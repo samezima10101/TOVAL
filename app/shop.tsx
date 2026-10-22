@@ -8,13 +8,21 @@ import {
   useRef,
   useState,
 } from "react";
-import { Alert, StyleSheet, Text, View, useWindowDimensions } from "react-native";
+import {
+  Alert,
+  StyleSheet,
+  Text,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import StoryArchive, { type StoryArchiveChapter } from "@/src/components/common/StoryArchive";
-import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import StoryArchive, {
+  type StoryArchiveChapter,
+} from "@/src/components/common/StoryArchive";
+import StoryMessageBox, { StoryMessage } from "@/src/components/story/StoryMessageBox";
 import { getSideStorySetting } from "@/src/config/conversationSettings";
 import { SHOP_CHAPTERS } from "@/src/config/storyArchive";
 import { Colors, Fonts } from "@/src/constants/theme";
@@ -138,40 +146,51 @@ export default function ShopScreen() {
     title: chapter.title,
     emptyLabel: chapter.storyIds.length ? "未入荷" : "準備中",
     items: chapter.storyIds.flatMap((id, index) => {
-      const conversation = availableConversations.find((entry) => entry.id === id);
+      const conversation = availableConversations.find(
+        (entry) => entry.id === id,
+      );
       if (!conversation) return [];
       const isUnlocked = state.purchasedSideStoryIds.includes(id);
       const { priceNt } = getSideStorySetting(id);
       const insufficient = !isUnlocked && state.totalNt < priceNt;
-      return [{
-        id,
-        number: index + 1,
-        title: conversation.title,
-        description: conversation.commonBefore[0]?.text ?? "",
-        status: isUnlocked
-          ? "解放済み・いつでも再生できます"
-          : insufficient
-            ? `NTが不足しています（必要: ${priceNt.toLocaleString("ja-JP")} NT）`
-            : `${priceNt.toLocaleString("ja-JP")} NTで解放できます`,
-        metadata: [
-          `RECORD: ${String(index + 1).padStart(2, "0")}`,
-          isUnlocked ? "STATUS: UNLOCKED" : `PRICE: ${priceNt} NT`,
-        ],
-        isUnlocked,
-        action: isUnlocked ? "再生する" : `${priceNt.toLocaleString("ja-JP")} NTで解放`,
-        actionLabel: isUnlocked
-          ? `${conversation.title}を再生`
-          : `${conversation.title}を${priceNt} NTで解放`,
-        disabled: isPurchasing || insufficient,
-        onPress: isUnlocked
-          ? () => replay(id)
-          : () => confirmPurchase(conversation),
-      }];
+      return [
+        {
+          id,
+          number: index + 1,
+          title: conversation.title,
+          description: conversation.commonBefore[0]?.text ?? "",
+          status: isUnlocked
+            ? "解放済み・いつでも再生できます"
+            : insufficient
+              ? `NTが不足しています（必要: ${priceNt.toLocaleString("ja-JP")} NT）`
+              : `${priceNt.toLocaleString("ja-JP")} NTで解放できます`,
+          metadata: [
+            `RECORD: ${String(index + 1).padStart(2, "0")}`,
+            isUnlocked ? "STATUS: UNLOCKED" : `PRICE: ${priceNt} NT`,
+          ],
+          isUnlocked,
+          action: isUnlocked
+            ? "再生する"
+            : `${priceNt.toLocaleString("ja-JP")} NTで解放`,
+          actionLabel: isUnlocked
+            ? `${conversation.title}を再生`
+            : `${conversation.title}を${priceNt} NTで解放`,
+          disabled: isPurchasing || insufficient,
+          onPress: isUnlocked
+            ? () => replay(id)
+            : () => confirmPurchase(conversation),
+        },
+      ];
     }),
   }));
 
   return (
-    <View style={[styles.container, { paddingTop: phase === "list" ? 0 : top + 76 }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: phase === "list" ? 0 : top + 76 },
+      ]}
+    >
       <ScreenBackground source={require("@/assets/bg/shop-bg.png")} />
       {phase === "greeting" || phase === "farewell" ? (
         <Image
@@ -192,7 +211,11 @@ export default function ShopScreen() {
           topInset={top + 76}
           selectionDisabled={isPurchasing}
           loading={isPurchasing}
-          footer={<BackButton onPress={handleBack} />}
+          footer={
+            <View style={styles.archiveBack}>
+              <BackButton onPress={handleBack} />
+            </View>
+          }
         />
       ) : phase !== "closed" ? (
         <ShopGreeting
@@ -228,19 +251,12 @@ function ShopGreeting({
 }) {
   const reader = useStoryReader(episode, { source: "shop", onFinish, onClose });
   return (
-    <View style={styles.dialogue}>
+    <View style={styles.container}>
       {reader.error ? <Text style={styles.error}>{reader.error}</Text> : null}
       {reader.line ? (
-        <StoryMessageBox
-          speaker={reader.line.speaker}
-          speakerName={SHOP_KEEPER_NAME}
-          text={reader.visibleText}
-          fullText={reader.line.text}
-          isTyping={reader.isTyping}
-          isLastLine={reader.isLastLine}
-          isProcessing={reader.isProcessing}
-          onNext={() => void reader.handleNext()}
-        />
+        <StoryMessageBox contentKey={reader.line.id}>
+          <StoryMessage {...reader} speakerName={SHOP_KEEPER_NAME} />
+        </StoryMessageBox>
       ) : null}
     </View>
   );
@@ -248,8 +264,8 @@ function ShopGreeting({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  archiveBack: { alignSelf: "flex-start", marginLeft: 24, marginBottom: 24 },
   character: { position: "absolute", left: 0, right: 0 },
-  dialogue: { flex: 1, justifyContent: "flex-end" },
   error: {
     fontFamily: Fonts.regular,
     color: Colors.warning,

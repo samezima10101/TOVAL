@@ -71,3 +71,31 @@
 [手動検証データ・具体的手順・結果](manual-acceptance-checklist.md#conversation-completion)を参照。PCの補助確認をiPhone操作の合格とはしない。
 
 2026-10-22追記: 選択中タイトルは横幅いっぱいの固定帯へ拡大表示（章名も同じ帯へ表示）。追加指示により、スクロール中も帯と文字の位置を固定し、選択された話が変わると文字だけを更新する。一覧の同じ話は非表示にして重複を避ける。リストの表示領域は章番号の横まで上へ延ばし、選択位置は従来のタイトル帯の高さに維持する。画面全体は固定。
+
+### 会話画面の構成と表示調整
+
+メインとサイドは、タイトル・閉じる・再生エラー・固定会話枠・話者名・文字送りを共有する。主な違いは以下のとおり。
+
+| 項目 | メイン（app/story.tsx） | サイド（app/side-story.tsx） |
+| --- | --- | --- |
+| 再生できる条件 | エピソードとルートの解放状態 | サイド会話の購入状態 |
+| 画面の背景 | primary-bg.png | shop-bg.png |
+| キャラクター | 表情と発話者を反映 | 表示しない |
+| 会話の進行 | 共通前半・分岐・共通後半、追加分岐の解放確認 | 分岐なしの会話 |
+| 終了先 | ホームまたはメモリー | ショップ |
+
+コンポーネントの役割は以下に限定する。権利判定・購入・保存・終了先の判断と再生フックの呼び出しは各画面に残し、共通UIへ移さない。背景の選択・描画と共通ヘッダーを避ける画面上部の余白も、各画面で明示する。
+
+| 部品 | 担当 |
+| --- | --- |
+| [StoryScene](../src/components/story/StoryScene.tsx) | 共通ヘッダー・閉じる・再生エラー、任意のキャラクター領域、固定枠を一度だけ配置 |
+| [StoryMessageBox](../src/components/story/StoryMessageBox.tsx)（既定export） | SVG・固定位置・サイズ・内側余白・枠内スクロール。受け取るのは中身と内容の識別子だけ |
+| 同ファイルのStoryMessage（名前付きexport） | 話者・本文・文字送り状態・タップ操作。再生結果の必要な項目だけを受け取り、枠を作らない |
+| [StoryCharacters](../src/components/story/StoryCharacters.tsx) | キャラクター画像・表情・発話者による濃淡 |
+| [StoryChoices](../src/components/story/StoryChoices.tsx)／[StoryUnlockConfirmation](../src/components/story/StoryUnlockConfirmation.tsx) | メイン固有の選択肢・解放確認の中身。枠を作らず、購入処理自体は画面へ委ねる |
+
+StoryDialogueは再作成せず、枠と本文表示をStoryMessageBox.tsxの同じファイルにまとめる。異なる引数の形式を判別して切り替えるAPIは使わない。ショップ挨拶・退店では共通ヘッダーを使わず、同じStoryMessageBoxとStoryMessageを組み合わせる。
+
+会話枠の位置・サイズ・内側余白はStoryMessageBox.tsxのstyles.frameだけで指定する。現在は左右18・下60・高さ210。下位置はロゴフッターの上にある画面領域の下端から測り、数値を増やすと上へ移動する。背景はassets/images/file_textbox.svg。長いセリフや選択肢・解放確認は枠内だけスクロールし、枠は伸縮させない。キャラクターの表示領域はStorySceneで独立して確保する。
+
+内容の識別子（セリフID／選択肢／解放確認）が変わると枠内のスクロール位置だけを先頭へ戻す。枠やキャラクターは再作成せず、文字送りの途中ではスクロール位置をリセットしない。

@@ -9,7 +9,7 @@ export default function BackButton({ onPress }: { onPress: () => void }) {
       accessibilityRole="button"
       accessibilityLabel="戻る"
     >
-      <Text style={styles.backText}>戻る</Text>
+      <Text style={styles.backText}>＜ 戻る</Text>
     </TouchableOpacity>
   );
 }
