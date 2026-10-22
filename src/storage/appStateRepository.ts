@@ -13,6 +13,12 @@ import {
   UnlockedStory,
 } from "@/src/domain/common/types";
 import { STORY_CATALOG, StoryCatalog } from "@/src/domain/storyData";
+import {
+  DEFAULT_NOTIFICATION_HOUR,
+  DEFAULT_NOTIFICATION_MINUTE,
+  DEFAULT_USER_NAME,
+  isValidNotificationTime,
+} from "@/src/domain/reminder";
 import { developmentStorage } from "./developmentStorage";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
@@ -47,7 +53,9 @@ export function createInitialAppState(): AppState {
   return {
     schemaVersion: APP_SCHEMA_VERSION,
     bgmEnabled: DEFAULT_BGM_ENABLED,
-    userName: "",
+    userName: DEFAULT_USER_NAME,
+    notificationHour: DEFAULT_NOTIFICATION_HOUR,
+    notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
     taskName: "",
     totalNt: 0,
     totalCompletions: 0,
@@ -272,7 +280,8 @@ export function validateAppState(
 
   if (
     typeof value.bgmEnabled !== "boolean" ||
-    typeof value.userName !== "string" ||
+    typeof value.userName !== "string" || value.userName.trim().length === 0 ||
+    !isValidNotificationTime(value.notificationHour, value.notificationMinute) ||
     typeof value.taskName !== "string" ||
     typeof value.totalNt !== "number" ||
     !Number.isSafeInteger(value.totalNt) ||
@@ -379,7 +388,8 @@ function migrateLegacyState(
   if (activeTimer === undefined && value.activeTimer !== undefined) return null;
   const migrated: AppState = {
     ...initial,
-    userName: typeof value.userName === "string" ? value.userName : "",
+    userName: typeof value.userName === "string" && value.userName.trim()
+      ? value.userName : DEFAULT_USER_NAME,
     taskName: typeof value.taskName === "string" ? value.taskName : "",
     totalNt: isNonNegativeSafeInteger(value.totalNt) ? value.totalNt : 0,
     totalCompletions: isNonNegativeSafeInteger(value.totalCompletions)
@@ -405,6 +415,19 @@ function migrateLegacyState(
   return validateAppState(migrated, catalog) ? migrated : null;
 }
 
+function migrateReminderSettings(value: Record<string, unknown>) {
+  return {
+    ...value,
+    schemaVersion: APP_SCHEMA_VERSION,
+    // Empty names were the historical default. Keep other legacy names exactly,
+    // including names longer than the limit now applied when editing settings.
+    userName: typeof value.userName === "string" && !value.userName.trim()
+      ? DEFAULT_USER_NAME : value.userName,
+    notificationHour: DEFAULT_NOTIFICATION_HOUR,
+    notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
+  };
+}
+
 export function parsePersistedState(
   raw: string,
   catalog: StoryCatalog = STORY_CATALOG,
@@ -420,9 +443,14 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
+  // v10 predates daily reminders. Keep all saved progress and preferences.
+  if (isRecord(value) && value.schemaVersion === 10) {
+    const migrated = migrateReminderSettings(value);
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
   // v9 predates BGM preferences. Preserve every other field exactly.
   if (isRecord(value) && value.schemaVersion === 9) {
-    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, bgmEnabled: DEFAULT_BGM_ENABLED };
+    const migrated = migrateReminderSettings({ ...value, bgmEnabled: DEFAULT_BGM_ENABLED });
     return validateAppState(migrated, catalog) ? migrated : null;
   }
   // v8 had read/unread flags. Validate their old types before discarding only
@@ -430,7 +458,7 @@ export function parsePersistedState(
   if (isRecord(value) && value.schemaVersion === 8) {
     const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
     if (!unlockedStories) return null;
-    const migrated = { ...value, schemaVersion: APP_SCHEMA_VERSION, unlockedStories, bgmEnabled: DEFAULT_BGM_ENABLED };
+    const migrated = migrateReminderSettings({ ...value, unlockedStories, bgmEnabled: DEFAULT_BGM_ENABLED });
     return validateAppState(migrated, catalog) ? migrated : null;
   }
   // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
@@ -446,7 +474,7 @@ export function parsePersistedState(
     const diaryLogs = value.diaryLogs === undefined ? [] : value.diaryLogs;
     const purchased = value.purchasedSideStoryIds === undefined ? [] : value.purchasedSideStoryIds;
     if (!isConversationIds(purchased)) return null;
-    const migrated = {
+    const migrated = migrateReminderSettings({
       ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
       bgmEnabled: DEFAULT_BGM_ENABLED,
@@ -467,7 +495,7 @@ export function parsePersistedState(
             };
           })
         : diaryLogs,
-    };
+    });
     return validateAppState(migrated, catalog) ? migrated : null;
   }
   return isRecord(value) ? migrateLegacyState(value, catalog) : null;
