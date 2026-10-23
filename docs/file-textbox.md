@@ -38,13 +38,13 @@ import FileTextboxBackground from "@/src/components/common/FileTextboxBackground
 
 背景は親全体へ絶対配置し、`onLayout`で実寸を取得して描画する。タップとアクセシビリティの対象から除外するため、本文のボタン・スクロールを妨げない。任意の`style`は背景の影などの装飾に使い、枠自体の寸法は親で指定する。
 
-現行の利用箇所は[`LogModal`](../src/components/log/LogModal.tsx)、[`StoryMessageBox`](../src/components/story/StoryMessageBox.tsx)、[`TimerSetupModal`](../src/components/home/TimerSetupModal.tsx)。ログの上余白48、会話枠の左右18・下60・高さ210を含む外側の配置と本文余白は、各利用箇所で管理する。集中時間設定はスクロールせず、小型画面では数字・余白と文字倍率を調整してSafe Area内へ固定表示し、枠の下へ`× CLOSE`を置く。開始／再開、時間の増減、保存エラーと再試行は設定Modalが担当する。
+現行の利用箇所は[`LogModal`](../src/components/log/LogModal.tsx)、[`StoryMessageBox`](../src/components/story/StoryMessageBox.tsx)、[`TimerSetupModal`](../src/components/home/TimerSetupModal.tsx)。ログの上余白32、会話枠の左右18・下60・高さ210を含む外側の配置と本文余白は、各利用箇所で管理する。集中時間設定はスクロールせず、小型画面では数字・余白と文字倍率を調整してSafe Area内へ固定表示し、枠の下へ`× CLOSE`を置く。開始／再開、時間の増減、保存エラーと再試行は設定Modalが担当する。
 
 ## 原本と描画の変更
 
 元SVGはデザイン原本として残し、共通部品の座標・色・透過率・グラデーションの基準にする。実行時にSVGファイルを読み込んで部分変形する方式ではなく、原本は現在のバンドルへ同梱しない。原本のインデックス形状・角・色を変更した場合は、共通部品の対応する定数・描画も揃える。新しい画面で同じ枠を使うだけなら、原本や共通部品の変更は不要。
 
-共通部品は1つの連続した輪郭を使い、インデックスと本体の境界へ分割線や半透明の重なりを作らない。元SVGに含まれる`foreignObject`のCSS背景ぼかしは描画しない。半透明の塗りとグラデーションで表現し、ログの発光は利用側の影で指定する。
+共通部品は1つの連続した輪郭を使い、インデックスと本体の境界へ分割線や半透明の重なりを作らない。元SVGに含まれる`foreignObject`のCSS背景ぼかしは描画しない。半透明の塗りとグラデーションで表現し、ログの発光は利用側の影で指定する。日付は枠の上、日付矢印は枠の下の閉じる操作の左右へ配置し、枠の幅を日付矢印の領域で狭めない。
 
 SDKの参照先は[Expo SDK 57](https://docs.expo.dev/versions/v57.0.0/)と[`react-native-svg`](https://docs.expo.dev/versions/v57.0.0/sdk/svg/)。既存依存の15.15.4を使い、SVG変換用の新規依存は追加しない。
 

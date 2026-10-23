@@ -86,5 +86,6 @@ export function formatDuration(totalSeconds: number): string {
 
 export function formatFocusDuration(totalSeconds: number): string {
   const seconds = Math.max(0, Math.floor(totalSeconds));
-  return `${Math.floor(seconds / 3600)}時間${Math.floor((seconds % 3600) / 60)}分${seconds % 60}秒`;
+  const hours = Math.floor(seconds / 3600);
+  return `${hours > 0 ? `${hours}時間` : ""}${Math.floor((seconds % 3600) / 60)}分${seconds % 60}秒`;
 }

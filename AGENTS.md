@@ -51,6 +51,7 @@ npm run bundle:ios
 | [BGM設定](docs/bgm-settings.md) | 音源・画面割り当て・再生設定の編集 |
 | [フォント設定](docs/font-settings.md) | UI-v3の書体・ウェイト、同梱・読み込み・適用箇所 |
 | [フォルダ型テキスト枠](docs/file-textbox.md) | インデックスの比率を保つ共通背景、サイズ・本文余白の指定 |
+| [キーボード編集](docs/keyboard-editor.md) | 入力欄・✕／OKバー・キーボード余白の共通部品と再利用 |
 | [データ仕様](docs/data-integrations.md) | 保存項目、更新順序、旧形式の移行、破損保全 |
 | [開発運用手順](docs/development-operations.md) | 環境の再現、診断、起動、バンドル生成 |
 | [BGM検証記録](docs/verification/bgm-2026-10-17.md) | PC診断と実機未確認事項、無音報告の訂正履歴 |
