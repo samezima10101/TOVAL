@@ -16,7 +16,7 @@ function TabIcon({
     <View style={styles.icon}>
       {focused ? (
         <LinearGradient
-          colors={["rgba(255,255,255,0)", "#FFFFFF", "rgba(255,255,255,0)"]}
+          colors={["rgba(255,255,255,0)", "#FFFFFF", "rgba(38, 52, 210, 0)"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={styles.selectedLine}
@@ -42,7 +42,7 @@ export default function TabLayout() {
         tabBarStyle: styles.tabBar,
         tabBarBackground: () => (
           <LinearGradient
-            colors={["rgba(209, 215, 227, 0.45)", "rgba(49, 52, 56, 0.94)"]}
+            colors={["rgba(124, 155, 216, 0.56)", "rgba(0, 0, 0, 0.2)"]}
             style={styles.tabBackground}
           />
         ),

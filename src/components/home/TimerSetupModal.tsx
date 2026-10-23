@@ -1,7 +1,16 @@
-import React from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Modal,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  useWindowDimensions,
+  View,
+} from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { Colors, Fonts } from "@/src/constants/theme";
+import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
+import PrimaryButton from "@/src/components/common/PrimaryButton";
+import { Fonts } from "@/src/constants/theme";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
 
 type Props = {
@@ -21,123 +30,246 @@ export default function TimerSetupModal({
   onStart,
   onResume,
 }: Props) {
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+  const compact = height - insets.top - insets.bottom < 620;
+  const fontMultiplier = compact ? 1 : 1.2;
   const { isStarting, error, displayHours, displayMins, adjust, handleStart } =
     useTimerSetup(initialMinutes, visible, onStart);
+  const handleClose = () => {
+    if (!isStarting) onClose();
+  };
 
   return (
     <Modal
       visible={visible}
       transparent
       animationType="fade"
-      onRequestClose={onClose}
+      onRequestClose={handleClose}
       accessibilityViewIsModal
     >
-      <View style={styles.overlay}>
-        <View style={styles.card}>
-          <Text style={styles.title}>集中時間を設定</Text>
-          {hasActiveTimer ? (
-            <>
-              <Text style={styles.description}>
-                進行中のタイマーがあります。新しく作らず、そのセッションを再開します。
-              </Text>
-              <TouchableOpacity
-                style={styles.primaryAction}
-                onPress={onResume}
-                accessibilityRole="button"
-                accessibilityLabel="進行中のタイマーを再開"
+      <View
+        style={[
+          styles.overlay,
+          { paddingTop: insets.top + 16, paddingBottom: insets.bottom + 16 },
+        ]}
+      >
+        <View style={styles.content}>
+          <View style={[styles.card, compact && styles.cardCompact]}>
+            <FileTextboxBackground style={styles.frameGlow} />
+            <View>
+              <Text
+                style={styles.title}
+                accessibilityRole="header"
+                maxFontSizeMultiplier={fontMultiplier}
               >
-                <Text style={styles.primaryActionText}>タイマーを再開</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.description}>
-                5分単位、または1時間単位で調整できます。0:00はデバッグ用です。
+                集中時間を設定
               </Text>
-
-              <View style={styles.pickerContainer}>
-                {/* 時間の設定カラム */}
-                <View style={styles.pickerColumn}>
-                  <TouchableOpacity
-                    onPress={() => adjust(60)}
-                    style={styles.arrowButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="1時間増やす"
+              {hasActiveTimer ? (
+                <>
+                  <Text
+                    style={styles.description}
+                    maxFontSizeMultiplier={fontMultiplier}
                   >
-                    <Text style={styles.arrowText}>＋</Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.numberText, { color: Colors.primary }]}>
-                    {displayHours}
+                    進行中のタイマーがあります。新しく作らず、そのセッションを再開します。
                   </Text>
-                  <TouchableOpacity
-                    onPress={() => adjust(-60)}
-                    style={styles.arrowButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="1時間減らす"
+                  <PrimaryButton
+                    title="タイマーを再開"
+                    style={
+                      compact
+                        ? styles.primaryActionCompact
+                        : styles.primaryAction
+                    }
+                    maxFontSizeMultiplier={fontMultiplier}
+                    onPress={onResume}
+                    accessibilityLabel="進行中のタイマーを再開"
+                  />
+                </>
+              ) : (
+                <>
+                  {!compact ? (
+                    <Text
+                      style={styles.description}
+                      maxFontSizeMultiplier={fontMultiplier}
+                    >
+                      1時間・5分単位で調整できます。
+                    </Text>
+                  ) : null}
+
+                  <View
+                    style={[
+                      styles.pickerContainer,
+                      compact && styles.pickerCompact,
+                    ]}
                   >
-                    <Text style={styles.arrowText}>－</Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.unitText, { color: Colors.textSub }]}>
-                    hour
-                  </Text>
-                </View>
+                    {/* 時間の設定カラム */}
+                    <View style={styles.pickerColumn}>
+                      <TouchableOpacity
+                        onPress={() => adjust(60)}
+                        style={[
+                          styles.arrowButton,
+                          isStarting && styles.disabledAction,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="1時間増やす"
+                        disabled={isStarting}
+                        accessibilityState={{ disabled: isStarting }}
+                      >
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          ＋
+                        </Text>
+                      </TouchableOpacity>
+                      <Text
+                        style={[
+                          styles.numberText,
+                          compact && styles.numberCompact,
+                        ]}
+                        accessibilityLabel={`${displayHours}時間`}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.6}
+                        maxFontSizeMultiplier={fontMultiplier}
+                      >
+                        {displayHours}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => adjust(-60)}
+                        style={[
+                          styles.arrowButton,
+                          isStarting && styles.disabledAction,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="1時間減らす"
+                        disabled={isStarting}
+                        accessibilityState={{ disabled: isStarting }}
+                      >
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          －
+                        </Text>
+                      </TouchableOpacity>
+                      <Text
+                        style={styles.unitText}
+                        maxFontSizeMultiplier={fontMultiplier}
+                      >
+                        hour
+                      </Text>
+                    </View>
 
-                <Text style={[styles.colon, { color: Colors.text }]}>:</Text>
+                    <Text
+                      style={styles.colon}
+                      accessible={false}
+                      maxFontSizeMultiplier={fontMultiplier}
+                    >
+                      :
+                    </Text>
 
-                {/* 分の設定カラム */}
-                <View style={styles.pickerColumn}>
-                  <TouchableOpacity
-                    onPress={() => adjust(5)}
-                    style={styles.arrowButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="5分増やす"
-                  >
-                    <Text style={styles.arrowText}>＋</Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.numberText, { color: Colors.primary }]}>
-                    {String(displayMins).padStart(2, "0")}
-                  </Text>
-                  <TouchableOpacity
-                    onPress={() => adjust(-5)}
-                    style={styles.arrowButton}
-                    accessibilityRole="button"
-                    accessibilityLabel="5分減らす"
-                  >
-                    <Text style={styles.arrowText}>－</Text>
-                  </TouchableOpacity>
-                  <Text style={[styles.unitText, { color: Colors.textSub }]}>
-                    min
-                  </Text>
-                </View>
-              </View>
+                    {/* 分の設定カラム */}
+                    <View style={styles.pickerColumn}>
+                      <TouchableOpacity
+                        onPress={() => adjust(5)}
+                        style={[
+                          styles.arrowButton,
+                          isStarting && styles.disabledAction,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="5分増やす"
+                        disabled={isStarting}
+                        accessibilityState={{ disabled: isStarting }}
+                      >
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          ＋
+                        </Text>
+                      </TouchableOpacity>
+                      <Text
+                        style={[
+                          styles.numberText,
+                          compact && styles.numberCompact,
+                        ]}
+                        accessibilityLabel={`${displayMins}分`}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.6}
+                        maxFontSizeMultiplier={fontMultiplier}
+                      >
+                        {String(displayMins).padStart(2, "0")}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => adjust(-5)}
+                        style={[
+                          styles.arrowButton,
+                          isStarting && styles.disabledAction,
+                        ]}
+                        accessibilityRole="button"
+                        accessibilityLabel="5分減らす"
+                        disabled={isStarting}
+                        accessibilityState={{ disabled: isStarting }}
+                      >
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          －
+                        </Text>
+                      </TouchableOpacity>
+                      <Text
+                        style={styles.unitText}
+                        maxFontSizeMultiplier={fontMultiplier}
+                      >
+                        min
+                      </Text>
+                    </View>
+                  </View>
 
-              {error ? <Text style={styles.error}>{error}</Text> : null}
+                  {error ? (
+                    <Text
+                      style={styles.error}
+                      accessibilityRole="alert"
+                      maxFontSizeMultiplier={fontMultiplier}
+                    >
+                      {error}
+                    </Text>
+                  ) : null}
 
-              <TouchableOpacity
-                style={[
-                  styles.primaryAction,
-                  isStarting && styles.disabledAction,
-                ]}
-                onPress={handleStart}
-                disabled={isStarting}
-                accessibilityRole="button"
-                accessibilityLabel="設定した時間でタイマーを開始"
-                accessibilityState={{ disabled: isStarting, busy: isStarting }}
-              >
-                <Text style={styles.primaryActionText}>
-                  {isStarting ? "保存中…" : "タイマーを開始"}
-                </Text>
-              </TouchableOpacity>
-            </>
-          )}
+                  <PrimaryButton
+                    title="タイマーを開始"
+                    style={
+                      compact
+                        ? styles.primaryActionCompact
+                        : styles.primaryAction
+                    }
+                    maxFontSizeMultiplier={fontMultiplier}
+                    onPress={handleStart}
+                    disabled={isStarting}
+                    loading={isStarting}
+                    accessibilityLabel="設定した時間でタイマーを開始"
+                  />
+                </>
+              )}
+            </View>
+          </View>
           <TouchableOpacity
-            onPress={onClose}
-            style={styles.closeAction}
+            onPress={handleClose}
+            style={[styles.closeAction, isStarting && styles.disabledAction]}
             disabled={isStarting}
             accessibilityRole="button"
             accessibilityLabel="タイマー設定を閉じる"
+            accessibilityState={{ disabled: isStarting }}
           >
-            <Text style={styles.closeText}>閉じる</Text>
+            <Text
+              style={styles.closeText}
+              maxFontSizeMultiplier={fontMultiplier}
+            >
+              × CLOSE
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -149,30 +281,47 @@ const styles = StyleSheet.create({
   overlay: {
     flex: 1,
     justifyContent: "center",
-    padding: 20,
-    backgroundColor: "rgba(0, 0, 0, 0.45)",
+    alignItems: "center",
+    paddingHorizontal: 24,
+    backgroundColor: "rgba(0, 0, 0, 0.76)",
+  },
+  content: {
+    width: "100%",
+    maxWidth: 380,
+    maxHeight: "100%",
+    alignItems: "center",
+    gap: 8,
   },
   card: {
-    borderRadius: 20,
-    padding: 24,
-    backgroundColor: Colors.surface,
+    width: "100%",
+    paddingTop: 32,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+  },
+  cardCompact: { paddingTop: 28, paddingBottom: 12, paddingHorizontal: 20 },
+  frameGlow: {
+    shadowColor: "#FFFFFF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
   },
   title: {
-    color: Colors.text,
+    color: "#FFFFFF",
     fontSize: 22,
+    lineHeight: 28,
     fontFamily: Fonts.bold,
     textAlign: "center",
   },
   description: {
     fontFamily: Fonts.regular,
-    color: Colors.textSub,
+    color: "#E0E3EE",
     fontSize: 14,
     lineHeight: 22,
-    marginTop: 12,
+    marginTop: 8,
     textAlign: "center",
   },
+  pickerCompact: { marginTop: 8, marginBottom: 0 },
 
-  // 新しいピッカーUI用のスタイル
   pickerContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -185,61 +334,66 @@ const styles = StyleSheet.create({
     width: 80,
   },
   arrowButton: {
-    padding: 10,
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: 44,
+    minHeight: 44,
   },
   arrowText: {
     fontSize: 24,
-    color: Colors.border,
+    color: "#FFFFFF",
     fontFamily: Fonts.bold,
   },
   numberText: {
-    fontSize: 48,
-    fontFamily: Fonts.bold,
-    marginVertical: 10,
+    width: "100%",
+    textAlign: "center",
+    color: "#FFFFFF",
+    fontSize: 72,
+    lineHeight: 80,
+    fontFamily: Fonts.timer,
+    marginVertical: 6,
     fontVariant: ["tabular-nums"],
   },
+  numberCompact: { fontSize: 48, lineHeight: 52, marginVertical: 0 },
   unitText: {
     fontFamily: Fonts.regular,
-    fontSize: 16,
-    marginTop: 5,
+    color: "#E0E3EE",
+    fontSize: 14,
+    lineHeight: 20,
+    marginTop: 4,
   },
   colon: {
     fontSize: 36,
-    fontFamily: Fonts.bold,
+    color: "#FFFFFF",
+    fontFamily: Fonts.timer,
     marginHorizontal: 10,
     marginBottom: 25, // 「hour/min」のテキスト分だけ少し上にズラして中央を合わせるための余白
   },
 
   primaryAction: {
-    alignItems: "center",
-    backgroundColor: Colors.accent,
-    borderRadius: 28,
-    marginTop: 24,
-    paddingVertical: 15,
+    marginTop: 16,
   },
+  primaryActionCompact: { marginTop: 8 },
   disabledAction: {
     opacity: 0.6,
   },
-  primaryActionText: {
-    color: Colors.surface,
-    fontSize: 17,
-    fontFamily: Fonts.bold,
-  },
   closeAction: {
     alignItems: "center",
-    marginTop: 14,
-    padding: 8,
+    justifyContent: "center",
+    minHeight: 44,
+    paddingHorizontal: 20,
   },
   closeText: {
-    color: Colors.textSub,
-    fontSize: 15,
-    fontFamily: Fonts.medium,
+    color: "#FFFFFF",
+    fontSize: 18,
+    fontFamily: Fonts.regular,
   },
   error: {
     fontFamily: Fonts.regular,
-    color: Colors.warning,
+    color: "#FFE0E7",
     fontSize: 13,
-    marginTop: 12,
+    lineHeight: 18,
+    marginTop: 6,
     textAlign: "center",
   },
 });

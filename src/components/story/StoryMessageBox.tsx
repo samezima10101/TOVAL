@@ -1,7 +1,7 @@
-import { Image } from "expo-image";
 import { type ReactNode } from "react";
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
+import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
 import { Colors, Fonts } from "@/src/constants/theme";
 import type { StoryLine } from "@/src/domain/common/types";
 import {
@@ -70,8 +70,7 @@ export function StoryMessage({
 export default function StoryMessageBox({ children, contentKey }: StoryMessageBoxProps) {
   return (
     <View style={styles.frame}>
-      <Image source={require("@/assets/images/file_textbox.svg")} style={StyleSheet.absoluteFill}
-        contentFit="fill" pointerEvents="none" accessible={false} />
+      <FileTextboxBackground />
       <ScrollView key={contentKey} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="never">
         {children}
       </ScrollView>
