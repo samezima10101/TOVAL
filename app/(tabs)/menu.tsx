@@ -57,7 +57,7 @@ export default function MenuScreen() {
 
   return (
     <View style={{ flex: 1 }}>
-      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
       <ScrollView
         contentContainerStyle={[
           styles.content,
