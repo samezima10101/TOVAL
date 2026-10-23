@@ -8,6 +8,7 @@ import AppStartupGate from "@/src/components/common/AppStartupGate";
 import { AUDIO_VOLUMES, getScreenBgm } from "@/src/config/audioSettings";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
+import { ReminderNotificationProvider } from "@/src/state/ReminderNotificationProvider";
 
 export const unstable_settings = { initialRouteName: "(tabs)" };
 
@@ -17,7 +18,9 @@ export default function RootLayout() {
       <StatusBar hidden />
       <AppFontLoader>
         <AppStateProvider>
-          <AppShell />
+          <ReminderNotificationProvider>
+            <AppShell />
+          </ReminderNotificationProvider>
         </AppStateProvider>
       </AppFontLoader>
     </SafeAreaProvider>

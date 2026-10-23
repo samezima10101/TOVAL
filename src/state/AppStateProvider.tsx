@@ -25,6 +25,7 @@ import {
 import { pauseTimer, resumeTimer } from "@/src/domain/timer";
 import { localDateKey, localTimeKey } from "@/src/domain/common/date";
 import { editDiary } from "@/src/domain/diary";
+import { isValidNotificationTime, normalizeReminderSettings, type NotificationTime } from "@/src/domain/reminder";
 import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
   STORY_CATALOG,
@@ -63,6 +64,8 @@ type AppStateContextValue = {
   retryTimerSave: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
   setBgmEnabled: (enabled: boolean) => Promise<void>;
+  setUserName: (userName: string) => Promise<void>;
+  setNotificationTime: (time: NotificationTime) => Promise<void>;
   updateDiary: (logId: string, diary: string) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
@@ -303,6 +306,31 @@ export function AppStateProvider({
     [enqueue, requireState, saveAndCommit],
   );
 
+  const setUserName = useCallback(
+    (userName: string) => enqueue(async () => {
+      const current = requireState();
+      const normalized = normalizeReminderSettings({ ...current, userName });
+      if (current.userName !== normalized.userName) {
+        await saveAndCommit({ ...current, userName: normalized.userName });
+      }
+    }),
+    [enqueue, requireState, saveAndCommit],
+  );
+
+  const setNotificationTime = useCallback(
+    ({ notificationHour, notificationMinute }: NotificationTime) => enqueue(async () => {
+      if (!isValidNotificationTime(notificationHour, notificationMinute)) {
+        throw new RangeError("通知時間は0:00から23:59の間で設定してください。");
+      }
+      const current = requireState();
+      // A time-only edit also preserves historical names over the editing limit.
+      if (current.notificationHour !== notificationHour || current.notificationMinute !== notificationMinute) {
+        await saveAndCommit({ ...current, notificationHour, notificationMinute });
+      }
+    }),
+    [enqueue, requireState, saveAndCommit],
+  );
+
   const updateDiary = useCallback(
     (logId: string, diary: string) => enqueue(async () => {
       await saveAndCommit(editDiary(requireState(), logId, diary));
@@ -430,6 +458,8 @@ export function AppStateProvider({
       retryTimerSave,
       setTaskName,
       setBgmEnabled,
+      setUserName,
+      setNotificationTime,
       updateDiary,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
@@ -454,6 +484,8 @@ export function AppStateProvider({
       announceSideStories,
       setTaskName,
       setBgmEnabled,
+      setUserName,
+      setNotificationTime,
       updateDiary,
       setTimerRouteFocused,
       startTimer,

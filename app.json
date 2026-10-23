@@ -47,6 +47,7 @@
         }
       ],
       "expo-font",
+      "expo-notifications",
       "expo-image",
       "expo-web-browser",
       "expo-asset",
@@ -55,7 +56,8 @@
         {
           "hidden": true
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

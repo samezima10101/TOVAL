@@ -1,11 +1,8 @@
 import {
   Image,
   ImageSourcePropType,
-  ImageStyle,
-  StyleProp,
   StyleSheet,
   View,
-  ViewStyle,
 } from "react-native";
 
 import { Expression, Speaker, StoryCharacter } from "@/src/domain/common/types";
@@ -34,16 +31,12 @@ type StoryCharactersProps = {
   leftExpression?: Expression;
   rightExpression?: Expression;
   activeSpeaker?: Speaker;
-  containerStyle?: StyleProp<ViewStyle>;
-  imageStyle?: StyleProp<ImageStyle>;
 };
 
 export default function StoryCharacters({
   leftExpression = "normal",
   rightExpression = "normal",
   activeSpeaker,
-  containerStyle,
-  imageStyle,
 }: StoryCharactersProps) {
   const bossCharacter = STORY_CHARACTER_BY_SPEAKER.boss;
   const subCharacter = STORY_CHARACTER_BY_SPEAKER.sub;
@@ -51,12 +44,11 @@ export default function StoryCharacters({
   const subIsActive = !activeSpeaker || activeSpeaker === "sub";
 
   return (
-    <View style={[styles.charactersContainer, containerStyle]}>
+    <View style={styles.charactersContainer}>
       <Image
         source={faceAssets[bossCharacter][leftExpression]}
         style={[
           styles.characterImage,
-          imageStyle,
           bossIsActive ? styles.activeCharacter : styles.inactiveCharacter,
         ]}
         resizeMode="contain"
@@ -66,7 +58,6 @@ export default function StoryCharacters({
         source={faceAssets[subCharacter][rightExpression]}
         style={[
           styles.characterImage,
-          imageStyle,
           subIsActive ? styles.activeCharacter : styles.inactiveCharacter,
         ]}
         resizeMode="contain"

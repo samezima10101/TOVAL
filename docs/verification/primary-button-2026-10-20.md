@@ -29,3 +29,9 @@
 ## 残る手動確認
 
 [共通PrimaryButtonの確認手順](../manual-acceptance-checklist.md#primary-button)をiPhoneで実施する。特に長文・文字サイズ拡大・狭い画面・保存中のサイズ維持・再試行ボタンの配置を確認する。PC診断・バンドル生成の成功を実機の受け入れ合格にはしない。
+
+## 2026-10-23: 輪郭の細線化と青い面の透過
+
+ユーザー指示により`hex_button.svg`の二重輪郭の線幅を2から1へ変更し、内側の青`#466FB6`だけへ`fill-opacity="0.75"`を設定した。輪郭・文字の不透明度、座標・サイズ・二重輪郭の形は維持する。PrimaryButtonの処理・操作と依存は変更しない。
+
+SVGのXML解析は成功、`git diff --check`は空白エラーなし。`npm.cmd run bundle:ios`はexit 0（1763 modules・73 assets、変更したhex_button.svgを同梱）。SVGのみの変更のためlint・型・依存診断は今回再実行していない。自動テストの追加・復元なし。実際の細さ・青い面の透過・白文字の読みやすさはiPhone未確認であり、受け入れ合格にはしない。

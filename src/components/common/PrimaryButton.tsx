@@ -15,6 +15,7 @@ export default function PrimaryButton({
   disabled = false,
   loading = false,
   accessibilityLabel,
+  maxFontSizeMultiplier,
 }: {
   title: string;
   onPress: () => void;
@@ -22,6 +23,7 @@ export default function PrimaryButton({
   disabled?: boolean;
   loading?: boolean;
   accessibilityLabel?: string;
+  maxFontSizeMultiplier?: number;
 }) {
   const unavailable = disabled || loading;
   return (
@@ -41,7 +43,12 @@ export default function PrimaryButton({
         pointerEvents="none"
         accessible={false}
       />
-      <Text style={[styles.text, loading && styles.loadingText]}>{title}</Text>
+      <Text
+        style={[styles.text, loading && styles.loadingText]}
+        maxFontSizeMultiplier={maxFontSizeMultiplier}
+      >
+        {title}
+      </Text>
       {loading ? <ActivityIndicator color={Colors.surface} style={StyleSheet.absoluteFill} /> : null}
     </TouchableOpacity>
   );

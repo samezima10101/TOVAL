@@ -1,10 +1,10 @@
+import ScreenBackground from "@/src/components/common/ScreenBackground";
 import CustomCalendar from "@/src/components/log/CustomCalendar";
 import LogModal from "@/src/components/log/LogModal";
 import { DiaryLog } from "@/src/domain/common/types";
-import ScreenBackground from "@/src/components/common/ScreenBackground";
 import { useAppState } from "@/src/state/AppStateProvider";
-import { useMemo, useState } from "react";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { useMemo, useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -37,7 +37,7 @@ export default function CalendarScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
       <ScrollView
         contentContainerStyle={[
           styles.content,
