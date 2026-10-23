@@ -4,7 +4,7 @@ import {
   Text,
   TouchableOpacity,
   useWindowDimensions,
-  View
+  View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -58,17 +58,28 @@ export default function TimerSetupModal({
           <View style={[styles.card, compact && styles.cardCompact]}>
             <FileTextboxBackground style={styles.frameGlow} />
             <View>
-              <Text style={styles.title} accessibilityRole="header" maxFontSizeMultiplier={fontMultiplier}>
+              <Text
+                style={styles.title}
+                accessibilityRole="header"
+                maxFontSizeMultiplier={fontMultiplier}
+              >
                 集中時間を設定
               </Text>
               {hasActiveTimer ? (
                 <>
-                  <Text style={styles.description} maxFontSizeMultiplier={fontMultiplier}>
+                  <Text
+                    style={styles.description}
+                    maxFontSizeMultiplier={fontMultiplier}
+                  >
                     進行中のタイマーがあります。新しく作らず、そのセッションを再開します。
                   </Text>
                   <PrimaryButton
                     title="タイマーを再開"
-                    style={compact ? styles.primaryActionCompact : styles.primaryAction}
+                    style={
+                      compact
+                        ? styles.primaryActionCompact
+                        : styles.primaryAction
+                    }
                     maxFontSizeMultiplier={fontMultiplier}
                     onPress={onResume}
                     accessibilityLabel="進行中のタイマーを再開"
@@ -76,11 +87,21 @@ export default function TimerSetupModal({
                 </>
               ) : (
                 <>
-                  {!compact ? <Text style={styles.description} maxFontSizeMultiplier={fontMultiplier}>
-                    1時間・5分単位で調整できます。
-                  </Text> : null}
+                  {!compact ? (
+                    <Text
+                      style={styles.description}
+                      maxFontSizeMultiplier={fontMultiplier}
+                    >
+                      1時間・5分単位で調整できます。
+                    </Text>
+                  ) : null}
 
-                  <View style={[styles.pickerContainer, compact && styles.pickerCompact]}>
+                  <View
+                    style={[
+                      styles.pickerContainer,
+                      compact && styles.pickerCompact,
+                    ]}
+                  >
                     {/* 時間の設定カラム */}
                     <View style={styles.pickerColumn}>
                       <TouchableOpacity
@@ -94,10 +115,18 @@ export default function TimerSetupModal({
                         disabled={isStarting}
                         accessibilityState={{ disabled: isStarting }}
                       >
-                        <Text style={styles.arrowText} maxFontSizeMultiplier={fontMultiplier}>＋</Text>
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          ＋
+                        </Text>
                       </TouchableOpacity>
                       <Text
-                        style={[styles.numberText, compact && styles.numberCompact]}
+                        style={[
+                          styles.numberText,
+                          compact && styles.numberCompact,
+                        ]}
                         accessibilityLabel={`${displayHours}時間`}
                         numberOfLines={1}
                         adjustsFontSizeToFit
@@ -117,12 +146,26 @@ export default function TimerSetupModal({
                         disabled={isStarting}
                         accessibilityState={{ disabled: isStarting }}
                       >
-                        <Text style={styles.arrowText} maxFontSizeMultiplier={fontMultiplier}>－</Text>
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          －
+                        </Text>
                       </TouchableOpacity>
-                      <Text style={styles.unitText} maxFontSizeMultiplier={fontMultiplier}>hour</Text>
+                      <Text
+                        style={styles.unitText}
+                        maxFontSizeMultiplier={fontMultiplier}
+                      >
+                        hour
+                      </Text>
                     </View>
 
-                    <Text style={styles.colon} accessible={false} maxFontSizeMultiplier={fontMultiplier}>
+                    <Text
+                      style={styles.colon}
+                      accessible={false}
+                      maxFontSizeMultiplier={fontMultiplier}
+                    >
                       :
                     </Text>
 
@@ -139,10 +182,18 @@ export default function TimerSetupModal({
                         disabled={isStarting}
                         accessibilityState={{ disabled: isStarting }}
                       >
-                        <Text style={styles.arrowText} maxFontSizeMultiplier={fontMultiplier}>＋</Text>
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          ＋
+                        </Text>
                       </TouchableOpacity>
                       <Text
-                        style={[styles.numberText, compact && styles.numberCompact]}
+                        style={[
+                          styles.numberText,
+                          compact && styles.numberCompact,
+                        ]}
                         accessibilityLabel={`${displayMins}分`}
                         numberOfLines={1}
                         adjustsFontSizeToFit
@@ -162,21 +213,39 @@ export default function TimerSetupModal({
                         disabled={isStarting}
                         accessibilityState={{ disabled: isStarting }}
                       >
-                        <Text style={styles.arrowText} maxFontSizeMultiplier={fontMultiplier}>－</Text>
+                        <Text
+                          style={styles.arrowText}
+                          maxFontSizeMultiplier={fontMultiplier}
+                        >
+                          －
+                        </Text>
                       </TouchableOpacity>
-                      <Text style={styles.unitText} maxFontSizeMultiplier={fontMultiplier}>min</Text>
+                      <Text
+                        style={styles.unitText}
+                        maxFontSizeMultiplier={fontMultiplier}
+                      >
+                        min
+                      </Text>
                     </View>
                   </View>
 
                   {error ? (
-                    <Text style={styles.error} accessibilityRole="alert" maxFontSizeMultiplier={fontMultiplier}>
+                    <Text
+                      style={styles.error}
+                      accessibilityRole="alert"
+                      maxFontSizeMultiplier={fontMultiplier}
+                    >
                       {error}
                     </Text>
                   ) : null}
 
                   <PrimaryButton
                     title="タイマーを開始"
-                    style={compact ? styles.primaryActionCompact : styles.primaryAction}
+                    style={
+                      compact
+                        ? styles.primaryActionCompact
+                        : styles.primaryAction
+                    }
                     maxFontSizeMultiplier={fontMultiplier}
                     onPress={handleStart}
                     disabled={isStarting}
@@ -195,7 +264,12 @@ export default function TimerSetupModal({
             accessibilityLabel="タイマー設定を閉じる"
             accessibilityState={{ disabled: isStarting }}
           >
-            <Text style={styles.closeText} maxFontSizeMultiplier={fontMultiplier}>× CLOSE</Text>
+            <Text
+              style={styles.closeText}
+              maxFontSizeMultiplier={fontMultiplier}
+            >
+              × CLOSE
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
