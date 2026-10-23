@@ -36,7 +36,11 @@ export default function HomeScreen() {
   });
   const monitorHeight = Math.max(
     0,
-    Math.min(monitorSpace.width / MONITOR_ASPECT_RATIO, monitorSpace.height, height * 0.42),
+    Math.min(
+      monitorSpace.width / MONITOR_ASPECT_RATIO,
+      monitorSpace.height,
+      height * 0.42,
+    ),
   );
   const monitorWidth = monitorHeight * MONITOR_ASPECT_RATIO;
   const shortScreen = height < 700;
@@ -164,7 +168,11 @@ export default function HomeScreen() {
             </View>
             {todaysEpisode ? (
               <View
-                style={[styles.episode, compact && styles.episodeCompact, tight && styles.episodeTight]}
+                style={[
+                  styles.episode,
+                  compact && styles.episodeCompact,
+                  tight && styles.episodeTight,
+                ]}
                 accessible
                 accessibilityLabel={`${episodeLabel}、第${todaysEpisode.id}話、${todaysEpisode.title}`}
               >
@@ -235,7 +243,7 @@ export default function HomeScreen() {
         </View>
 
         <PrimaryButton
-          title="集中モードを開始"
+          title="はじめる"
           onPress={() => setIsTimerSetupOpen(true)}
           disabled={needsTask}
           style={shortScreen ? styles.startButtonCompact : styles.startButton}

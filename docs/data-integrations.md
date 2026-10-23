@@ -1,6 +1,6 @@
 # データ・連携仕様
 
-更新日: 2026-10-22（日本時間）。現行の保存形式はv11。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
+更新日: 2026-10-23（日本時間）。現行の保存形式はv11。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
 
 ## 永続化の単位と更新順序
 
@@ -71,6 +71,8 @@
 | `unlockedEpisodeId` | その完了で解放した話ID、解放なしはnull |
 
 **事実**: カレンダーの印・一覧・選択日の合計は`logDate`を使う。正常完了の実集中秒数を開始日の合計に全量加算し、日付境界で分割しない。キャンセルではログを作らない。各記録に開始時刻（旧記録は「記録なし」）・集中時間・日記を表示し、開始日は個別項目として表示しない。時間と合計は「0時間0分0秒」形式。`completedAt/completedDate/completedTime`は終了情報として維持するが、開始時刻の代用にしない。タスク名、予定秒数、獲得NT、日記更新時刻、タイムゾーンID、キャンセル履歴はログに保存しない。根拠: [completeTimer](../src/domain/completion.ts)、[ログ](../app/(tabs)/log.tsx)、[LogModal](../src/components/log/LogModal.tsx)。
+
+**2026-10-23のユーザー回答で確定した矢印移動**: 移動先は「集中記録のある日」とする。`diaryLogs`から重複のない`logDate`を取り、選択日より前／後にある最も近い日へ移動する。空の日を選択していても同じ比較を使い、候補がない方向は薄く表示して操作できなくする。ログイン・起動日の履歴と保存項目・形式は追加しない。日記編集も従来どおり対象ログの`diary`だけを更新する。UI/iPhoneの確認は未実施で、手順と結果は[ログ表示のチェックリスト](manual-acceptance-checklist.md#calendar-log-design)に記録する。
 
 ## 作成・更新・削除の一覧
 

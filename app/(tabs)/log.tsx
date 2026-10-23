@@ -54,7 +54,6 @@ export default function CalendarScreen() {
       </ScrollView>
       {modalVisible ? (
         <LogModal
-          key={selectedDate}
           visible={modalVisible}
           selectedDate={selectedDate}
           logsByDate={logsByDate}
