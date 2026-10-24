@@ -19,6 +19,7 @@ import {
   DEFAULT_USER_NAME,
   isValidNotificationTime,
 } from "@/src/domain/reminder";
+import { DEFAULT_TIMER_MINUTES, isValidDefaultTimerMinutes } from "@/src/domain/timer";
 import { developmentStorage } from "./developmentStorage";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
@@ -56,6 +57,7 @@ export function createInitialAppState(): AppState {
     userName: DEFAULT_USER_NAME,
     notificationHour: DEFAULT_NOTIFICATION_HOUR,
     notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
+    defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
     taskName: "",
     totalNt: 0,
     totalCompletions: 0,
@@ -282,6 +284,7 @@ export function validateAppState(
     typeof value.bgmEnabled !== "boolean" ||
     typeof value.userName !== "string" || value.userName.trim().length === 0 ||
     !isValidNotificationTime(value.notificationHour, value.notificationMinute) ||
+    !isValidDefaultTimerMinutes(value.defaultTimerMinutes) ||
     typeof value.taskName !== "string" ||
     typeof value.totalNt !== "number" ||
     !Number.isSafeInteger(value.totalNt) ||
@@ -425,6 +428,7 @@ function migrateReminderSettings(value: Record<string, unknown>) {
       ? DEFAULT_USER_NAME : value.userName,
     notificationHour: DEFAULT_NOTIFICATION_HOUR,
     notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
+    defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
   };
 }
 
@@ -442,6 +446,15 @@ export function parsePersistedState(
 
   if (validateAppState(value, catalog)) {
     return value;
+  }
+  // v11 predates the configurable initial duration. Preserve every other field.
+  if (isRecord(value) && value.schemaVersion === 11) {
+    const migrated = {
+      ...value,
+      schemaVersion: APP_SCHEMA_VERSION,
+      defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
+    };
+    return validateAppState(migrated, catalog) ? migrated : null;
   }
   // v10 predates daily reminders. Keep all saved progress and preferences.
   if (isRecord(value) && value.schemaVersion === 10) {

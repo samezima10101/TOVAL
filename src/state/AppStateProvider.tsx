@@ -22,7 +22,7 @@ import {
   completeTimer,
   CompletionOutcome,
 } from "@/src/domain/completion";
-import { pauseTimer, resumeTimer } from "@/src/domain/timer";
+import { isValidDefaultTimerMinutes, pauseTimer, resumeTimer } from "@/src/domain/timer";
 import { localDateKey, localTimeKey } from "@/src/domain/common/date";
 import { editDiary } from "@/src/domain/diary";
 import { isValidNotificationTime, normalizeReminderSettings, type NotificationTime } from "@/src/domain/reminder";
@@ -66,6 +66,7 @@ type AppStateContextValue = {
   setBgmEnabled: (enabled: boolean) => Promise<void>;
   setUserName: (userName: string) => Promise<void>;
   setNotificationTime: (time: NotificationTime) => Promise<void>;
+  setDefaultTimerMinutes: (minutes: number) => Promise<void>;
   updateDiary: (logId: string, diary: string) => Promise<void>;
   selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
   unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
@@ -331,6 +332,19 @@ export function AppStateProvider({
     [enqueue, requireState, saveAndCommit],
   );
 
+  const setDefaultTimerMinutes = useCallback(
+    (minutes: number) => enqueue(async () => {
+      if (!isValidDefaultTimerMinutes(minutes)) {
+        throw new RangeError("デフォルト時間は0分から23時間55分まで、5分単位で設定してください。");
+      }
+      const current = requireState();
+      if (current.defaultTimerMinutes !== minutes) {
+        await saveAndCommit({ ...current, defaultTimerMinutes: minutes });
+      }
+    }),
+    [enqueue, requireState, saveAndCommit],
+  );
+
   const updateDiary = useCallback(
     (logId: string, diary: string) => enqueue(async () => {
       await saveAndCommit(editDiary(requireState(), logId, diary));
@@ -460,6 +474,7 @@ export function AppStateProvider({
       setBgmEnabled,
       setUserName,
       setNotificationTime,
+      setDefaultTimerMinutes,
       updateDiary,
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
@@ -486,6 +501,7 @@ export function AppStateProvider({
       setBgmEnabled,
       setUserName,
       setNotificationTime,
+      setDefaultTimerMinutes,
       updateDiary,
       setTimerRouteFocused,
       startTimer,

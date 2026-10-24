@@ -165,7 +165,7 @@ export default function LogModal({
     setError(null);
   };
   const save = async () => {
-    if (savingRef.current || editingId === null) return;
+    if (savingRef.current || editingId === null || draft.length > MAX_DIARY_LENGTH) return;
     savingRef.current = true;
     setSaving(true);
     setError(null);

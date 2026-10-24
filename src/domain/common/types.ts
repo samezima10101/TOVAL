@@ -1,4 +1,5 @@
-export const APP_SCHEMA_VERSION = 11;
+export const APP_SCHEMA_VERSION = 12;
+export const MAX_TASK_NAME_LENGTH = 80;
 export const MAX_DIARY_LENGTH = 1000;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 
@@ -74,6 +75,7 @@ export type AppState = {
   userName: string;
   notificationHour: number;
   notificationMinute: number;
+  defaultTimerMinutes: number;
   taskName: string;
   totalNt: number;
   totalCompletions: number;

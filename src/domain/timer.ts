@@ -1,4 +1,11 @@
-import { ActiveTimer } from "./common/types";
+import { ActiveTimer, MAX_PLANNED_SECONDS } from "./common/types";
+
+export const DEFAULT_TIMER_MINUTES = 25;
+
+export function isValidDefaultTimerMinutes(value: unknown): value is number {
+  return typeof value === "number" && Number.isInteger(value) &&
+    value >= 0 && value <= MAX_PLANNED_SECONDS / 60 && value % 5 === 0;
+}
 
 export type TimerSnapshot = {
   elapsedMs: number;
