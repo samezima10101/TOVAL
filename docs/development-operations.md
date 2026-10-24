@@ -4,7 +4,7 @@
 
 ## 環境の再現
 
-Node **22.15.0** / npm **10.9.2** / Expo SDK **57**を使う。指定は[package.json](../package.json)・[.nvmrc](../.nvmrc)・[.npmrc](../.npmrc)、解決版は[package-lock.json](../package-lock.json)を参照する。Windowsでは`.nvmrc`だけでNodeは自動切替されない。
+Node **22.15.0** / npm **10.9.2** / Expo SDK **58**を使う。指定は[package.json](../package.json)・[.nvmrc](../.nvmrc)・[.npmrc](../.npmrc)、解決版は[package-lock.json](../package-lock.json)を参照する。Windowsでは`.nvmrc`だけでNodeは自動切替されない。
 
 ```powershell
 node --version
@@ -17,7 +17,7 @@ npm.cmd run start
 
 通常はLANモード。同じネットワークのiPhoneからSDK対応のExpo Goまたは開発ビルドで接続する。PC内だけの確認は`npm.cmd run start -- --localhost --port 8081`。この環境ではnpm.ps1経由の追加引数が正しく渡らない事例があるため、追加引数を渡す際は`npm.cmd`を使う。
 
-依存を変更する前に[Expo SDK 57の版指定ドキュメント](https://docs.expo.dev/versions/v57.0.0/)を読み、Expoパッケージは`npx expo install`で導入する。宣言とlockを一緒に更新し、SDKに合わない強制更新や診断抑制は行わない。過去の依存監査で残った指摘の解消は未確認。古い件数を現状とみなさず、依存更新時に再監査する。
+依存を変更する前に[Expo SDK 58の版指定ドキュメント](https://docs.expo.dev/versions/v58.0.0/)を読み、Expoパッケージは`npx expo install`で導入する。宣言とlockを一緒に更新し、SDKに合わない強制更新や診断抑制は行わない。過去の依存監査で残った指摘の解消は未確認。古い件数を現状とみなさず、依存更新時に再監査する。
 
 ## 確認コマンド
 

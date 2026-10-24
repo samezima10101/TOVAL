@@ -1,5 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from "react-native";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import StoryNumber from "@/src/components/common/StoryNumber";
@@ -70,7 +70,7 @@ export default function StoryArchive({
     () => chapters.find((entry) => entry.items.length)?.id,
   );
   const [itemId, setItemId] = useState<number>();
-  const listRef = useRef<ScrollView>(null);
+  const listRef = useRef<ScrollViewInstance>(null);
   const [wheelHeight, setWheelHeight] = useState(ITEM_HEIGHT);
   const chapter = chapters.find((entry) => entry.id === chapterId)
     ?? chapters.find((entry) => entry.items.length);

@@ -6,6 +6,8 @@ import {
   Text,
   useWindowDimensions,
   View,
+  type ViewInstance,
+  type ScrollViewInstance,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,8 +27,8 @@ export default function MenuScreen() {
   const { top } = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   const tabBarHeight = useBottomTabBarHeight();
-  const screenRef = useRef<View>(null);
-  const scrollRef = useRef<ScrollView>(null);
+  const screenRef = useRef<ViewInstance>(null);
+  const scrollRef = useRef<ScrollViewInstance>(null);
   const [bottomOffset, setBottomOffset] = useState(0);
   const userSettings = useUserSettings();
   const { toolbarBottom, contentBottomInset } = useKeyboardEditor({

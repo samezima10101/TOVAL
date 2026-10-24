@@ -5,7 +5,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
+  type TextInputInstance,
+  type ScrollViewInstance,
   TouchableOpacity,
   useWindowDimensions,
   View,
@@ -90,8 +91,8 @@ export default function LogModal({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const savingRef = useRef(false);
-  const inputRef = useRef<TextInput>(null);
-  const recordsRef = useRef<ScrollView>(null);
+  const inputRef = useRef<TextInputInstance>(null);
+  const recordsRef = useRef<ScrollViewInstance>(null);
   const [recordsHeight, setRecordsHeight] = useState(200);
   const getInput = useCallback(() => inputRef.current, []);
   const { revealInput, onScroll } = useInputReveal({

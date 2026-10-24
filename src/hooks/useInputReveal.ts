@@ -3,13 +3,13 @@ import {
   Keyboard,
   type NativeScrollEvent,
   type NativeSyntheticEvent,
-  type ScrollView,
-  type TextInput,
+  type ScrollViewInstance,
+  type TextInputInstance,
 } from "react-native";
 
 type InputRevealOptions = {
-  scrollRef: RefObject<ScrollView | null>;
-  getInput: () => TextInput | null | undefined;
+  scrollRef: RefObject<ScrollViewInstance | null>;
+  getInput: () => TextInputInstance | null | undefined;
   topInset?: number;
   bottomInset?: number;
   deferToAnimationFrame?: boolean;
