@@ -2,11 +2,11 @@
 
 ## Expo HAS CHANGED
 
-Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing any code.
+Read the exact versioned docs at https://docs.expo.dev/versions/v58.0.0/ before writing any code.
 
 ## プロジェクト概要
 
-My-Juneは、1件のタスクに集中するタイマーと、完了に応じて解放される会話を組み合わせたオフラインアプリ。Expo SDK 57を使用し、今回の完成判定対象はiPhone。
+My-Juneは、1件のタスクに集中するタイマーと、完了に応じて解放される会話を組み合わせたオフラインアプリ。Expo SDK 58を使用し、今回の完成判定対象はiPhone。
 
 タスク登録・改名、タイマーの中断・再開、NT報酬、日記とカレンダーログ、メイン14話各2分岐、サイド会話3件の購入・再生、BGMとタブ効果音の独立した0〜100%音量調整を実装している。音量はBGM初期30%・効果音初期100%、0%で無音とし、操作中は即時反映・指を離すと保存する。4タブの押下音は選択中の再タップでも鳴り、プログラム遷移では鳴らない。正式素材・Figmaデザインの反映、iPhoneでの回帰検証、TestFlight配布は未完了。実装済みと受け入れ合格を区別する。最新の状態は完成基準と手動チェックリストで確認する。
 

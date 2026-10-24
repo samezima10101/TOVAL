@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from "react";
-import { Keyboard, StyleSheet, Text, TextInput } from "react-native";
+import { Keyboard, StyleSheet, Text, type TextInputInstance } from "react-native";
 
 import {
   KeyboardEditorInput,
@@ -33,7 +33,7 @@ const TEXT_SETTINGS = [
 // Share one editor between the cards inside the scroll area and its toolbar.
 export function useUserSettings() {
   const { state, setTaskName, setUserName } = useAppState();
-  const inputRefs = useRef<Record<TextSettingKey, TextInput | null>>({
+  const inputRefs = useRef<Record<TextSettingKey, TextInputInstance | null>>({
     taskName: null,
     userName: null,
   });

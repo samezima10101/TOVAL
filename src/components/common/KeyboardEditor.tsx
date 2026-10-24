@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useState } from "react";
 import {
   Keyboard, Platform, StyleSheet, Text, TextInput, TouchableOpacity,
-  useWindowDimensions, View, type KeyboardEvent, type TextInputProps, type TextStyle,
+  useWindowDimensions, View, type KeyboardEvent, type TextInputProps, type TextInputInstance, type TextStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -49,7 +49,7 @@ type EditorInputProps = TextInputProps & {
  * Native text scrolling keeps the selection visible without estimating wrapped
  * Japanese text, or moving the selection during IME composition.
  */
-export const KeyboardEditorInput = forwardRef<TextInput, EditorInputProps>(
+export const KeyboardEditorInput = forwardRef<TextInputInstance, EditorInputProps>(
   function KeyboardEditorInput({ style, maxLength, autoGrow = false, maxInputHeight = 160, onContentSizeChange, ...props }, ref) {
     const [contentHeight, setContentHeight] = useState(46);
     const inputHeight = Math.min(contentHeight, Math.max(46, maxInputHeight));
@@ -88,7 +88,7 @@ export const KeyboardEditorInput = forwardRef<TextInput, EditorInputProps>(
             // Measure independently of the TextInput's currently constrained
             // native content size. The sentinel includes a trailing empty line.
             const lineHeight = lines.reduce((total, line) => total + line.height, 0);
-            const flat: TextStyle = StyleSheet.flatten([styles.input, style]);
+            const flat: TextStyle = StyleSheet.flatten([styles.input, style]) ?? {};
             const top = flat.paddingTop ?? flat.paddingVertical ?? flat.padding ?? 0;
             const bottom = flat.paddingBottom ?? flat.paddingVertical ?? flat.padding ?? 0;
             const border = flat.borderWidth ?? 0;
