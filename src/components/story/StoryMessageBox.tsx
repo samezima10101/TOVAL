@@ -1,8 +1,14 @@
 import { type ReactNode } from "react";
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
-import { Colors, Fonts } from "@/src/constants/theme";
+import { Fonts } from "@/src/constants/theme";
 import type { StoryLine } from "@/src/domain/common/types";
 import {
   STORY_CHARACTER_BY_SPEAKER,
@@ -22,6 +28,7 @@ type StoryMessageProps = {
 type StoryMessageBoxProps = {
   children: ReactNode;
   contentKey?: string;
+  inFlow?: boolean;
 };
 
 export function StoryMessage({
@@ -53,25 +60,29 @@ export function StoryMessage({
     >
       <Text style={styles.speakerName}>
         {speakerName ??
-          STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]]}
+          (line.speaker === "both"
+            ? `２人`
+            : STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]])}
       </Text>
       <Text style={styles.messageText}>{visibleText}</Text>
-      <Text style={styles.tapPrompt}>
-        {isTyping
-          ? "Tap to show all ▼"
-          : isLastLine
-            ? "Tap to close ▼"
-            : "Tap to next ▼"}
-      </Text>
+      <Text style={styles.tapPrompt}>▼</Text>
     </TouchableOpacity>
   );
 }
 
-export default function StoryMessageBox({ children, contentKey }: StoryMessageBoxProps) {
+export default function StoryMessageBox({
+  children,
+  contentKey,
+  inFlow = false,
+}: StoryMessageBoxProps) {
   return (
-    <View style={styles.frame}>
+    <View style={inFlow ? styles.flowFrame : styles.frame}>
       <FileTextboxBackground />
-      <ScrollView key={contentKey} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="never">
+      <ScrollView
+        key={contentKey}
+        contentContainerStyle={styles.content}
+        contentInsetAdjustmentBehavior="never"
+      >
         {children}
       </ScrollView>
     </View>
@@ -79,30 +90,47 @@ export default function StoryMessageBox({ children, contentKey }: StoryMessageBo
 }
 
 const styles = StyleSheet.create({
-  frame: { position: "absolute", left: 18, right: 18, bottom: 60, height: 210, paddingHorizontal: 24, paddingTop: 28, paddingBottom: 18 },
+  flowFrame: {
+    height: 190,
+    flexShrink: 1,
+    minHeight: 0,
+    paddingHorizontal: 22,
+    paddingTop: 6,
+    paddingBottom: 14,
+  },
+  frame: {
+    position: "absolute",
+    left: 18,
+    right: 18,
+    bottom: 60,
+    height: 210,
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 18,
+  },
   content: { flexGrow: 1 },
   messageBox: { flexGrow: 1 },
   messageBoxDisabled: {
     opacity: 0.7,
   },
   speakerName: {
-    color: Colors.primary,
-    fontSize: 18,
+    color: "#FFFFFF",
+    fontSize: 14,
     fontFamily: Fonts.bold,
     marginBottom: 10,
   },
   messageText: {
     fontFamily: Fonts.medium,
-    color: Colors.text,
-    fontSize: 18,
-    lineHeight: 30,
+    color: "#FFFFFF",
+    fontSize: 16,
+    lineHeight: 23,
     flexGrow: 1,
   },
   tapPrompt: {
     marginTop: 10,
     textAlign: "right",
-    color: Colors.textSub,
-    fontSize: 13,
+    color: "#FFFFFF",
+    fontSize: 24,
     fontFamily: Fonts.bold,
   },
 });

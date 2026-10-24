@@ -5,15 +5,24 @@ export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 
 export type EpisodeId = number;
 export type Speaker = "boss" | "sub";
+export type StorySpeaker = Speaker | "both";
 export type StoryCharacter = "gem" | "alta";
-export type Expression = "normal" | "talk" | "doubt";
+type LegacyExpression = "normal" | "talk" | "doubt";
+type NormalExpression = `normal${1 | 2 | 3 | 4}`;
+export type GemExpression = LegacyExpression | NormalExpression
+  | `surprised${1 | 2 | 3 | 4}` | `doubt${3 | 4}`
+  | `beam${1 | 2}` | `nervous${1 | 2 | 3 | 4}`;
+export type AltaExpression = LegacyExpression | NormalExpression
+  | `grumpy${1 | 2 | 3 | 4}` | `grin${1 | 2 | 3 | 4}`
+  | `sparkle${1 | 2}` | `smirk${3 | 4}`;
+export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {
   id: string;
-  speaker: Speaker;
+  speaker: StorySpeaker;
   text: string;
-  left: Expression;
-  right: Expression;
+  left: GemExpression;
+  right: AltaExpression;
 };
 
 export type StoryRoute = {
