@@ -220,7 +220,7 @@ export const episode01: StoryEpisode = {
     {
       id: "episode-01-after-6",
       speaker: "both",
-      text: "...",
+      text: "・・・",
       left: "nervous1",
       right: "smirk3",
     },

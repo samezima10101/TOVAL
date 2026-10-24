@@ -5,8 +5,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import StoryScene from "@/src/components/story/StoryScene";
 import { StoryMessage } from "@/src/components/story/StoryMessageBox";
+import StoryScene from "@/src/components/story/StoryScene";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { SHOP_CONVERSATIONS, SIDE_STORY } from "@/src/domain/sideStory";
 import useConversationExit from "@/src/hooks/useConversationExit";
@@ -55,7 +55,13 @@ function SideStoryPlayback() {
   if (!line || !episode) return null;
 
   return (
-    <StoryScene title={episode.title} onClose={handleClose} disabled={isProcessing} error={error} contentKey={line.id}>
+    <StoryScene
+      title={episode.title}
+      onClose={handleClose}
+      disabled={isProcessing}
+      error={error}
+      contentKey={line.id}
+    >
       <StoryMessage {...reader} />
     </StoryScene>
   );
