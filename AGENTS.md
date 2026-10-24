@@ -8,7 +8,7 @@ Read the exact versioned docs at https://docs.expo.dev/versions/v57.0.0/ before 
 
 My-Juneは、1件のタスクに集中するタイマーと、完了に応じて解放される会話を組み合わせたオフラインアプリ。Expo SDK 57を使用し、今回の完成判定対象はiPhone。
 
-タスク登録・改名、タイマーの中断・再開、NT報酬、日記とカレンダーログ、メイン14話各2分岐、サイド会話3件の購入・再生、BGMオン/オフを実装している。正式素材・Figmaデザインの反映、iPhoneでの回帰検証、TestFlight配布は未完了。実装済みと受け入れ合格を区別する。最新の状態は完成基準と検証記録で確認する。
+タスク登録・改名、タイマーの中断・再開、NT報酬、日記とカレンダーログ、メイン14話各2分岐、サイド会話3件の購入・再生、BGMとタブ効果音の独立した0〜100%音量調整を実装している。音量はBGM初期30%・効果音初期100%、0%で無音とし、操作中は即時反映・指を離すと保存する。4タブの押下音は選択中の再タップでも鳴り、プログラム遷移では鳴らない。正式素材・Figmaデザインの反映、iPhoneでの回帰検証、TestFlight配布は未完了。実装済みと受け入れ合格を区別する。最新の状態は完成基準と検証記録で確認する。
 
 ## 開発
 
@@ -34,12 +34,12 @@ npm run bundle:ios
 | 場所 | 内容 |
 | --- | --- |
 | `app/` | Expo Routerの画面と共通レイアウト |
-| `src/components/`・`src/hooks/` | UI部品、計測・会話・BGMのフック |
+| `src/components/`・`src/hooks/` | UI部品、計測・会話・BGMとタブ効果音のフック |
 | `src/domain/` | 時間計算、完了・報酬、日記、会話・購入の判定 |
 | `src/state/AppStateProvider.tsx` | 共有状態、保存キュー、保存成功後の状態反映 |
 | `src/storage/appStateRepository.ts` | AsyncStorageへの保存、検証、移行、破損保全 |
 | `src/content/stories/`・`src/content/shop.ts` | メイン各話、サイド会話、店員の本文 |
-| `src/config/` | 会話の価格・入荷条件、BGMの割り当て・共通音量 |
+| `src/config/` | 会話の価格・入荷条件、BGMの割り当て・BGMと効果音の初期音量 |
 
 ## ドキュメント
 
@@ -48,7 +48,7 @@ npm run bundle:ios
 | [完成基準](docs/completion-criteria.md) | 今回の仕様、対象範囲、合格条件、残作業 |
 | [手動チェックリスト](docs/manual-acceptance-checklist.md) | iPhoneでの確認手順、検証用データ、実施結果 |
 | [会話設定](docs/conversation-settings.md) | 本文・価格・サイド会話の入荷条件の編集 |
-| [BGM設定](docs/bgm-settings.md) | 音源・画面割り当て・再生設定の編集 |
+| [BGM・効果音設定](docs/bgm-settings.md) | BGM音源・画面割り当て、タブ効果音と各音量の編集 |
 | [フォント設定](docs/font-settings.md) | UI-v3の書体・ウェイト、同梱・読み込み・適用箇所 |
 | [フォルダ型テキスト枠](docs/file-textbox.md) | インデックスの比率を保つ共通背景、サイズ・本文余白の指定 |
 | [キーボード編集](docs/keyboard-editor.md) | 入力欄・✕／OKバー・キーボード余白の共通部品と再利用 |

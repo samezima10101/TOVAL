@@ -1,10 +1,10 @@
 # データ・連携仕様
 
-更新日: 2026-10-24（日本時間）。現行の保存形式はv12。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
+更新日: 2026-10-24（日本時間）。現行の保存形式はv14。仕様の合格条件は[完成基準](completion-criteria.md)、検証手順と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)を参照する。
 
 ## 永続化の単位と更新順序
 
-**事実**: AsyncStorageのキー`@my-june/app-state-v1`に、AppState全体を1件のJSON文字列で保存する。キー末尾v1はデータスキーマの番号ではなく、現在の`schemaVersion`は12。DB、クラウド同期、別のログファイルは実装されていない。根拠: [APP_STATE_STORAGE_KEY/load/save](../src/storage/appStateRepository.ts)、[型](../src/domain/common/types.ts)。
+**事実**: AsyncStorageのキー`@my-june/app-state-v1`に、AppState全体を1件のJSON文字列で保存する。キー末尾v1はデータスキーマの番号ではなく、現在の`schemaVersion`は14。DB、クラウド同期、別のログファイルは実装されていない。根拠: [APP_STATE_STORAGE_KEY/load/save](../src/storage/appStateRepository.ts)、[型](../src/domain/common/types.ts)。
 
 **事実**: Providerの変更操作はPromiseキューで直列化し、最新のstateRefを参照する。原則は「検証→次状態を作る→Repository保存→stateRef/React state更新」。保存失敗時は共有状態を更新せず、後続操作のキューは継続する。保証範囲はこのProvider内であり、複数ブラウザタブや別プロセス間の排他制御はない。根拠: [enqueue/commitState](../src/state/AppStateProvider.tsx)。
 
@@ -12,14 +12,19 @@
 
 **通知設定**: ユーザー名と通知時刻も保存成功後に共有状態へ反映する。OSへの通知予約はその後に同期し、予約失敗を設定保存失敗と区別する。予約失敗でも保存済みの名前・時刻を戻さず、メニューの再試行と前景復帰で再同期する。OSの許可状態と予約状態はアプリの保存データとは別に照合する。固定ID`myjune-daily-timer-reminder`でiOSの繰り返し予約を置き換え、更新前に取り消さないため、予約更新の失敗では旧予約が残る場合がある。許可されていない場合はその予約を取り消す。根拠: [予約処理](../src/notifications/reminderNotifications.ts)、[同期Provider](../src/state/ReminderNotificationProvider.tsx)。
 
+**BGM音量**: 保存済み値は`state.bgmVolume`に保持する。`previewBgmVolume(number | null)`で操作中だけの値を設定／解除し、`useAppState().bgmVolume`はプレビューがあればその値、なければ保存済み値を返す。スライダーを離したときに`setBgmVolume`で保存し、成功後に保存済みstateへ反映する。失敗時はプレビューを解除して表示・再生を保存済み値へ戻し、同じ希望値で再試行する。プレビュー値は他項目の保存に混ぜない。根拠: [Provider](../src/state/AppStateProvider.tsx)、[メニュー](../app/(tabs)/menu.tsx)。
+
+**効果音音量**: 保存済み値は`state.seVolume`へ独立して保持する。`previewSeVolume(number | null)`で操作中の値を設定／解除し、`useAppState().seVolume`が現在の音量を返す。`setSeVolume`で保存成功後にstateへ反映する。メニューの両音量は共通`VolumeSetting`を使い、対象音量だけを保存／失敗時復帰／再試行する。どちらもVoiceOverなど非ドラッグの増減は変更時に保存する。タブ押下は音を再生するだけで、記録・NT・会話権利や音量の保存値を更新しない。
+
 ## AppState項目
 
 以下は[AppState型](../src/domain/common/types.ts)と[初期値・検証](../src/storage/appStateRepository.ts)で確認した事実。
 
 | 項目 | 型・初期値 | 用途・更新 |
 | --- | --- | --- |
-| `schemaVersion` | 現在12 | 保存形式の識別 |
-| `bgmEnabled` | boolean、true | メニューで切替、保存成功後に表示・再生へ反映。SEには使わない |
+| `schemaVersion` | 現在14 | 保存形式の識別 |
+| `bgmVolume` | 0〜1の有限数、0.3 | メニューの標準スライダーで0〜100%に調整。操作中は即時プレビューし、指を離すと保存。0は無音・一時停止。旧`bgmEnabled`を置換し、SEには使わない |
+| `seVolume` | 0〜1の有限数、1 | BGMとは独立したタブ効果音音量。メニューで0〜100%・1%刻みに調整し、プレビュー／保存／失敗時復帰はBGMと共通化。0で効果音だけを無音にする |
 | `userName` | string、「ゲスト」 | メニューの入力は40 UTF-16コード単位で制限し、保存時にtrim。保存APIの互換検証はtrim後1〜40 Unicodeコードポイントを維持する。既存の長い名前は移行・他項目の保存・編集開始で切り詰めない。保存済みの名前を通知本文へ使用 |
 | `notificationHour` | 0〜23の整数、21 | 毎日の通知時刻の時。端末ローカル時刻 |
 | `notificationMinute` | 0〜59の整数、30 | 毎日の通知時刻の分 |
@@ -83,6 +88,8 @@
 | ユーザー名保存 | `setUserName`で`userName`のみ更新。処理キュー内の最新通知時刻を保持し、保存成功後にOSの予約を更新 | [Provider](../src/state/AppStateProvider.tsx)、[メニュー](../app/(tabs)/menu.tsx) |
 | 通知時刻保存 | `setNotificationTime`で`notificationHour`・`notificationMinute`のみ更新。最新の名前を長さも含め保持し、保存成功後にOSの予約を更新。入力はiPhone標準の時刻ピッカー | [Provider](../src/state/AppStateProvider.tsx)、[メニュー](../app/(tabs)/menu.tsx) |
 | デフォルト時間保存 | `setDefaultTimerMinutes`で`defaultTimerMinutes`だけを更新。0分〜23時間55分の5分刻みを検証し、保存成功後に共有状態へ反映。ホームの時間設定Modal内の一時的な増減では設定を上書きしない | [Provider](../src/state/AppStateProvider.tsx)、[ホーム](../app/(tabs)/index.tsx) |
+| BGM音量保存 | `setBgmVolume`で0〜1の有限数を検証し`bgmVolume`だけを更新。保存キューと保存成功後のstate反映を使い、プレビューは永続化しない | [Provider](../src/state/AppStateProvider.tsx)、[メニュー](../app/(tabs)/menu.tsx) |
+| 効果音音量保存 | `setSeVolume`で0〜1の有限数を検証し`seVolume`だけを更新。BGMと同じ保存キューを使い、他の保存値・プレビューを混ぜない | [Provider](../src/state/AppStateProvider.tsx)、[メニュー](../app/(tabs)/menu.tsx) |
 | タイマー開始 | `activeTimer`作成。既存があればそのまま返す | [startTimer](../src/state/AppStateProvider.tsx) |
 | 実行開始/停止 | 停止は直ちに区間を閉じて保存。再開は保存成功後に現在の資格を確認 | [applyTimerEligibility](../src/state/AppStateProvider.tsx) |
 | 期限前キャンセル | `activeTimer=null`。他の業務データは変更なし | [cancelTimer](../src/domain/completion.ts) |
@@ -111,13 +118,15 @@
 
 | 保存形式 | 処理 |
 | --- | --- |
-| v12 | デフォルト時間の0〜1435の整数・5分刻み、通知時刻の時0〜23・分0〜59の整数とユーザー名、bgmEnabledの真偽値、以下の既存条件を検証。必須項目の欠落・不正型は保全 |
-| v11 | デフォルト時間25分だけを追加し、通知時刻・ユーザー名・BGM・進捗・進行中タイマー等を保持してv12へ保存。旧形式の必須項目も検証し、不正な通知時刻等を補正しない |
-| v10 | デフォルト時間25分と通知時刻21:30を追加し、空白だけのユーザー名は「ゲスト」へ移行。有効な既存名・BGM設定・他の保存項目を保持してv12へ保存。旧形式の必須項目も検証 |
-| v9 | デフォルト時間25分・BGM=true・通知設定の初期値を補完しv12へ保存。他の全項目は補完せず保持。型、整数、日付、開始情報（nullまたは全3項目）、所属日と開始日の一致、ID重複、既存話ID、タイマー範囲等を検証して受入。欠落した開始情報を自動補正しない |
-| v8 | 旧isReadの真偽値を検証して除去。デフォルト時間・BGM・通知設定を補い、他の必須項目は補完せず、解放・購入・NT・ログ・タイマー等を保持してv12へ保存 |
-| v7 | `startInfo=null`、ログの`logDate=completedDate`、デフォルト時間・BGM・通知設定を追加し、旧isReadを除去してv12として検証。元の必須配列（日記・購入・告知）の欠落は破損として拒否 |
-| v4/v5/v6 | 従来の互換補完に加え開始情報null・元所属日のlogDate・デフォルト時間・BGM・通知設定を追加し、旧isReadを除去してv12として検証。購入・告知・日記を欠けていれば補う |
+| v14 | `bgmVolume`・`seVolume`の0〜1の有限数、デフォルト時間の0〜1435の整数・5分刻み、通知時刻の時0〜23・分0〜59の整数とユーザー名、以下の既存条件を検証。必須項目の欠落・不正型・範囲外は保全 |
+| v13 | `seVolume=1`だけを補完してv14へ保存。BGM音量・名前・通知・デフォルト時間・記録・権利・進行中タイマー等の全既存値を保持し、旧必須項目の不正値を補正しない |
+| v12 | 旧`bgmEnabled`の真偽値を検証し、true→`bgmVolume=0.3`、false→0へ変換して旧項目を除去。`seVolume=1`を追加。デフォルト時間・通知時刻・名前・進捗・進行中タイマー等を保持してv14へ保存。旧必須項目の欠落・不正型は補正しない |
+| v11 | デフォルト時間25分・SE音量1を追加し、旧BGM真偽値を音量へ変換。通知時刻・ユーザー名・進捗・進行中タイマー等を保持してv14へ保存。旧形式の必須項目も検証し、不正な通知時刻等を補正しない |
+| v10 | デフォルト時間25分・通知時刻21:30・SE音量1を追加し、旧BGM真偽値を音量へ変換。空白だけのユーザー名は「ゲスト」へ移行。有効な既存名・他の保存項目を保持してv14へ保存。旧形式の必須項目も検証 |
+| v9 | デフォルト時間25分・BGM音量0.3・SE音量1・通知設定の初期値を補完しv14へ保存。他の全項目は補完せず保持。型、整数、日付、開始情報（nullまたは全3項目）、所属日と開始日の一致、ID重複、既存話ID、タイマー範囲等を検証して受入。欠落した開始情報を自動補正しない |
+| v8 | 旧isReadの真偽値を検証して除去。デフォルト時間・BGM音量0.3・SE音量1・通知設定を補い、他の必須項目は補完せず、解放・購入・NT・ログ・タイマー等を保持してv14へ保存 |
+| v7 | `startInfo=null`、ログの`logDate=completedDate`、デフォルト時間・BGM音量0.3・SE音量1・通知設定を追加し、旧isReadを除去してv14として検証。元の必須配列（日記・購入・告知）の欠落は破損として拒否 |
+| v4/v5/v6 | 従来の互換補完に加え開始情報null・元所属日のlogDate・デフォルト時間・BGM音量0.3・SE音量1・通知設定を追加し、旧isReadを除去してv14として検証。購入・告知・日記を欠けていれば補う |
 | 旧`isSideStoryUnlocked=true` | 購入済みID `[101]`へ移行 |
 | v5の日記で日付欠落 | `completedAt`から読込時のローカル日付を補う。元のタイムゾーンは復元不可 |
 | v0〜v3/番号なし | 旧形式の省略可能フィールドを補完。存在する不正フィールドは受け入れない。v3以降で必須だった旧isReadは型を検証後に除去する。元形式にない日記・ショップは初期値、デフォルト時間は25分 |
@@ -125,7 +134,7 @@
 | v4 | 専用のv4/v5/v6分岐が先に実行されるため、そこで不正ならlegacy経路には進まずnull |
 | JSON不正、未対応バージョン、現行/旧形式の検証不合格 | parseはnull、loadはPreservedDataError。通常画面を開かず主キー原文を保護し、通常保存・移行による上書きを拒否 |
 
-**互換動作**: 開始情報を持たない全旧タイマーは`startInfo=null`のまま再開・完了する。v1以前の旧startedAtも、元のローカル暦・開始ボタンの記録として転用しない。完了時は従来の終了日に所属させ、開始時刻は「記録なし」。開始日を現在日や再開日から推定しない。v5の日付欠落だけは従来どおりcompletedAtから補完する。既存の日付があれば移動しない。主キーは変更せず、対応旧版を読んだ時にv12へ1回保存する。移行保存の失敗時は旧原文が残り、読込エラーから再試行できる。全旧形式のデフォルト時間は25分とする。通知設定がないv10以前は通知時刻21:30、空白だけのユーザー名は「ゲスト」とし、有効な既存名は保持する。v11の通知時刻・名前はそのまま保持する。
+**互換動作**: 開始情報を持たない全旧タイマーは`startInfo=null`のまま再開・完了する。v1以前の旧startedAtも、元のローカル暦・開始ボタンの記録として転用しない。完了時は従来の終了日に所属させ、開始時刻は「記録なし」。開始日を現在日や再開日から推定しない。v5の日付欠落だけは従来どおりcompletedAtから補完する。既存の日付があれば移動しない。主キーは変更せず、対応旧版を読んだ時にv14へ1回保存する。移行保存の失敗時は旧原文が残り、読込エラーから再試行できる。デフォルト時間はv12以降の値を保持し、項目のないv11以前は25分とする。通知設定がないv10以前は通知時刻21:30、空白だけのユーザー名は「ゲスト」とし、有効な既存名は保持する。v11以降の通知時刻・名前はそのまま保持する。BGM音量はv13の値を保持し、v10〜v12の旧オン／オフを0.3／0へ変換し、音設定のない旧版では0.3とする。SE音量はv13以前に1を追加する。
 
 **事実**: 有効な旧形式はload時に現行形式で保存する。不正データでは書込資格を無効にし、通常保存前にも主キーの形式を確認する。再読込または明示的初期化へ進める。初期化時だけ `@my-june/recovery/<時刻>-<乱数>` に原文を退避・照合し、主キーが変わっていないことを確認して初期値へ置換する。退避失敗は通知して中止する。自動修復/退避からのアプリ内自動復元はない。実行中の保存タイマーはProvider読込時に区間を停止へ正規化し、未確定時間を加算しない。
 
@@ -142,7 +151,7 @@
 | 入荷条件 | [専用設定](../src/config/conversationSettings.ts): 初期101条件なし、102/103は第2話解放。[sideStory.ts](../src/domain/sideStory.ts)で共通判定、購入済みは常に可 |
 | 店員会話 | [shop.ts](../src/content/shop.ts): 挨拶1行、入荷告知追加1行、退店1行。エトの立ち絵は仮アイコン |
 | 表情 | [StoryCharacters](../src/components/story/StoryCharacters.tsx): 各2画像、doubtはtalkと同じ画像を使用 |
-| BGM・背景 | [audioSettings.ts](../src/config/audioSettings.ts)でBGM一覧・7画面の割当・共通音量。[timer.tsx](../app/timer.tsx)の背景はローカル固定アセット |
+| BGM・効果音・背景 | [audioSettings.ts](../src/config/audioSettings.ts)でBGM一覧・8画面の割当・タブ押下音`assets/audio/tabs.mp3`・両音量の初期値。実行時の音量はAppStateで独立保存。[timer.tsx](../app/timer.tsx)の背景はローカル固定アセット |
 
 **事実**: 全メインと102/103は仮本文。価格・入荷条件は専用設定で本文から分離した。本文はアプリに同梱し、CMSやサーバーから取得しない。変更はソース変更と再配布が必要。
 

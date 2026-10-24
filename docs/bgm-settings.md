@@ -1,10 +1,10 @@
-# BGM設定と将来の音量調整
+# BGM・効果音設定と音量調整
 
-更新日: 2026-10-20（日本時間）。対象: 工程4後半・Expo SDK 57。
+更新日: 2026-10-24（日本時間）。対象: Expo SDK 57。BGMとタブ効果音の独立した0〜100%音量調整を実装済み、iPhoneでの表示・聴音・保存操作は未検証。
 
 ## 編集するファイル
 
-[audioSettings.ts](../src/config/audioSettings.ts)に音源一覧、画面別の割り当て、初期オン設定、共通音量をまとめる。旧`src/constants/bgm.ts`はこのファイルへ移した。
+[audioSettings.ts](../src/config/audioSettings.ts)にBGM音源一覧、画面別の割り当て、タブ効果音、初期音量（BGM30%・効果音100%）をまとめる。実行時の音量はAppStateの`bgmVolume`・`seVolume`で独立して保存する。旧`src/constants/bgm.ts`はこのファイルへ移した。
 
 | 画面             | ルート        | 現在の音源ID |
 | ---------------- | ------------- | ------------ |
@@ -30,32 +30,46 @@
 
 同一音源は1つの登録を共用する。`getScreenBgm`は音源を返し、未登録ルートは無音とする。モーダル・会話の進行行・クエリ引数は曲の判定に使わない。
 
-無音にしたい画面には`"non"`を割り当てる。`BGM_TRACKS.non.source=null`は共通プレイヤーの一時停止を意味し、無音ファイルや別プレイヤーは使わない。BGMオン設定も変更しない。曲のある画面へ戻ると、オンなら同じ曲の続きから再開する。2026-10-18の指示でショップ・サイドストーリーをnonへ変更した。
+無音にしたい画面には`"non"`を割り当てる。`BGM_TRACKS.non.source=null`は共通プレイヤーの一時停止を意味し、無音ファイルや別プレイヤーは使わない。保存済み音量も変更しない。曲のある画面へ戻ると、音量が0より大きければ同じ曲の続きから再開する。2026-10-18の指示でショップ・サイドストーリーをnonへ変更した。
 
 2026-10-17の再生準備の変更: require登録した音源はexpo-assetで端末内へ準備し、AudioPlayerのisLoadedを待ってから再生する。空のプレイヤーへの不要なpauseを避ける。ダウンロード/読み込みは各15秒で打ち切って再試行を案内し、待機中の背景移動・オフ・画面変更では古い要求を破棄する。2026-10-18にユーザーが無音の原因はマナーモードだったと訂正。前日の変更が無音を解決したという判定はしない。[経緯と訂正](verification/bgm-2026-10-17.md#silent-playback-report)。
 
-## 再生とオン／オフ
+## 再生と音量調整
 
 ルートの[AppShell](../app/_layout.tsx)だけが[useScreenBgm](../src/hooks/useScreenBgm.ts)を呼び、`useAudioPlayer(null)`で1プレイヤーを保持する。同じ音源ではreplace/seekをせず、別音源ではpause→replace→playとする。非同期の音声モード設定を直列化し、古い遷移・背景移動の要求は再生前に破棄する。
 
-2026-10-20にBGMスイッチをホームからメニューへ移した。`useAppState().setBgmEnabled`へ接続する。初期値オン。保存中は連打を抑止し、保存成功後に表示と再生を変更する。失敗時は保存済み設定を維持して通知し、同じ希望値で保存を再試行できる。購入・日記編集と同じ保存キュー／破損保全を使う。音声自体の失敗は共通バナーとコンソールへ通知し、「BGMを再試行」で現在の設定を再適用する。音声失敗によってオン／オフの保存値を勝手に変更しない。
+メニューのBGM項目で標準スライダーを使い、0〜100%を1%刻みで調整する。初期値は30%。操作中はその場で表示とプレイヤーの音量へ反映し、指を離すと`setBgmVolume`で保存する。VoiceOverなどドラッグを伴わない増減操作は変更時に保存する。0%はプレイヤーを一時停止し、0%より大きい音量へ戻すと同じ曲の続きから再開する。再生中の音量変更だけで曲をreplace/seekしない。
+
+保存中は追加のスライダー操作を抑止する。保存失敗時は保存済みの音量へ表示・再生を戻して通知し、同じ希望値で保存を再試行できる。未保存のプレビュー値は永続化せず、購入・日記編集と同じ保存キュー／破損保全を使う。音声自体の失敗は共通バナーとコンソールへ通知し、「BGMを再試行」で現在の設定を再適用する。音声失敗によって保存済み音量を勝手に変更しない。
 
 共通バナーの表示は[AppFrame](../src/components/common/AppFrame.tsx)が担当し、AppShellからエラーと再試行コールバックを受け取る。プレイヤーを持つフックはAppShellに残し、読み込み・復旧の表示切替でも呼び出し位置を維持する。
 
-`playsInSilentMode=false`、`shouldPlayInBackground=false`。AppStateがactive以外なら同期的にpauseし、復帰時に現在の画面・保存済みオン／オフを再確認する。黒画面Modalだけでは停止しない。タイマーの計測資格・停止／再開処理には接続しない。
+`playsInSilentMode=false`、`shouldPlayInBackground=false`。AppStateがactive以外なら同期的にpauseし、復帰時に現在の画面・音量を再確認する。黒画面Modalだけでは停止しない。タイマーの計測資格・停止／再開処理には接続しない。
 
-## 将来のメニューへの接続
+## 音量の管理と依存
 
-現在のBGM音量は`AUDIO_VOLUMES.bgm=0.3`で従来値を維持する。各音源・画面には音量を持たせない。将来メニューで共有の音量状態を管理し、AppShellから`useScreenBgm(source, bgmEnabled, bgmVolume)`の第3引数へ渡せば、再生中の曲のvolumeにも反映する。同じ音源のreplace/seekは行わない。
+BGM音量は0〜1の有限数で保存し、各音源・画面には個別音量を持たせない。30%を表す0.3は新規データと旧オン設定の移行時の初期値であり、実行中の固定音量ではない。メニューの操作中のプレビューと保存済み音量を分け、AppShellから共通プレイヤーへ現在の音量を渡す。
 
-SEは別の`AUDIO_VOLUMES.se=1`を予約する（SEは未実装のため従来値はなく、将来用の既定値）。BGMオン／オフをSEへ流用しない。SEプレイヤー・仮音源・保存項目は追加していない。将来の音量保存は、AppStateの項目・検証／移行・保存キューによるsetterを追加する。現在保存する音設定は`bgmEnabled`だけ。
+`useAppState().bgmVolume`がプレビューまたは保存済みの音量を返す。AppShellは既存の`useScreenBgm(source, enabled, volume)`の署名を維持し、準備済みかつ音量が0より大きい時に有効化する。音量の反映は再生開始／音源切替とは別の処理で`player.volume`へ適用し、音量だけの変更で音声モードを再初期化しない。
 
-メニュー画面とヘッダーアイコンは2026-10-20に追加し、ホームのBGMスイッチをメニューへ移した。メニューも既存曲の割り当てとし、ショップ・サイドからメニューを開くと、オンなら再生、戻ると無音になる。BGM/SEスライダー、音量の永続化、SE再生は後工程。実機での切り替え・保存・戻る操作は未検証。
+標準スライダーは`@react-native-community/slider` 5.2.0を使用する（[Expo SDK 57公式資料](https://docs.expo.dev/versions/v57.0.0/sdk/slider/)）。独自のスライダー描画は追加しない。ネイティブ依存の追加を既存の開発ビルドへ反映するには再ビルドが必要。
+
+メニューも既存曲の割り当てとし、ショップ・サイドからメニューを開くと、音量が0より大きければ再生し、戻ると無音になる。BGM音量を効果音へ流用しない。iPhoneのスライダー操作、途中で0%にした場合の再開位置、保存失敗と再試行は未検証。
+
+## タブ押下の効果音
+
+`TAB_PRESS_SOUND`に指定する`assets/audio/tabs.mp3`を4つのタブ（ホーム・メモリー・ログ・メニュー）の押下時に1回だけ再生する。タブレイアウトが`useTabSound(volume)`の再生関数を`tabPress`へ接続し、選択中タブの再タップでも鳴らす。プログラムによる画面遷移では鳴らさない。単一のSEプレイヤーを使い、連打時は同じ音を先頭から再生し直す。ループやタップごとのプレイヤー追加は行わない。
+
+効果音はBGMと独立した`seVolume`を使い、`DEFAULT_SE_VOLUME=1`（初期100%）、0%で効果音だけを無音にする。`previewSeVolume(number | null)`でプレビューを設定／解除し、`setSeVolume`で保存する。メニューの「BGM音量」と「効果音音量」は同じ`VolumeSetting({ title, volume, onPreview, onSave })`とスタイルを共用し、どちらも標準スライダーの0〜100%・1%刻みとする。操作中はプレビュー、指を離すと保存し、VoiceOverなど非ドラッグの増減は変更時に保存する。失敗時は対象の音量だけを保存済み値へ戻し、同じ希望値で再試行する。両音量の検証は共通の`isValidAudioVolume`を使う。
+
+`src/audio/audioSession.ts`の`prepareAudioSession()`をBGMとSEで共用し、BGMが0%でも`playsInSilentMode=false`・`shouldPlayInBackground=false`を適用する。SEは非アクティブ時・タブレイアウトを離れた時に停止して保留中の押下を破棄し、復帰だけでは鳴らさない。SE終了でBGMのセッションを無効化しない。
+
+効果音の押下・音量変更でBGMの音源・音量・再生位置を変えない。BGMのマナーモード遵守・背景停止と計測の条件を維持する。今回のSE実装はタブ押下音のみとし、他の操作音・通知音や追加音源は含めない。依存追加はなく、既存のexpo-audioと標準スライダーを使う。実機のタップ・連打・聴音・VoiceOver・保存失敗は[M46](manual-acceptance-checklist.md#tab-sound-effect)で確認し、現時点は未実施。
 
 ## 保存とネイティブ設定
 
-保存キーは`@my-june/app-state-v1`を維持し、schemaVersionは10。v9からは`bgmEnabled=true`だけを追加し、その他の値は保持する。v8以前の移行・旧既読フラグの除去は従来どおり。既読/未読は2026-10-16に廃止済みで今回復元していない。v10の設定欠落・不正型は破損として保全する。移行保存の失敗でも旧原文を上書きしない。
+保存キーは`@my-june/app-state-v1`を維持し、schemaVersionは14。v13からは`seVolume=1`だけを補完し、既存のBGM音量・全データを保持する。v12以前は従来の移行に`seVolume=1`を加える。BGMはv10〜v12の旧`bgmEnabled`をtrue→0.3、false→0へ置き換え、音設定のないv9以前は0.3。v12のデフォルト時間・通知設定・名前と既存の記録・購入権利・進行中タイマー等を保持する。従来の補完・旧既読フラグ除去も維持する。現行の両音量の欠落・不正型・有限でない値・範囲外は破損として保全し、旧形式の必須音設定の欠落・不正値も補正しない。移行保存の失敗でも旧原文を上書きしない。[保存形式の詳細](data-integrations.md)を参照。
 
 [app.json](../app.json)のexpo-audio設定は`microphonePermission`、`recordAudioAndroid`、`enableBackgroundPlayback`、`enableBackgroundRecording`をすべてfalseとする。[SDK 57公式資料](https://docs.expo.dev/versions/v57.0.0/sdk/audio/)とローカル57.0.5プラグインを照合した。設定変更のネイティブ反映には新しいアプリバイナリが必要。Expo GoやJS Reloadだけでは確認できない。
 
-`expo config --type introspect`の仮想生成結果ではマイク説明、audio background mode、録音・背景サービス宣言なし。実際のprebuild成果物・製品バイナリは未検証。[今回の検証記録](verification/bgm-2026-10-17.md)と[実機チェックリスト](manual-acceptance-checklist.md#bgm-completion)を参照。
+`expo config --type introspect`の仮想生成結果ではマイク説明、audio background mode、録音・背景サービス宣言なし。実際のprebuild成果物・製品バイナリは未検証。[過去の検証記録](verification/bgm-2026-10-17.md)、[BGM音量チェックリスト](manual-acceptance-checklist.md#bgm-volume)、[タブ効果音と音量チェックリスト](manual-acceptance-checklist.md#tab-sound-effect)を参照。過去のオン／オフ検証を音量調整・効果音の合格には流用しない。

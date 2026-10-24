@@ -1,4 +1,6 @@
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Slider from "@react-native-community/slider";
+import { useFocusEffect } from "expo-router";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import {
   useCallback,
@@ -8,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import {
+  AppState as NativeAppState,
   Keyboard,
   Linking,
   Modal,
@@ -15,7 +18,6 @@ import {
   Pressable,
   ScrollView,
   StyleSheet,
-  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -71,51 +73,92 @@ function SettingsRow({
   );
 }
 
-function BgmToggle() {
-  const { state, setBgmEnabled } = useAppState();
-  const busy = useRef(false);
-  const [saving, setSaving] = useState(false);
-  const [failedValue, setFailedValue] = useState<boolean | null>(null);
+type VolumeSettingProps = {
+  title: string;
+  volume: number;
+  onPreview: (volume: number | null) => void;
+  onSave: (volume: number) => Promise<void>;
+};
 
-  const save = async (enabled: boolean) => {
-    if (busy.current) return;
+function VolumeSetting({ title, volume, onPreview, onSave }: VolumeSettingProps) {
+  const busy = useRef(false);
+  const dragging = useRef(false);
+  const focused = useRef(false);
+  const [saving, setSaving] = useState(false);
+  const [failedValue, setFailedValue] = useState<number | null>(null);
+
+  useFocusEffect(useCallback(() => {
+    focused.current = true;
+    return () => {
+      focused.current = false;
+      dragging.current = false;
+      onPreview(null);
+    };
+  }, [onPreview]));
+
+  const save = async (nextVolume: number) => {
+    if (busy.current || !focused.current || NativeAppState.currentState !== "active") return;
     busy.current = true;
     setSaving(true);
     setFailedValue(null);
+    onPreview(nextVolume);
     try {
-      await setBgmEnabled(enabled);
+      await onSave(nextVolume);
     } catch {
-      setFailedValue(enabled);
+      setFailedValue(nextVolume);
     } finally {
+      onPreview(null);
       busy.current = false;
       setSaving(false);
     }
   };
 
-  if (!state) return null;
   return (
-    <View style={styles.bgmContainer}>
-      <View style={styles.settingRow}>
-        <Text style={[styles.sectionTitle, styles.rowTitle]}>
-          BGM {state.bgmEnabled ? "オン" : "オフ"}
-          {saving ? "（保存中…）" : ""}
-        </Text>
-        <Switch
-          value={state.bgmEnabled}
-          disabled={saving}
-          onValueChange={(enabled) => {
-            void save(enabled);
-          }}
-          accessibilityLabel="BGMのオン・オフ"
-        />
-      </View>
+    <View style={styles.volumeContainer}>
+      <SettingsRow title={title}>
+        <Text style={styles.value}>{Math.round(volume * 100)}%</Text>
+      </SettingsRow>
+      <Slider
+        style={styles.volumeSlider}
+        value={Math.round(volume * 100)}
+        minimumValue={0}
+        maximumValue={100}
+        step={1}
+        minimumTrackTintColor="#FFFFFF"
+        maximumTrackTintColor="rgba(255,255,255,0.3)"
+        disabled={saving}
+        onSlidingStart={() => {
+          if (busy.current || !focused.current || NativeAppState.currentState !== "active") return;
+          dragging.current = true;
+        }}
+        onValueChange={(percent) => {
+          if (busy.current || !focused.current || NativeAppState.currentState !== "active") return;
+          const nextVolume = Math.round(percent) / 100;
+          if (dragging.current) onPreview(nextVolume);
+          else void save(nextVolume); // VoiceOver changes do not emit touch-end.
+        }}
+        onSlidingComplete={(percent) => {
+          const wasDragging = dragging.current;
+          dragging.current = false;
+          if (wasDragging) void save(Math.round(percent) / 100);
+        }}
+        accessibilityLabel={title}
+        accessibilityHint="0%で消音になります"
+        accessibilityValue={{
+          min: 0,
+          max: 100,
+          now: Math.round(volume * 100),
+          text: `${Math.round(volume * 100)}%`,
+        }}
+      />
+      {saving ? <Text style={styles.status}>保存中…</Text> : null}
       {failedValue !== null ? (
         <View accessibilityRole="alert">
           <Text style={styles.error}>
-            BGM設定を保存できませんでした。保存済みの設定を維持しています。
+            {title}を保存できませんでした。保存済みの音量に戻しました。
           </Text>
           <PrimaryButton
-            title="BGM設定の保存を再試行"
+            title={`${title}の保存を再試行`}
             onPress={() => {
               void save(failedValue);
             }}
@@ -347,6 +390,12 @@ export default function MenuScreen() {
     setUserName,
     setNotificationTime,
     setDefaultTimerMinutes,
+    bgmVolume,
+    previewBgmVolume,
+    setBgmVolume,
+    seVolume,
+    previewSeVolume,
+    setSeVolume,
   } = useAppState();
   const {
     status,
@@ -539,7 +588,20 @@ export default function MenuScreen() {
           メニュー
         </Text>
         <SettingsCard>
-          <BgmToggle />
+          <VolumeSetting
+            title="BGM音量"
+            volume={bgmVolume}
+            onPreview={previewBgmVolume}
+            onSave={setBgmVolume}
+          />
+        </SettingsCard>
+        <SettingsCard>
+          <VolumeSetting
+            title="効果音音量"
+            volume={seVolume}
+            onPreview={previewSeVolume}
+            onSave={setSeVolume}
+          />
         </SettingsCard>
         {textSettings.map((setting) => (
           <SettingsCard key={setting.key}>
@@ -710,7 +772,8 @@ const styles = StyleSheet.create({
     textDecorationLine: "underline",
   },
   error: { color: "#FFE0E7", fontFamily: Fonts.regular, fontSize: 13 },
-  bgmContainer: { gap: 8 },
+  volumeContainer: { gap: 8 },
+  volumeSlider: { width: "100%", height: 44 },
   timeContainer: { alignItems: "flex-end", maxWidth: "55%" },
   timeButton: {
     minHeight: 44,

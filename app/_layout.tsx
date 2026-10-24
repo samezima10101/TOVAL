@@ -5,7 +5,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import AppFontLoader from "@/src/components/common/AppFontLoader";
 import AppFrame from "@/src/components/common/AppFrame";
 import AppStartupGate from "@/src/components/common/AppStartupGate";
-import { AUDIO_VOLUMES, getScreenBgm } from "@/src/config/audioSettings";
+import { getScreenBgm } from "@/src/config/audioSettings";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 import { ReminderNotificationProvider } from "@/src/state/ReminderNotificationProvider";
@@ -29,11 +29,11 @@ export default function RootLayout() {
 
 function AppShell() {
   const pathname = usePathname();
-  const { state, status } = useAppState();
+  const { state, status, bgmVolume } = useAppState();
   const bgm = useScreenBgm(
     status === "ready" && state ? getScreenBgm(pathname) : null,
-    status === "ready" && !!state?.bgmEnabled,
-    AUDIO_VOLUMES.bgm,
+    status === "ready" && bgmVolume > 0,
+    bgmVolume,
   );
 
   return (

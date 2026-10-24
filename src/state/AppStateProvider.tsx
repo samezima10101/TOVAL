@@ -10,6 +10,7 @@ import React, {
 } from "react";
 import { AppState as NativeAppState } from "react-native";
 
+import { DEFAULT_BGM_VOLUME, DEFAULT_SE_VOLUME, isValidAudioVolume } from "@/src/config/audioSettings";
 import {
   ActiveTimer,
   AppState,
@@ -63,7 +64,12 @@ type AppStateContextValue = {
   timerSaveError: string | null;
   retryTimerSave: () => Promise<void>;
   setTaskName: (taskName: string) => Promise<void>;
-  setBgmEnabled: (enabled: boolean) => Promise<void>;
+  bgmVolume: number;
+  previewBgmVolume: (volume: number | null) => void;
+  setBgmVolume: (volume: number) => Promise<void>;
+  seVolume: number;
+  previewSeVolume: (volume: number | null) => void;
+  setSeVolume: (volume: number) => Promise<void>;
   setUserName: (userName: string) => Promise<void>;
   setNotificationTime: (time: NotificationTime) => Promise<void>;
   setDefaultTimerMinutes: (minutes: number) => Promise<void>;
@@ -125,6 +131,8 @@ export function AppStateProvider({
   const [status, setStatus] = useState<HydrationStatus>("loading");
   const [hydrationError, setHydrationError] = useState<Error | null>(null);
   const [timerSaveError, setTimerSaveError] = useState<string | null>(null);
+  const [bgmVolumePreview, setBgmVolumePreview] = useState<number | null>(null);
+  const [seVolumePreview, setSeVolumePreview] = useState<number | null>(null);
   const stateRef = useRef<AppState | null>(null);
   const queueRef = useRef<Promise<void>>(Promise.resolve());
   const appIsActiveRef = useRef(NativeAppState.currentState === "active");
@@ -273,6 +281,10 @@ export function AppStateProvider({
     const subscription = NativeAppState.addEventListener(
       "change",
       (nextState) => {
+        if (nextState !== "active") {
+          setBgmVolumePreview(null);
+          setSeVolumePreview(null);
+        }
         void applyTimerEligibility({
           appIsActive: nextState === "active",
           changedAt: Date.now(),
@@ -297,11 +309,37 @@ export function AppStateProvider({
     [enqueue, requireState, saveAndCommit],
   );
 
-  const setBgmEnabled = useCallback(
-    (enabled: boolean) => enqueue(async () => {
+  const previewBgmVolume = useCallback((volume: number | null) => {
+    if (volume !== null && !isValidAudioVolume(volume)) return;
+    setBgmVolumePreview(volume);
+  }, []);
+
+  const setBgmVolume = useCallback(
+    (volume: number) => enqueue(async () => {
+      if (!isValidAudioVolume(volume)) {
+        throw new RangeError("BGM音量は0から100%の間で設定してください。");
+      }
       const current = requireState();
-      if (current.bgmEnabled !== enabled) {
-        await saveAndCommit({ ...current, bgmEnabled: enabled });
+      if (current.bgmVolume !== volume) {
+        await saveAndCommit({ ...current, bgmVolume: volume });
+      }
+    }),
+    [enqueue, requireState, saveAndCommit],
+  );
+
+  const previewSeVolume = useCallback((volume: number | null) => {
+    if (volume !== null && !isValidAudioVolume(volume)) return;
+    setSeVolumePreview(volume);
+  }, []);
+
+  const setSeVolume = useCallback(
+    (volume: number) => enqueue(async () => {
+      if (!isValidAudioVolume(volume)) {
+        throw new RangeError("効果音音量は0から100%の間で設定してください。");
+      }
+      const current = requireState();
+      if (current.seVolume !== volume) {
+        await saveAndCommit({ ...current, seVolume: volume });
       }
     }),
     [enqueue, requireState, saveAndCommit],
@@ -471,7 +509,12 @@ export function AppStateProvider({
       timerSaveError,
       retryTimerSave,
       setTaskName,
-      setBgmEnabled,
+      bgmVolume: bgmVolumePreview ?? state?.bgmVolume ?? DEFAULT_BGM_VOLUME,
+      previewBgmVolume,
+      setBgmVolume,
+      seVolume: seVolumePreview ?? state?.seVolume ?? DEFAULT_SE_VOLUME,
+      previewSeVolume,
+      setSeVolume,
       setUserName,
       setNotificationTime,
       setDefaultTimerMinutes,
@@ -498,7 +541,12 @@ export function AppStateProvider({
       unlockSideStory,
       announceSideStories,
       setTaskName,
-      setBgmEnabled,
+      bgmVolumePreview,
+      previewBgmVolume,
+      setBgmVolume,
+      seVolumePreview,
+      previewSeVolume,
+      setSeVolume,
       setUserName,
       setNotificationTime,
       setDefaultTimerMinutes,

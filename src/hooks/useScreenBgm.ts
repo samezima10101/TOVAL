@@ -1,7 +1,14 @@
-import { setAudioModeAsync, useAudioPlayer, type AudioSource } from "expo-audio";
+import { useAudioPlayer, type AudioPlayer, type AudioSource } from "expo-audio";
 import { Asset } from "expo-asset";
 import React from "react";
 import { AppState } from "react-native";
+
+import { prepareAudioSession } from "@/src/audio/audioSession";
+
+// AudioPlayer is a native SharedObject with a writable volume property.
+function updatePlayerVolume(player: AudioPlayer, volume: number) {
+  player.volume = volume;
+}
 
 /** Root-only player. UI modals and timer eligibility do not own audio state. */
 export default function useScreenBgm(source: AudioSource, enabled: boolean, volume: number) {
@@ -10,6 +17,20 @@ export default function useScreenBgm(source: AudioSource, enabled: boolean, volu
   const [retryRevision, retry] = React.useReducer((value: number) => value + 1, 0);
   const loaded = React.useRef<{ player: typeof player; source: AudioSource } | null>(null);
   const queue = React.useRef<Promise<void>>(Promise.resolve());
+  const volumeRef = React.useRef(volume);
+
+  // Dragging the slider only updates volume; keep the current track/session.
+  React.useEffect(() => {
+    volumeRef.current = Math.max(0, Math.min(1, volume));
+    try {
+      updatePlayerVolume(player, volumeRef.current);
+    } catch (failure) {
+      console.warn("BGM volume change failed", failure);
+      // Report a failure while synchronizing the external native player.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setError("BGMの音量を変更できませんでした。再試行できます。");
+    }
+  }, [player, volume, retryRevision]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -87,17 +108,11 @@ export default function useScreenBgm(source: AudioSource, enabled: boolean, volu
         if (cancelled || requested !== revision) return;
         try {
           failed = false;
-          await setAudioModeAsync({
-            playsInSilentMode: false,
-            shouldPlayInBackground: false,
-            allowsRecording: false,
-            allowsBackgroundRecording: false,
-            interruptionMode: "mixWithOthers",
-          });
+          await prepareAudioSession();
           if (cancelled || requested !== revision || AppState.currentState !== "active") return;
           // Expo's SharedObject exposes writable native playback properties.
           player.loop = true;
-          player.volume = Math.max(0, Math.min(1, volume));
+          updatePlayerVolume(player, volumeRef.current);
           if (loaded.current?.player !== player || loaded.current.source !== source) {
             // Bundled require() assets may still be served over Metro in Expo
             // Go. Download first so AVPlayer loads a local file with its suffix.
@@ -141,7 +156,7 @@ export default function useScreenBgm(source: AudioSource, enabled: boolean, volu
       playback.remove();
       // useAudioPlayer releases the single native player on unmount.
     };
-  }, [enabled, player, source, volume, retryRevision]);
+  }, [enabled, player, source, retryRevision]);
 
   return { error, retry };
 }
