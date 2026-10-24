@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DEFAULT_BGM_ENABLED } from "@/src/config/audioSettings";
+import { DEFAULT_BGM_VOLUME, DEFAULT_SE_VOLUME, isValidAudioVolume } from "@/src/config/audioSettings";
 
 import { localDateKey } from "@/src/domain/common/date";
 import {
@@ -19,6 +19,7 @@ import {
   DEFAULT_USER_NAME,
   isValidNotificationTime,
 } from "@/src/domain/reminder";
+import { DEFAULT_TIMER_MINUTES, isValidDefaultTimerMinutes } from "@/src/domain/timer";
 import { developmentStorage } from "./developmentStorage";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
@@ -52,10 +53,12 @@ export class AppStateStorageError extends Error {
 export function createInitialAppState(): AppState {
   return {
     schemaVersion: APP_SCHEMA_VERSION,
-    bgmEnabled: DEFAULT_BGM_ENABLED,
+    bgmVolume: DEFAULT_BGM_VOLUME,
+    seVolume: DEFAULT_SE_VOLUME,
     userName: DEFAULT_USER_NAME,
     notificationHour: DEFAULT_NOTIFICATION_HOUR,
     notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
+    defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
     taskName: "",
     totalNt: 0,
     totalCompletions: 0,
@@ -279,9 +282,12 @@ export function validateAppState(
   }
 
   if (
-    typeof value.bgmEnabled !== "boolean" ||
+    "bgmEnabled" in value ||
+    !isValidAudioVolume(value.bgmVolume) ||
+    !isValidAudioVolume(value.seVolume) ||
     typeof value.userName !== "string" || value.userName.trim().length === 0 ||
     !isValidNotificationTime(value.notificationHour, value.notificationMinute) ||
+    !isValidDefaultTimerMinutes(value.defaultTimerMinutes) ||
     typeof value.taskName !== "string" ||
     typeof value.totalNt !== "number" ||
     !Number.isSafeInteger(value.totalNt) ||
@@ -415,17 +421,28 @@ function migrateLegacyState(
   return validateAppState(migrated, catalog) ? migrated : null;
 }
 
-function migrateReminderSettings(value: Record<string, unknown>) {
+function migrateBgmVolume(value: Record<string, unknown>) {
+  const { bgmEnabled, ...previous } = value;
+  if (typeof bgmEnabled !== "boolean") return null;
   return {
-    ...value,
+    ...previous,
     schemaVersion: APP_SCHEMA_VERSION,
+    bgmVolume: bgmEnabled ? DEFAULT_BGM_VOLUME : 0,
+    seVolume: DEFAULT_SE_VOLUME,
+  };
+}
+
+function migrateReminderSettings(value: Record<string, unknown>) {
+  return migrateBgmVolume({
+    ...value,
     // Empty names were the historical default. Keep other legacy names exactly,
     // including names longer than the limit now applied when editing settings.
     userName: typeof value.userName === "string" && !value.userName.trim()
       ? DEFAULT_USER_NAME : value.userName,
     notificationHour: DEFAULT_NOTIFICATION_HOUR,
     notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
-  };
+    defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
+  });
 }
 
 export function parsePersistedState(
@@ -443,6 +460,28 @@ export function parsePersistedState(
   if (validateAppState(value, catalog)) {
     return value;
   }
+  // v13 predates persisted sound-effect volume. Do not repair its BGM setting.
+  if (isRecord(value) && value.schemaVersion === 13) {
+    const migrated = {
+      ...value,
+      schemaVersion: APP_SCHEMA_VERSION,
+      seVolume: DEFAULT_SE_VOLUME,
+    };
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
+  // v12 stored only BGM enablement. Keep all other saved settings and progress.
+  if (isRecord(value) && value.schemaVersion === 12) {
+    const migrated = migrateBgmVolume(value);
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
+  // v11 predates the configurable initial duration. Preserve every other field.
+  if (isRecord(value) && value.schemaVersion === 11) {
+    const migrated = migrateBgmVolume({
+      ...value,
+      defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
+    });
+    return validateAppState(migrated, catalog) ? migrated : null;
+  }
   // v10 predates daily reminders. Keep all saved progress and preferences.
   if (isRecord(value) && value.schemaVersion === 10) {
     const migrated = migrateReminderSettings(value);
@@ -450,7 +489,7 @@ export function parsePersistedState(
   }
   // v9 predates BGM preferences. Preserve every other field exactly.
   if (isRecord(value) && value.schemaVersion === 9) {
-    const migrated = migrateReminderSettings({ ...value, bgmEnabled: DEFAULT_BGM_ENABLED });
+    const migrated = migrateReminderSettings({ ...value, bgmEnabled: true });
     return validateAppState(migrated, catalog) ? migrated : null;
   }
   // v8 had read/unread flags. Validate their old types before discarding only
@@ -458,7 +497,7 @@ export function parsePersistedState(
   if (isRecord(value) && value.schemaVersion === 8) {
     const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
     if (!unlockedStories) return null;
-    const migrated = migrateReminderSettings({ ...value, unlockedStories, bgmEnabled: DEFAULT_BGM_ENABLED });
+    const migrated = migrateReminderSettings({ ...value, unlockedStories, bgmEnabled: true });
     return validateAppState(migrated, catalog) ? migrated : null;
   }
   // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
@@ -477,7 +516,7 @@ export function parsePersistedState(
     const migrated = migrateReminderSettings({
       ...previous,
       schemaVersion: APP_SCHEMA_VERSION,
-      bgmEnabled: DEFAULT_BGM_ENABLED,
+      bgmEnabled: true,
       unlockedStories,
       activeTimer: isRecord(value.activeTimer) ? { ...value.activeTimer, startInfo: null } : value.activeTimer,
       purchasedSideStoryIds: isSideStoryUnlocked === true ? [...new Set([...purchased, 101])] : purchased,

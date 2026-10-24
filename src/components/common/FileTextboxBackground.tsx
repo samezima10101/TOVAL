@@ -4,6 +4,7 @@ import Svg, { ClipPath, Defs, LinearGradient, Path, Stop } from "react-native-sv
 
 type FileTextboxBackgroundProps = {
   style?: StyleProp<ViewStyle>;
+  shape?: "folder" | "rectangle";
 };
 
 // Geometry and colors from assets/images/file_textbox.svg (340 x 184).
@@ -16,7 +17,7 @@ const TOP_CUT_HEIGHT = 15.7969;
 const BOTTOM_CUT_WIDTH = 13.67;
 const BOTTOM_CUT_HEIGHT = 10.623;
 
-export default function FileTextboxBackground({ style }: FileTextboxBackgroundProps) {
+export default function FileTextboxBackground({ style, shape = "folder" }: FileTextboxBackgroundProps) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   const clipId = `fileTextboxClip${id}`;
@@ -33,7 +34,7 @@ export default function FileTextboxBackground({ style }: FileTextboxBackgroundPr
   const scale = Math.min(1, size.width / 120, size.height / 56);
   const width = scale > 0 ? size.width / scale : 0;
   const height = scale > 0 ? size.height / scale : 0;
-  const outline = [
+  const outline = shape === "rectangle" ? `M0 0 H${width} V${height} H0 Z` : [
     `M${TAB_WIDTH} ${TAB_HEIGHT}`,
     `H${width - TOP_CUT_WIDTH}`,
     `L${width} ${TAB_HEIGHT + TOP_CUT_HEIGHT}`,

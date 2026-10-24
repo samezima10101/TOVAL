@@ -1,4 +1,4 @@
-// 編集方法: docs/conversation-settings.md。IDは変更せず、値だけを編集する。
+// 編集方法: docs/editing-guide.md。IDは変更せず、値だけを編集する。
 export const MAIN_STORY_SETTINGS: Readonly<Record<number, { additionalRoutePriceNt: number }>> = {
   1: { additionalRoutePriceNt: 60 },
   2: { additionalRoutePriceNt: 60 },

@@ -1,10 +1,16 @@
 import type { AudioSource } from "expo-audio";
 
-export const DEFAULT_BGM_ENABLED = true;
+export const DEFAULT_BGM_VOLUME = 0.3;
+export const DEFAULT_SE_VOLUME = 1;
 
-// The future menu should own runtime volumes and pass bgm to useScreenBgm.
-// BGM enablement is independent of SE. No SE player or persisted volume yet.
-export const AUDIO_VOLUMES = { bgm: 0.3, se: 1 } as const;
+// BGM and sound effects have independent persisted runtime volumes.
+export const AUDIO_VOLUMES = { bgm: DEFAULT_BGM_VOLUME, se: DEFAULT_SE_VOLUME } as const;
+
+export function isValidAudioVolume(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
+}
+
+export const TAB_PRESS_SOUND = require("@/assets/audio/tabs.mp3") as AudioSource;
 
 export const BGM_TRACKS = {
   non: { source: null },

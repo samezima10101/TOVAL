@@ -9,8 +9,12 @@ import { Fonts } from "@/src/constants/theme";
 
 export const KEYBOARD_EDITOR_TOOLBAR_HEIGHT = 48;
 
-/** For a full-screen modal: reserve the keyboard and toolbar below its content. */
-export function useKeyboardEditor() {
+/** Reserve keyboard/toolbar space. For a nested screen, subtract the distance
+ * from its bottom to the window bottom (for example an app footer). */
+export function useKeyboardEditor({ bottomOffset = 0, minBottom = 0 }: {
+  bottomOffset?: number;
+  minBottom?: number;
+} = {}) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -26,7 +30,9 @@ export function useKeyboardEditor() {
     ];
     return () => subscriptions.forEach((subscription) => subscription.remove());
   }, [height]);
-  const toolbarBottom = keyboardHeight > 0 ? keyboardHeight : insets.bottom;
+  const toolbarBottom = keyboardHeight > 0
+    ? Math.max(0, keyboardHeight - bottomOffset)
+    : Math.max(minBottom, insets.bottom - bottomOffset);
   return {
     toolbarBottom,
     contentBottomInset: toolbarBottom + KEYBOARD_EDITOR_TOOLBAR_HEIGHT + 12,
@@ -34,6 +40,7 @@ export function useKeyboardEditor() {
 }
 
 type EditorInputProps = TextInputProps & {
+  maxLength: number;
   autoGrow?: boolean;
   maxInputHeight?: number;
 };
@@ -43,9 +50,12 @@ type EditorInputProps = TextInputProps & {
  * Japanese text, or moving the selection during IME composition.
  */
 export const KeyboardEditorInput = forwardRef<TextInput, EditorInputProps>(
-  function KeyboardEditorInput({ style, autoGrow = false, maxInputHeight = 160, onContentSizeChange, ...props }, ref) {
+  function KeyboardEditorInput({ style, maxLength, autoGrow = false, maxInputHeight = 160, onContentSizeChange, ...props }, ref) {
     const [contentHeight, setContentHeight] = useState(46);
     const inputHeight = Math.min(contentHeight, Math.max(46, maxInputHeight));
+    // Keep legacy text intact and let it shrink. A fixed lower cap can make
+    // iOS reject even Backspace while the existing value exceeds that cap.
+    const nativeMaxLength = Math.max(maxLength, (props.value ?? props.defaultValue ?? "").length);
     const input = (
       <TextInput
         autoFocus
@@ -54,6 +64,7 @@ export const KeyboardEditorInput = forwardRef<TextInput, EditorInputProps>(
         selectionColor="#E0DFFF"
         maxFontSizeMultiplier={1.3}
         {...props}
+        maxLength={nativeMaxLength}
         ref={ref}
         onContentSizeChange={(event) => {
           onContentSizeChange?.(event);

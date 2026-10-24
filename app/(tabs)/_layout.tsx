@@ -4,6 +4,8 @@ import { Tabs } from "expo-router";
 import { StyleSheet, View } from "react-native";
 
 import { Colors, Fonts } from "@/src/constants/theme";
+import useTabSound from "@/src/hooks/useTabSound";
+import { useAppState } from "@/src/state/AppStateProvider";
 
 function TabIcon({
   source,
@@ -16,7 +18,7 @@ function TabIcon({
     <View style={styles.icon}>
       {focused ? (
         <LinearGradient
-          colors={["rgba(255,255,255,0)", "#FFFFFF", "rgba(38, 52, 210, 0)"]}
+          colors={["rgba(84, 96, 237, 0)", "#FFFFFF", "rgba(84, 96, 237, 0)"]}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={styles.selectedLine}
@@ -29,10 +31,14 @@ function TabIcon({
 }
 
 export default function TabLayout() {
+  const { seVolume } = useAppState();
+  const playTabSound = useTabSound(seVolume);
+
   return (
     <Tabs
       // AppFrame's footer handles the bottom safe area below this bar.
       safeAreaInsets={{ bottom: 0 }}
+      screenListeners={{ tabPress: playTabSound }}
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: "transparent" },

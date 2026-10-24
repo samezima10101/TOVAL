@@ -11,6 +11,7 @@ import {
 } from "react-native";
 
 import { Colors, Fonts } from "@/src/constants/theme";
+import { MAX_TASK_NAME_LENGTH } from "@/src/domain/common/types";
 
 export default function TaskNameModal({
   visible,
@@ -85,7 +86,7 @@ export default function TaskNameModal({
             placeholderTextColor={Colors.textSub}
             style={styles.input}
             autoFocus
-            maxLength={80}
+            maxLength={MAX_TASK_NAME_LENGTH}
             returnKeyType="done"
             onSubmitEditing={() => void handleSave()}
             accessibilityLabel="タスク名"

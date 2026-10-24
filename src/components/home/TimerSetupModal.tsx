@@ -11,6 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Fonts } from "@/src/constants/theme";
+import { DEFAULT_TIMER_MINUTES } from "@/src/domain/timer";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
 
 type Props = {
@@ -24,7 +25,7 @@ type Props = {
 
 export default function TimerSetupModal({
   visible,
-  initialMinutes = 25,
+  initialMinutes = DEFAULT_TIMER_MINUTES,
   hasActiveTimer,
   onClose,
   onStart,

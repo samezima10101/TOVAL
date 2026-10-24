@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   Keyboard,
   Modal,
@@ -23,6 +23,7 @@ import { Fonts } from "@/src/constants/theme";
 import { DiaryLog, MAX_DIARY_LENGTH } from "@/src/domain/common/types";
 import { getStoryEpisode } from "@/src/domain/storyData";
 import { formatFocusDuration } from "@/src/domain/timer";
+import useInputReveal from "@/src/hooks/useInputReveal";
 
 type RecordModalProps = {
   visible: boolean;
@@ -91,68 +92,13 @@ export default function LogModal({
   const savingRef = useRef(false);
   const inputRef = useRef<TextInput>(null);
   const recordsRef = useRef<ScrollView>(null);
-  const scrollOffsetRef = useRef(0);
-  const revealFrameRef = useRef<number | null>(null);
-  const revealRequestRef = useRef(0);
   const [recordsHeight, setRecordsHeight] = useState(200);
-  const revealInput = useCallback(() => {
-    const request = ++revealRequestRef.current;
-    if (revealFrameRef.current !== null)
-      cancelAnimationFrame(revealFrameRef.current);
-    revealFrameRef.current = requestAnimationFrame(() => {
-      revealFrameRef.current = null;
-      const input = inputRef.current;
-      const scroll = recordsRef.current;
-      if (!input?.isFocused() || !scroll) return;
-      // The native keyboard helper assumes a full-screen ScrollView. Measure
-      // this folder's actual viewport instead, preserving its existing offset.
-      scroll
-        .getNativeScrollRef()
-        ?.measureInWindow(
-          (
-            _x: number,
-            viewportY: number,
-            _width: number,
-            viewportHeight: number,
-          ) => {
-            input.measureInWindow(
-              (_inputX, inputY, _inputWidth, inputHeight) => {
-                if (
-                  request !== revealRequestRef.current ||
-                  inputRef.current !== input ||
-                  !input.isFocused()
-                )
-                  return;
-                const top = viewportY + 8;
-                const bottom = viewportY + viewportHeight - 8;
-                let delta = 0;
-                if (inputY + inputHeight > bottom)
-                  delta = inputY + inputHeight - bottom;
-                else if (inputY < top) delta = inputY - top;
-                if (Math.abs(delta) > 1) {
-                  scroll.scrollTo({
-                    y: Math.max(0, scrollOffsetRef.current + delta),
-                    animated: false,
-                  });
-                }
-              },
-            );
-          },
-        );
-    });
-  }, []);
-  const cancelReveal = useCallback(() => {
-    revealRequestRef.current++;
-    if (revealFrameRef.current !== null)
-      cancelAnimationFrame(revealFrameRef.current);
-  }, []);
-  useEffect(() => {
-    const subscription = Keyboard.addListener("keyboardDidShow", revealInput);
-    return () => {
-      subscription.remove();
-      cancelReveal();
-    };
-  }, [revealInput, cancelReveal]);
+  const getInput = useCallback(() => inputRef.current, []);
+  const { revealInput, onScroll } = useInputReveal({
+    scrollRef: recordsRef,
+    getInput,
+    deferToAnimationFrame: true,
+  });
   const { toolbarBottom, contentBottomInset } = useKeyboardEditor();
   const editing = editingId !== null;
   const previousDisabled = !previousDate || editing;
@@ -165,7 +111,7 @@ export default function LogModal({
     setError(null);
   };
   const save = async () => {
-    if (savingRef.current || editingId === null) return;
+    if (savingRef.current || editingId === null || draft.length > MAX_DIARY_LENGTH) return;
     savingRef.current = true;
     setSaving(true);
     setError(null);
@@ -215,9 +161,7 @@ export default function LogModal({
             <FileTextboxBackground style={styles.frameImage} />
             <ScrollView
               ref={recordsRef}
-              onScroll={({ nativeEvent }) => {
-                scrollOffsetRef.current = nativeEvent.contentOffset.y;
-              }}
+              onScroll={onScroll}
               scrollEventThrottle={16}
               onContentSizeChange={revealInput}
               automaticallyAdjustKeyboardInsets={false}

@@ -276,6 +276,7 @@ export default function HomeScreen() {
       />
       <TimerSetupModal
         visible={isTimerSetupOpen}
+        initialMinutes={state.defaultTimerMinutes}
         hasActiveTimer={Boolean(state.activeTimer)}
         onClose={() => setIsTimerSetupOpen(false)}
         onStart={handleStartTimer}
