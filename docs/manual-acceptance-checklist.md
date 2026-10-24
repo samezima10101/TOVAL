@@ -1128,3 +1128,26 @@ BGM・効果音・タスク・ユーザー名・デフォルト時間・通知�
 今回のPC診断: `npm.cmd run lint`は警告なし・exit 0、`npm.cmd run typecheck`はexit 0。`npm.cmd run bundle:ios`はexit 0（1783 modules・74 assets）となり、`tabs.mp3`の同梱を確認した。`git diff --check`は空白エラーなし。ソースレビューで両音量の独立性・保存キュー・0の失敗再試行・共通音声モードを確認し、画面離脱後にスライダーの取消イベントから保存しないよう修正した。今回の依存追加はなく、M45で記録した既存3依存の推奨パッチ差分は未解消。
 
 今回のiPhoneの表示・タップ・聴音・連打・VoiceOver、独立音量の保存・移行・失敗再試行は未実施。M46とA07の受け入れは未合格。M45や過去のBGM診断を今回の合格へ流用しない。自動テストは追加・復元しない。
+
+## メニューの時間選択分離と入力欄スクロール共通化（2026-10-24）
+
+`menu.tsx`の時間選択UI・保存キュー・失敗時の再試行を`src/components/menu/NativeTimeSetting.tsx`へ移し、メニューとログの入力欄スクロール処理を`src/hooks/useInputReveal.ts`へまとめた。メニューはヘッダー分を含む上余白と即時計測、ログは上下8の余白と次フレームでの計測を維持する。下書き・文字数上限・保存API・保存形式・依存は変更していない。
+
+PC確認（Windows、Node 22.15.0 / npm 10.9.2）:
+
+| 確認 | 結果 |
+| --- | --- |
+| `npm.cmd run lint` / `npm.cmd run typecheck` | いずれもexit 0、lint警告なし |
+| `npm.cmd run bundle:ios` | 初回はHermes実行権限で停止。実行許可後はexit 0、1785 modules・74 assetsを`dist/ios`へ出力 |
+| ソース照合・レビュー | 時間選択の関数本体と抽出した13スタイルは変更前と一致。スクロール位置の追跡・計測タイミング・古い計測の破棄・監視と予約フレームの解除を確認 |
+| `git diff --check` | 空白エラーなし |
+
+iPhoneでの時間選択・保存失敗からの再試行、メニューの入力切替、ログの日記編集、日本語変換・文字拡大・キーボードとの位置関係は未確認。[M43](#menu-folder-settings)と[ログ詳細の手順](#calendar-log-design)で確認する。今回のPC結果で実機項目やA10を合格にしない。依存診断は今回再実施しておらず、既存の推奨パッチ差分も未解消。自動テストは追加・復元していない。
+
+### 設定を4つの責務へ分離（2026-10-24追記）
+
+`menu.tsx`をさらに分割し、`AudioSettings`（BGM・効果音）、`UserSettings`（タスク名・ユーザー名）、`DefaultTimerSettings`（デフォルト時間）、`NotificationSettings`（通知時刻・許可・再試行）を配置する89行の画面にした。カードと見出し行は`SettingsLayout`で共有する。ユーザー情報の下書き・検証・保存・入力欄参照は`UserSettings.tsx`の`useUserSettings`で管理し、同じ編集状態を使う操作バーは引き続きScrollViewの外へ配置する。
+
+変更後のPC確認は`npm.cmd run lint`（警告なし）、`npm.cmd run typecheck`、Hermes実行を許可した`npm.cmd run bundle:ios`がいずれもexit 0（1790 modules・74 assets）、`git diff --check`も空白エラーなし。ソース照合・レビューでは保存・取消・音量プレビュー・通知の各処理とスタイル値、項目切替時の下書き保持、カードの順序・間隔・操作バーの位置を維持していることを確認した。今回も依存・保存形式・自動テストの変更はなく、依存診断は再実施していない。M43の入力・時間選択・通知とM45/M46の音量のiPhoneでの回帰確認は未実施で、受け入れ合格にはしない。
+
+2026-10-24 見出しスタイル修正: `UserSettings`と時間選択Modalに残っていた見出しスタイルを削除し、`SettingsLayout.tsx`の`SettingsTitle`へ統一した。現在の共通指定サイズ17を保持し、`styles.sectionTitle`の変更が全カード見出しに届く構造をソースで確認。修正後のlint（警告なし）・型チェックはexit 0、`git diff --check`は空白エラーなし。今回のiOSバンドル生成とiPhoneでのサイズ変更・文字拡大の表示確認は未実施。以前のバンドル結果は今回の表示確認に流用しない。

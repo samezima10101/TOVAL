@@ -2,9 +2,9 @@
 
 更新日: 2026-10-24（日本時間）。ログ詳細とメニューの全テキスト入力で利用。
 
-`src/components/common/KeyboardEditor.tsx`に表示・入力設定をまとめる。下書き・入力検証・保存・エラー処理・キャンセルの意味は利用する画面で管理する。
+`src/components/common/KeyboardEditor.tsx`に表示・入力設定をまとめる。下書き・入力検証・保存・エラー処理・キャンセルの意味は利用側で管理する。メニューでは`src/components/menu/UserSettings.tsx`が担当する。
 
-- `useKeyboardEditor()`はキーボード位置を監視し、`toolbarBottom`と`contentBottomInset`を返す。全画面Modalまたは画面内編集で使い、編集中は親の下余白へ`contentBottomInset`を確保する。キーボードを閉じてもSafe Area上に操作バーを残す。
+- `useKeyboardEditor()`はキーボード位置を監視し、キーボードと操作バーの余白を表す`toolbarBottom`と`contentBottomInset`を返す。全画面Modalまたは画面内編集で使い、編集中は親の下余白へ`contentBottomInset`を確保する。キーボードを閉じてもSafe Area上に操作バーを残す。入力欄の表示位置へのスクロールは`useInputReveal`で管理する。
 - `KeyboardEditorInput`は自動フォーカス・複数行・入力欄内部のスクロールを共通化する。通常は親に高さを与え、入力欄へ`flex: 1`の領域を確保する。メモ位置で行数に応じて伸ばす場合は`autoGrow`を指定する。入力欄と同じ幅・書体・行高・余白を持つ非表示のTextを`onTextLayout`で測り、折り返し・改行に合わせて最小46から`maxInputHeight`まで高さを増やす。末尾の空行も測るため、計測専用の文字列にゼロ幅文字を付ける（保存する本文には加えない）。TextInput自身のcontentSize通知は高さ計算に使用しない。上限を超えると入力欄内部のスクロールへ切り替える。外側のScrollViewと併用する場合は、その実際の表示高から上限を決める。ログでは標準文字で3行分の94を上限の下限とする。フォーカス・入力欄のレイアウト変更・キーボード表示後に入力欄を見える位置へスクロールする。折り返し・改行・選択位置の変更はネイティブ入力欄のカーソル追従を使い、日本語変換中に選択位置を上書きしない。単一行は`multiline={false}`で指定できる。
 - `KeyboardEditorToolbar`は左の✕、右のOK、任意の中央`status`を表示する。`bottom`に`toolbarBottom`、保存中に`busy`、保存可否に`saveDisabled`を渡す。`onCancel`・`onSave`と読み上げ用の`cancelLabel`・`saveLabel`を画面側で指定する。保存中の二重実行防止は保存処理側でも行う。
 
@@ -16,14 +16,18 @@
 
 ログの外側のスクロールは、入力欄とScrollView表示領域を`measureInWindow`で同じ座標系で測り、現在のスクロール位置に隠れている分だけ加減して移動する。既に見えていれば動かさない。`scrollResponderScrollNativeHandleToKeyboard`は内部計算が画面全体のScrollViewを前提とするため、フォルダ内では使用しない。フォーカス・入力欄／表示領域のレイアウト変更・内容高の変更・キーボード表示完了後に再計測し、直前の古い計測は破棄する。
 
-メニューのタスク名とユーザー名は、カード内の表示位置に単一行の`KeyboardEditorInput`を常設する。空欄時は各プレースホルダーを表示し、タップで直接編集する。入力欄は黒14%の背景、編集中は黒25%の背景とし、入力箇所を識別できるようにする。編集対象のキーボード／Safe Area上の✕・OK、保存失敗時の下書き保持と再フォーカスを共通化する。入力の上限は上記のUTF-16コード単位とし、前後空白を除いて空でないことを確認して既存の設定更新APIを呼ぶ。ユーザー名の保存APIは互換性のためtrim後40 Unicodeコードポイントの検証を維持する。日記保存用の識別子や項目固有の上限値は利用側で管理し、共通部品には`maxLength`で渡す。通知時刻・デフォルト時間は表示時間を直接タップして標準ピッカーで選択・自動保存するため、共通操作バーを使用しない。ホームの初回タスク登録Modalの入力・保存方式は維持する。メニューの確認は[メニュー設定の手順](manual-acceptance-checklist.md#menu-folder-settings)、全入力の上限確認は[M44](manual-acceptance-checklist.md#input-maxlength-audit)を使う。
+メニューと`LogModal`の外側スクロール処理は`src/hooks/useInputReveal.ts`で共有する。`scrollRef`と、対象入力欄を返す安定した`useCallback`の`getInput`を渡す。表示領域内の余白は`topInset`・`bottomInset`（既定は各8）、計測を次のフレームへ送るかは`deferToAnimationFrame`（既定は`false`）で指定する。返り値の`revealInput`をフォーカス・レイアウト・内容高の変更時に呼び、`onScroll`をScrollViewへ渡して現在のスクロール位置を追跡する。フックは`keyboardDidShow`でも再計測し、古い要求・対象入力欄の変更・フォーカス解除後の計測結果を破棄する。新しいフレーム予約時は前の予約を解除し、クリーンアップ時はキーボード監視と予約フレームを解除して計測を無効にする。メニューは`topInset: top + 76 + 8`で即時計測し、ログは上下8・`deferToAnimationFrame: true`で従来の計測タイミングを維持する。
+
+メニューのタスク名とユーザー名は、カード内の表示位置に単一行の`KeyboardEditorInput`を常設する。空欄時は各プレースホルダーを表示し、タップで直接編集する。入力欄は黒14%の背景、編集中は黒25%の背景とし、入力箇所を識別できるようにする。編集対象のキーボード／Safe Area上の✕・OK、保存失敗時の下書き保持と再フォーカスを共通化する。入力の上限は上記のUTF-16コード単位とし、前後空白を除いて空でないことを確認して既存の設定更新APIを呼ぶ。ユーザー名の保存APIは互換性のためtrim後40 Unicodeコードポイントの検証を維持する。日記保存用の識別子や項目固有の上限値は利用側で管理し、共通部品には`maxLength`で渡す。通知時刻・デフォルト時間は表示時間を直接タップして標準ピッカーで選択・自動保存するため、共通操作バーを使用しない。この時間選択UIと保存・再試行の処理は、動作を維持したまま`src/components/menu/NativeTimeSetting.tsx`へ切り出す。ホームの初回タスク登録Modalの入力・保存方式は維持する。メニューの確認は[メニュー設定の手順](manual-acceptance-checklist.md#menu-folder-settings)、全入力の上限確認は[M44](manual-acceptance-checklist.md#input-maxlength-audit)を使う。
 
 SDK 57 / React Native 0.86を使用。[TextInput](https://reactnative.dev/docs/0.86/textinput#scrollenabled)・[Keyboard](https://reactnative.dev/docs/0.86/keyboard)を参照。新しい依存は追加しない。実機でのカーソル追従・日本語変換・予測候補・長文の途中編集・文字拡大は未検証。[手動確認](manual-acceptance-checklist.md#calendar-log-design)で確認する。
 
 
-2026-10-24 全テキスト入力の統一: menu.tsxの設定一覧から両入力を組み立て、共通の入力欄・保存・キャンセル・エラー処理を使う。項目を切り替えてもそれぞれの下書きを保持し、非編集中の未保存項目には「未保存」を表示する。操作バーの✕／OKは選択中の項目だけに作用する。不要になった名前編集モーダルを削除し、入力のスタイルもmenu.tsxで管理する。
+2026-10-24 メニューの機能分割（現在）: `menu.tsx`は画面配置・キーボード余白・`useInputReveal`の呼び出しを担当し、設定を`AudioSettings`・`UserSettings`・`DefaultTimerSettings`・`NotificationSettings`へ分離する。カードと行は`SettingsLayout.tsx`の`SettingsCard`・`SettingsRow`を共有する。タスク名とユーザー名の設定一覧・入力スタイルは`UserSettings.tsx`へ移し、同ファイルの`useUserSettings`が両項目の下書き・検証・保存・入力欄参照を管理する。親の`menu.tsx`が同じ編集状態を`UserSettings`と`UserSettingsToolbar`へ渡し、操作バーはScrollViewの外に配置する。入力欄・操作バーの表示と保存・キャンセル・エラー時の挙動は維持する。
+
+2026-10-24 全テキスト入力の統一（分割前の記録）: 当時のmenu.tsxの設定一覧から両入力を組み立て、共通の入力欄・保存・キャンセル・エラー処理を使う。項目を切り替えてもそれぞれの下書きを保持し、非編集中の未保存項目には「未保存」を表示する。操作バーの✕／OKは選択中の項目だけに作用する。不要になった名前編集モーダルを削除し、入力のスタイルも当時はmenu.tsxで管理する。
 
 
-2026-10-24 タスクの直接入力: タスク編集はModal・編集ボタンを使わず、カード上の入力欄と共通✕／OKバーで行う。`useKeyboardEditor`に任意のbottomOffset（画面下端からウィンドウ下端までの距離）・minBottom（キーボードを閉じた際の最低下余白）を追加した。メニューは実測した画面下端からフッター分を差し引き、キーボード非表示中はタブバー上へ操作バーを残す。既存の全画面Modalは引数省略で従来どおり。入力中は外側ScrollViewの表示領域を縮め、入力欄を同じウィンドウ座標で測ってヘッダーとキーボードに隠れた分だけスクロールする。保存成功・キャンセルでキーボードを閉じ、失敗時は元の保存値と下書きを保持して再フォーカスする。現在はユーザー名も同じ直接入力へ統一し、両方の入力スタイルをmenu.tsxで管理する。
+2026-10-24 タスクの直接入力（分割前の記録）: タスク編集はModal・編集ボタンを使わず、カード上の入力欄と共通✕／OKバーで行う。`useKeyboardEditor`に任意のbottomOffset（画面下端からウィンドウ下端までの距離）・minBottom（キーボードを閉じた際の最低下余白）を追加した。メニューは実測した画面下端からフッター分を差し引き、キーボード非表示中はタブバー上へ操作バーを残す。既存の全画面Modalは引数省略で従来どおり。入力中は外側ScrollViewの表示領域を縮め、入力欄を同じウィンドウ座標で測ってヘッダーとキーボードに隠れた分だけスクロールする。保存成功・キャンセルでキーボードを閉じ、失敗時は元の保存値と下書きを保持して再フォーカスする。この時点でユーザー名も同じ直接入力へ統一し、両方の入力スタイルをmenu.tsxで管理する。
 
 2026-10-24 全画面maxLength監査: 共通入力の`maxLength`を必須にし、既存値が長い場合は`Math.max(設定上限, 現在値.length)`を渡して削除可能な状態を保つ。全5入力の設定値とカウンタをUTF-16単位に統一し、文字数超過の画面警告を削除した。旧値は短くなるまでOK無効・保存処理も無言で停止する。空白だけの必須入力と保存失敗のエラー、再フォーカスと下書き保持は維持する。日本語変換・絵文字・貼り付け・iOSでの旧値の削除は[M44](manual-acceptance-checklist.md#input-maxlength-audit)で確認する。実機確認は未実施。
