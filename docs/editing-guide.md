@@ -12,7 +12,18 @@
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
 | ショップ／メモリーの章名・話の所属と順序 | [storyArchive.ts](../src/config/storyArchive.ts) |
 
-メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。
+メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。立ち絵は話者によらず常に不透明で表示する。
+
+第1話は[会話原稿](https://docs.google.com/spreadsheets/d/1-7rnog6vxtoi-MvNjKZ7Wyb1b6-GHhV-gZp8AWJgMWU/edit)のタブ`01`を反映している。共通前14行・分岐A4行／B5行・共通後12行。シートの`gem`／`alta`は`boss`／`sub`へ対応させ、行種別が空でも本文と話者がある行は取り込む。原稿の`[userName]`・`［userName］`は本文に保持し、`useStoryReader`の`userName`オプションで文字送り前に置換する。メイン画面は保存済みの名前を渡し、未指定時は「ゲスト」。シート側にタイトル指定はないため既存タイトルを維持している。
+
+表情は`left`にジェム、`right`にアルタの名前を指定する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
+
+| キャラクター | 表情名と画像（各範囲は番号順） |
+| --- | --- |
+| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt3〜4` → `G03-3〜4.png`、`beam1〜2` → `G04-1〜2.png`、`nervous1〜4` → `G05-1〜4.png` |
+| アルタ | `normal1〜4` → `alta/A01-1〜4.png`、`grumpy1〜4` → `A02-1〜4.png`、`grin1〜4` → `A03-1〜4.png`、`sparkle1〜2` → `A04-1〜2.png`、`smirk3〜4` → `A05-3〜4.png` |
+
+画像は`assets/faces/`以下。既存の`normal`・`talk`・`doubt`は互換用に従来の画像を維持する。例: `left: "surprised1", right: "sparkle1"`。
 
 - 話ID1〜14、サイドID101〜103、分岐IDは保存済み権利の識別子なので維持する。第1話は`episode-01-encourage`／`episode-01-bow`、第2〜14話は`episode-NN-route-a`／`episode-NN-route-b`。削除・改名には別途移行設計が必要。
 - 価格は0以上の安全な整数NT。メインは話ごとの`additionalRoutePriceNt`、サイドは`priceNt`を変更する。0 NTでも確認後に解放する。
@@ -39,12 +50,12 @@
 | [StoryScene](../src/components/story/StoryScene.tsx) | ヘッダー・閉じる・エラー・任意のキャラクター領域と固定会話枠を1回だけ配置 |
 | [StoryMessageBox](../src/components/story/StoryMessageBox.tsx) | 枠の位置・寸法・背景・余白・枠内スクロール。`children`と`contentKey`を受け取る |
 | 同ファイルの`StoryMessage` | 話者・本文・文字送り・タップ操作。枠は作らない |
-| [StoryCharacters](../src/components/story/StoryCharacters.tsx) | 画像・表情・話者の濃淡 |
+| [StoryCharacters](../src/components/story/StoryCharacters.tsx) | 画像・表情（話者による透明化なし） |
 | [StoryChoices](../src/components/story/StoryChoices.tsx)／[StoryUnlockConfirmation](../src/components/story/StoryUnlockConfirmation.tsx) | メイン固有の選択肢・解放確認の中身 |
 
 権利判定・購入・保存・退出ガード・再生フック・戻り先・背景は[story.tsx](../app/story.tsx)／[side-story.tsx](../app/side-story.tsx)が持つ。共通UIへ移さない。ショップ挨拶・退店は共通ヘッダーを使わず、同じ枠と本文表示を組み合わせる。`StoryDialogue`や引数の形を判別する別APIは作らない。
 
-枠の調整は`StoryMessageBox.tsx`の`styles.frame`で行う。現行は左右18・下60・高さ210、本文余白は左右24・上28・下18。下位置はロゴフッターより上の画面領域の下端から測り、増やすと上へ動く。長い内容は枠内だけでスクロールし、枠を伸縮させない。キャラクター領域は独立して管理する。台詞ID・選択肢・確認内容が変わった時だけ`contentKey`を変え、スクロールを先頭へ戻す。文字送り中には変えない。
+メイン会話はStorySceneの上部にstory-bg.pngを縦横比を保ったcoverで中央配置し、左右を切り取る立ち絵映像、下部に会話枠を配置する。LIVE・白いコーナー・DAY番号・解放日を重ね、立ち絵は常に不透明。映像枠は左右16のmarginを入れ、残りの幅÷1.38と表示領域高の52%の小さい方の高さを使う。背景画像の元の16:9へ枠を合わせず、枠に合わせて中央からトリミングする。下部を覆う机の色面は置かない。下部は左右22・上12・下28の余白内でStoryMessageBoxのinFlowを使い、高さ190（狭い画面では縮小可）で上端を固定し、白い話者名・本文・右下の▼を表示する。長文・選択肢は枠内スクロール。通常のサイド／ショップ枠はstyles.frameの左右18・下60・高さ210。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
 
 ## BGM・タブ効果音
 

@@ -24,10 +24,10 @@ import {
 } from "./common/types";
 
 /** Character identity is kept with story content, not inferred by the UI. */
-export const STORY_CHARACTER_BY_SPEAKER: Record<Speaker, StoryCharacter> = {
+export const STORY_CHARACTER_BY_SPEAKER = {
   boss: "gem",
   sub: "alta",
-};
+} as const satisfies Record<Speaker, StoryCharacter>;
 
 export const STORY_CHARACTER_NAMES: Record<StoryCharacter, string> = {
   gem: "ジェム",

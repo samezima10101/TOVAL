@@ -8,6 +8,7 @@ type SelectRoute = (routeId: string) => Promise<void>;
 type ReaderOptions = {
   source: "memory" | "home" | "unlock" | "shop";
   initialRouteId?: string;
+  userName?: string;
   selectInitialRoute?: SelectRoute;
   // Used by the shop to persist arrival announcements, not read/unread status.
   onFinish?: () => Promise<void>;
@@ -20,7 +21,7 @@ export const STORY_CHARACTER_INTERVAL_MS = 53;
 
 export default function useStoryReader(
   episode: StoryEpisode | undefined,
-  { source, initialRouteId, selectInitialRoute, onFinish, onClose,
+  { source, initialRouteId, userName = "ゲスト", selectInitialRoute, onFinish, onClose,
     processingRef, exitRequestedRef }: ReaderOptions,
 ) {
   const [lineIndex, setLineIndex] = React.useState(0);
@@ -70,7 +71,13 @@ export default function useStoryReader(
         ? episode.commonBefore
         : getPlayableStoryLines(episode)
     : [];
-  const line = lines[lineIndex];
+  const sourceLine = lines[lineIndex];
+  const line = sourceLine
+    ? {
+        ...sourceLine,
+        text: sourceLine.text.replace(/\[userName\]|［userName］/g, () => userName),
+      }
+    : undefined;
   const isLastLine =
     Boolean(line) &&
     lineIndex === lines.length - 1 &&

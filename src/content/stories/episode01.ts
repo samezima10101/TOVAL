@@ -1,88 +1,270 @@
-// 仮本文。編集方法: docs/editing-guide.md。話ID・分岐IDは購入記録の識別子。
-import type { StoryEpisode } from '@/src/domain/common/types';
+// 会話本文。編集方法: docs/editing-guide.md。話ID・分岐IDは購入記録の識別子。
+import type { StoryEpisode } from "@/src/domain/common/types";
 
 export const episode01: StoryEpisode = {
-  "id": 1,
-  "title": "初めてのタスク完了！",
-  "commonBefore": [
+  id: 1,
+  title: "初めてのタスク完了！",
+  commonBefore: [
     {
-      "id": "episode-01-before-1",
-      "speaker": "sub",
-      "text": "お疲れ様です。今日も無事に目標達成しましたね。",
-      "left": "normal",
-      "right": "talk"
+      id: "episode-01-before-1",
+      speaker: "boss",
+      text: "お、終わった",
+      left: "normal2",
+      right: "normal3",
     },
     {
-      "id": "episode-01-before-2",
-      "speaker": "boss",
-      "text": "うん、おつかれさま～。明日もがんばってね。",
-      "left": "talk",
-      "right": "normal"
-    }
-  ],
-  "routes": [
-    {
-      "id": "episode-01-encourage",
-      "label": "ありがとうございます！",
-      "lines": [
-        {
-          "id": "episode-01-a-1",
-          "speaker": "sub",
-          "text": "ありがとうございます！ 明日も頑張ります！",
-          "left": "normal",
-          "right": "talk"
-        },
-        {
-          "id": "episode-01-a-2",
-          "speaker": "boss",
-          "text": "いい返事だね～。でも、頑張りすぎはだめだよ？",
-          "left": "talk",
-          "right": "normal"
-        },
-        {
-          "id": "episode-01-a-3",
-          "speaker": "sub",
-          "text": "はい！ しっかり休んで、また明日に備えます。",
-          "left": "normal",
-          "right": "talk"
-        }
-      ]
+      id: "episode-01-before-2",
+      speaker: "sub",
+      text: "お疲れ様です。タスクを終えると、\nこのように私たちの会話を閲覧することができます。",
+      left: "normal1",
+      right: "normal2",
     },
     {
-      "id": "episode-01-bow",
-      "label": "はい、わかりました。",
-      "lines": [
-        {
-          "id": "episode-01-b-1",
-          "speaker": "sub",
-          "text": "はい、わかりました。",
-          "left": "normal",
-          "right": "talk"
-        },
-        {
-          "id": "episode-01-b-2",
-          "speaker": "boss",
-          "text": "あれ、ちょっと疲れてる？ 今日はもうゆっくり休みなね～。",
-          "left": "talk",
-          "right": "normal"
-        },
-        {
-          "id": "episode-01-b-3",
-          "speaker": "sub",
-          "text": "……お気遣いありがとうございます。お言葉に甘えます。",
-          "left": "normal",
-          "right": "talk"
-        }
-      ]
-    }
-  ],
-  "commonAfter": [
+      id: "episode-01-before-3",
+      speaker: "sub",
+      text: "とまあ、調査の流れは以上です。\nいかがでしょうか？",
+      left: "normal1",
+      right: "normal2",
+    },
     {
-      "id": "episode-01-after-1",
-      "speaker": "sub",
-      "text": "・・・では失礼します。",
-      "left": "normal",
-      "right": "talk"
-    }
-  ]
+      id: "episode-01-before-4",
+      speaker: "sub",
+      text: "普段よりも習慣化ができそうな感覚はありましたか？",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-01-before-5",
+      speaker: "sub",
+      text: "私たちが監視していた、ということによって\n作業のパフォーマンスが落ちていなければいいのですが。",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-01-before-6",
+      speaker: "boss",
+      text: "まー大丈夫っしょ～\nアプリなんだから、監視されてる感そんな無いよ",
+      left: "normal2",
+      right: "normal3",
+    },
+    {
+      id: "episode-01-before-7",
+      speaker: "boss",
+      text: "てかむしろ、誰かに見られてるんだって意識したほうが\nちゃんとやんなきゃて思わない？",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-01-before-8",
+      speaker: "sub",
+      text: "確かに。",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-01-before-9",
+      speaker: "sub",
+      text: "ん？　いや、どうなんでしょう\n地球はラサイルほどの管理社会じゃ...",
+      left: "normal3",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-01-before-10",
+      speaker: "boss",
+      text: "おーっとしゃべりすぎだぞーとまれー",
+      left: "nervous4",
+      right: "normal3",
+    },
+    {
+      id: "episode-01-before-11",
+      speaker: "boss",
+      text: "てか本人に直接聞いたら？",
+      left: "normal2",
+      right: "normal1",
+    },
+    {
+      id: "episode-01-before-12",
+      speaker: "sub",
+      text: "ああ、そのためのTOVALですもんね。",
+      left: "normal3",
+      right: "normal2",
+    },
+    {
+      id: "episode-01-before-13",
+      speaker: "sub",
+      text: "［userName］は誰かに見られている状況だとパフォーマンスが上がりますか？",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-01-before-14",
+      speaker: "boss",
+      text: "それとも一人でやったほうがはかどる派～？",
+      left: "normal2",
+      right: "normal1",
+    },
+  ],
+  routes: [
+    {
+      id: "episode-01-encourage",
+      label: "見られていると頑張れる",
+      lines: [
+        {
+          id: "episode-01-a-1",
+          speaker: "sub",
+          text: "そうなんですね、地球は個人主義的な流れが\n加速していると聞いていましたが、、、",
+          left: "normal1",
+          right: "normal2",
+        },
+        {
+          id: "episode-01-a-2",
+          speaker: "boss",
+          text: "わかる～自分も一人で作業してるとつい\nサボりたくなるんだよね",
+          left: "normal2",
+          right: "normal1",
+        },
+        {
+          id: "episode-01-a-3",
+          speaker: "sub",
+          text: "では自分たちの存在が、少しは励みになるかもしれない\nですね。",
+          left: "normal1",
+          right: "normal4",
+        },
+        {
+          id: "episode-01-a-4",
+          speaker: "boss",
+          text: "でも今日のアルタはパフォーマンス落ちてたよね",
+          left: "doubt4",
+          right: "normal3",
+        },
+      ],
+    },
+    {
+      id: "episode-01-bow",
+      label: "一人のほうが集中できる",
+      lines: [
+        {
+          id: "episode-01-b-1",
+          speaker: "sub",
+          text: "人に見られていると、作業以外の余計なことも\n考えてしまいますよね",
+          left: "normal1",
+          right: "normal2",
+        },
+        {
+          id: "episode-01-b-2",
+          speaker: "boss",
+          text: "でも安心して、自分たちは[userName]を\nリアルタイムでずっと監視してるわけじゃないからさ、",
+          left: "normal2",
+          right: "normal1",
+        },
+        {
+          id: "episode-01-b-3",
+          speaker: "sub",
+          text: "進捗情報などは記録されますが、完璧なデータも不完全なデータも\n同質のデータに変わりはありませんから。",
+          left: "normal1",
+          right: "normal2",
+        },
+        {
+          id: "episode-01-b-4",
+          speaker: "boss",
+          text: "要はあんま気にしないで～ってことだね",
+          left: "normal2",
+          right: "normal1",
+        },
+        {
+          id: "episode-01-b-5",
+          speaker: "boss",
+          text: "てかさ、今日はアルタもパフォーマンス落ちてたじゃん",
+          left: "doubt4",
+          right: "normal3",
+        },
+      ],
+    },
+  ],
+  commonAfter: [
+    {
+      id: "episode-01-after-1",
+      speaker: "sub",
+      text: "え、そうですか？",
+      left: "doubt3",
+      right: "normal4",
+    },
+    {
+      id: "episode-01-after-2",
+      speaker: "boss",
+      text: "初めて話す相手に対して緊張してるでしょ",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-01-after-3",
+      speaker: "sub",
+      text: "そりゃあ、これから60日間顔を合わせる相手なんですから、\n信頼性があることを表すために緊張もしますよ",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-01-after-4",
+      speaker: "sub",
+      text: "それ言ったらジェムだって愛想よくしてるじゃないですか",
+      left: "normal3",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-01-after-5",
+      speaker: "boss",
+      text: "そりゃあ、これから60日間顔を合わせる相手なんだよ？\n信頼してもらうために愛想よくするでしょ",
+      left: "nervous4",
+      right: "normal3",
+    },
+    {
+      id: "episode-01-after-6",
+      speaker: "both",
+      text: "・・・",
+      left: "nervous1",
+      right: "smirk3",
+    },
+    {
+      id: "episode-01-after-7",
+      speaker: "sub",
+      text: "まあ、結局のところ私たちは、自分が思っているよりも\n他人の存在に影響を受けやすい、ということですね",
+      left: "nervous1",
+      right: "grin2",
+    },
+    {
+      id: "episode-01-after-8",
+      speaker: "boss",
+      text: "雑にまとめるな",
+      left: "doubt4",
+      right: "grin1",
+    },
+    {
+      id: "episode-01-after-9",
+      speaker: "sub",
+      text: "あ、そういえばこのアプリの設定を話すのを忘れていましたね。",
+      left: "surprised3",
+      right: "normal4",
+    },
+    {
+      id: "episode-01-after-10",
+      speaker: "boss",
+      text: "え、ちょっと時間ないかも\n明日改めて説明しよ？",
+      left: "nervous4",
+      right: "normal3",
+    },
+    {
+      id: "episode-01-after-11",
+      speaker: "sub",
+      text: "まあ、しょうがないので今回はここまでということで。\nそれでは失礼します",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-01-after-12",
+      speaker: "boss",
+      text: "ばいば～い、また明日ね～",
+      left: "normal2",
+      right: "normal1",
+    },
+  ],
 };

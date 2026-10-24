@@ -1,10 +1,7 @@
-import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Colors, Fonts } from "@/src/constants/theme";
-import {
-  StoryRoute,
-} from "@/src/domain/common/types";
+import { StoryRoute } from "@/src/domain/common/types";
 
 type StoryChoicesProps = {
   priceNt: number;
@@ -23,7 +20,6 @@ export default function StoryChoices({
 }: StoryChoicesProps) {
   return (
     <View style={styles.messageBox} accessibilityRole="radiogroup">
-      <Text style={styles.prompt}>返信を選ぶ</Text>
       {routes.map((route) => {
         const isLocked = lockedRouteIds.includes(route.id);
         return (
@@ -47,9 +43,7 @@ export default function StoryChoices({
             <Text style={[styles.choiceText, isLocked && styles.lockedText]}>
               {route.label}
             </Text>
-            {isLocked ? (
-              <Text style={styles.cost}>🔒 {priceNt} NT</Text>
-            ) : null}
+            {isLocked ? <Text style={styles.cost}>🔒 {priceNt} NT</Text> : null}
           </TouchableOpacity>
         );
       })}
@@ -60,14 +54,14 @@ export default function StoryChoices({
 const styles = StyleSheet.create({
   messageBox: { flexGrow: 1 },
   prompt: {
-    color: Colors.primary,
+    color: Colors.text,
     fontSize: 15,
     fontFamily: Fonts.bold,
     marginBottom: 6,
   },
   choice: {
     alignItems: "center",
-    backgroundColor: Colors.primary,
+    backgroundColor: Colors.text,
     borderRadius: 10,
     flexDirection: "row",
     justifyContent: "space-between",

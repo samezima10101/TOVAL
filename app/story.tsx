@@ -7,8 +7,8 @@ import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
-import StoryScene from "@/src/components/story/StoryScene";
 import { StoryMessage } from "@/src/components/story/StoryMessageBox";
+import StoryScene from "@/src/components/story/StoryScene";
 import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmation";
 import { getAdditionalRoutePriceNt } from "@/src/config/conversationSettings";
 import { Colors, Fonts } from "@/src/constants/theme";
@@ -53,7 +53,7 @@ export default function StoryScreen({
   }>();
   return (
     <View style={{ flex: 1, paddingTop: top + 76 }}>
-      <ScreenBackground source={require("@/assets/bg/primary-bg.png")} />
+      <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
       <StoryPlayback
         key={JSON.stringify([params.episode, params.source, params.route])}
         catalog={catalog}
@@ -113,6 +113,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
     {
       source,
       initialRouteId,
+      userName: state?.userName,
       selectInitialRoute: episodeId
         ? (selectedRouteId) =>
             selectInitialStoryRoute(episodeId, selectedRouteId)
@@ -207,15 +208,26 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   return (
     <StoryScene
       title={`Episode ${String(episode.id).padStart(2, "0")} ${episode.title}`}
-      onClose={() => { if (!unlockingRef.current) handleClose(); }}
+      episodeNumber={episode.id}
+      dateLabel={unlockedStory?.unlockedDate.replaceAll("-", "/")}
+      onClose={() => {
+        if (!unlockingRef.current) handleClose();
+      }}
       disabled={isProcessing || isUnlocking}
       error={error}
-      contentKey={isWaitingForChoice ? pendingUnlockRoute ? `unlock:${pendingUnlockRoute.id}` : "choices" : line?.id}
-      characters={<StoryCharacters
-        leftExpression={characterLine?.left}
-        rightExpression={characterLine?.right}
-        activeSpeaker={isWaitingForChoice ? undefined : characterLine?.speaker}
-      />}
+      contentKey={
+        isWaitingForChoice
+          ? pendingUnlockRoute
+            ? `unlock:${pendingUnlockRoute.id}`
+            : "choices"
+          : line?.id
+      }
+      characters={
+        <StoryCharacters
+          leftExpression={characterLine?.left}
+          rightExpression={characterLine?.right}
+        />
+      }
     >
       <StoryMessage {...reader} />
 
