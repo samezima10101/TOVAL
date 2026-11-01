@@ -10,7 +10,6 @@ import {
   EpisodeId,
   MAX_PLANNED_SECONDS,
   StoryRouteProgress,
-  UnlockedStory,
 } from "@/src/domain/common/types";
 import { STORY_CATALOG, StoryCatalog } from "@/src/domain/storyData";
 import {
@@ -147,9 +146,9 @@ function isTimestamp(value: unknown): value is number {
 }
 
 function isSessionStart(value: unknown): boolean {
-  return value === null || (isRecord(value) &&
+  return isRecord(value) &&
     isTimestamp(value.startedAt) && isDateKey(value.startedDate) &&
-    typeof value.startedTime === "string" && /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(value.startedTime));
+    typeof value.startedTime === "string" && /^([01]\d|2[0-3]):[0-5]\d:[0-5]\d$/.test(value.startedTime);
 }
 
 function parseDiaryLogs(
@@ -171,8 +170,7 @@ function parseDiaryLogs(
       (isRecord(log.startInfo) && log.logDate !== log.startInfo.startedDate) ||
       !isTimestamp(log.completedAt) ||
       !isDateKey(log.completedDate) ||
-      (log.completedTime !== undefined &&
-        (typeof log.completedTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(log.completedTime))) ||
+      (typeof log.completedTime !== "string" || !/^([01]\d|2[0-3]):[0-5]\d$/.test(log.completedTime)) ||
       !isNonNegativeSafeInteger(log.totalTimerSeconds) ||
       typeof log.diary !== "string" ||
       (log.unlockedEpisodeId !== null &&
@@ -187,7 +185,7 @@ function parseDiaryLogs(
       id: log.id,
       completedAt: log.completedAt,
       completedDate: log.completedDate,
-      ...(log.completedTime === undefined ? {} : { completedTime: log.completedTime }),
+      completedTime: log.completedTime,
       totalTimerSeconds: log.totalTimerSeconds,
       diary: log.diary,
       unlockedEpisodeId: log.unlockedEpisodeId,
@@ -198,7 +196,6 @@ function parseDiaryLogs(
 
 function parseActiveTimer(
   value: unknown,
-  legacy = false,
 ): AppState["activeTimer"] | null | undefined {
   if (value === null) {
     return null;
@@ -216,7 +213,7 @@ function parseActiveTimer(
   } = value;
   if (
     typeof sessionId !== "string" ||
-    (!legacy && !isSessionStart(value.startInfo)) ||
+    !isSessionStart(value.startInfo) ||
     sessionId.trim().length === 0 ||
     !isNonNegativeSafeInteger(accumulatedMs) ||
     (runningSince !== null && !isTimestamp(runningSince)) ||
@@ -230,46 +227,12 @@ function parseActiveTimer(
   }
 
   return {
-    startInfo: legacy ? null : value.startInfo as ActiveTimer["startInfo"],
+    startInfo: value.startInfo as ActiveTimer["startInfo"],
     sessionId,
     plannedSeconds,
     startedTaskName,
     accumulatedMs,
     runningSince,
-  };
-}
-
-function parseV1ActiveTimer(value: unknown): ActiveTimer | null | undefined {
-  if (value === null || value === undefined) {
-    return null;
-  }
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const { sessionId, startedAt, plannedSeconds, startedTaskName } = value;
-  if (
-    typeof sessionId !== "string" ||
-    sessionId.trim().length === 0 ||
-    !isTimestamp(startedAt) ||
-    typeof plannedSeconds !== "number" ||
-    !Number.isInteger(plannedSeconds) ||
-    plannedSeconds < 0 ||
-    plannedSeconds > MAX_PLANNED_SECONDS ||
-    typeof startedTaskName !== "string"
-  ) {
-    return undefined;
-  }
-
-  // v1 had one wall-clock start and cannot distinguish active from background time.
-  // Keep the session, but restart accounting paused so unknown time is never credited.
-  return {
-    startInfo: null,
-    sessionId,
-    plannedSeconds,
-    startedTaskName,
-    accumulatedMs: 0,
-    runningSince: null,
   };
 }
 
@@ -282,7 +245,6 @@ export function validateAppState(
   }
 
   if (
-    "bgmEnabled" in value ||
     !isValidAudioVolume(value.bgmVolume) ||
     !isValidAudioVolume(value.seVolume) ||
     typeof value.userName !== "string" || value.userName.trim().length === 0 ||
@@ -313,7 +275,6 @@ export function validateAppState(
       !isRecord(story) ||
       !isEpisodeId(story.episodeId, catalog) ||
       !isDateKey(story.unlockedDate) ||
-      "isRead" in story ||
       ids.has(story.episodeId)
     ) {
       return false;
@@ -328,216 +289,16 @@ export function validateAppState(
   );
 }
 
-function parseLegacyUnlockedStories(
-  value: unknown,
-  catalog: StoryCatalog,
-  requireOldReadFlag: boolean,
-): UnlockedStory[] | undefined {
-  if (!Array.isArray(value) || value.length > catalog.episodes.length) {
-    return undefined;
-  }
-
-  const ids = new Set<number>();
-  const stories: UnlockedStory[] = [];
-  for (const story of value) {
-    if (
-      !isRecord(story) ||
-      !isEpisodeId(story.episodeId, catalog) ||
-      !isDateKey(story.unlockedDate) ||
-      (requireOldReadFlag && typeof story.isRead !== "boolean") ||
-      ids.has(story.episodeId)
-    ) {
-      return undefined;
-    }
-    ids.add(story.episodeId);
-    stories.push({
-      episodeId: story.episodeId,
-      unlockedDate: story.unlockedDate,
-    });
-  }
-  return stories;
-}
-
-function migrateLegacyState(
-  value: Record<string, unknown>,
-  catalog: StoryCatalog,
-): AppState | null {
-  if (
-    value.schemaVersion !== 0 &&
-    value.schemaVersion !== 1 &&
-    value.schemaVersion !== 2 &&
-    value.schemaVersion !== 3 &&
-    value.schemaVersion !== 4 &&
-    value.schemaVersion !== undefined
-  ) {
-    return null;
-  }
-
-  const initial = createInitialAppState();
-  // Missing legacy fields can use their historical defaults; invalid fields
-  // must never be silently repaired and then overwrite the source.
-  if (
-    // A random object without a version is not evidence of a legacy save.
-    (value.schemaVersion === undefined &&
-      !["taskName", "userName", "totalNt", "totalCompletions", "unlockedStories"].some((key) => key in value)) ||
-    (value.userName !== undefined && typeof value.userName !== "string") ||
-    (value.taskName !== undefined && typeof value.taskName !== "string") ||
-    (value.totalNt !== undefined && !isNonNegativeSafeInteger(value.totalNt)) ||
-    (value.totalCompletions !== undefined && !isNonNegativeSafeInteger(value.totalCompletions)) ||
-    (value.lastCompletionDate !== undefined && value.lastCompletionDate !== null && !isDateKey(value.lastCompletionDate)) ||
-    (value.unlockedStories !== undefined && parseLegacyUnlockedStories(value.unlockedStories, catalog, Number(value.schemaVersion) >= 3) === undefined)
-  ) return null;
-  const activeTimer =
-    typeof value.schemaVersion === "number" && value.schemaVersion >= 2
-      ? parseActiveTimer(value.activeTimer, true)
-      : parseV1ActiveTimer(value.activeTimer);
-  if (activeTimer === undefined && value.activeTimer !== undefined) return null;
-  const migrated: AppState = {
-    ...initial,
-    userName: typeof value.userName === "string" && value.userName.trim()
-      ? value.userName : DEFAULT_USER_NAME,
-    taskName: typeof value.taskName === "string" ? value.taskName : "",
-    totalNt: isNonNegativeSafeInteger(value.totalNt) ? value.totalNt : 0,
-    totalCompletions: isNonNegativeSafeInteger(value.totalCompletions)
-      ? value.totalCompletions
-      : 0,
-    lastCompletionDate:
-      value.lastCompletionDate === null || isDateKey(value.lastCompletionDate)
-        ? value.lastCompletionDate
-        : null,
-    unlockedStories: parseLegacyUnlockedStories(
-      value.unlockedStories,
-      catalog,
-      typeof value.schemaVersion === "number" && value.schemaVersion >= 3,
-    ) ?? [],
-    storyRouteProgress:
-      value.schemaVersion === 4
-        ? (parseStoryRouteProgress(value.storyRouteProgress, catalog) ?? {})
-        : {},
-    diaryLogs: [],
-    activeTimer: activeTimer ?? null,
-  };
-
-  return validateAppState(migrated, catalog) ? migrated : null;
-}
-
-function migrateBgmVolume(value: Record<string, unknown>) {
-  const { bgmEnabled, ...previous } = value;
-  if (typeof bgmEnabled !== "boolean") return null;
-  return {
-    ...previous,
-    schemaVersion: APP_SCHEMA_VERSION,
-    bgmVolume: bgmEnabled ? DEFAULT_BGM_VOLUME : 0,
-    seVolume: DEFAULT_SE_VOLUME,
-  };
-}
-
-function migrateReminderSettings(value: Record<string, unknown>) {
-  return migrateBgmVolume({
-    ...value,
-    // Empty names were the historical default. Keep other legacy names exactly,
-    // including names longer than the limit now applied when editing settings.
-    userName: typeof value.userName === "string" && !value.userName.trim()
-      ? DEFAULT_USER_NAME : value.userName,
-    notificationHour: DEFAULT_NOTIFICATION_HOUR,
-    notificationMinute: DEFAULT_NOTIFICATION_MINUTE,
-    defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
-  });
-}
-
 export function parsePersistedState(
   raw: string,
   catalog: StoryCatalog = STORY_CATALOG,
 ): AppState | null {
-  let value: unknown;
   try {
-    value = JSON.parse(raw);
-
+    const value: unknown = JSON.parse(raw);
+    return validateAppState(value, catalog) ? value : null;
   } catch {
     return null;
   }
-
-  if (validateAppState(value, catalog)) {
-    return value;
-  }
-  // v13 predates persisted sound-effect volume. Do not repair its BGM setting.
-  if (isRecord(value) && value.schemaVersion === 13) {
-    const migrated = {
-      ...value,
-      schemaVersion: APP_SCHEMA_VERSION,
-      seVolume: DEFAULT_SE_VOLUME,
-    };
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  // v12 stored only BGM enablement. Keep all other saved settings and progress.
-  if (isRecord(value) && value.schemaVersion === 12) {
-    const migrated = migrateBgmVolume(value);
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  // v11 predates the configurable initial duration. Preserve every other field.
-  if (isRecord(value) && value.schemaVersion === 11) {
-    const migrated = migrateBgmVolume({
-      ...value,
-      defaultTimerMinutes: DEFAULT_TIMER_MINUTES,
-    });
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  // v10 predates daily reminders. Keep all saved progress and preferences.
-  if (isRecord(value) && value.schemaVersion === 10) {
-    const migrated = migrateReminderSettings(value);
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  // v9 predates BGM preferences. Preserve every other field exactly.
-  if (isRecord(value) && value.schemaVersion === 9) {
-    const migrated = migrateReminderSettings({ ...value, bgmEnabled: true });
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  // v8 had read/unread flags. Validate their old types before discarding only
-  // that retired field; do not turn malformed old records into valid saves.
-  if (isRecord(value) && value.schemaVersion === 8) {
-    const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
-    if (!unlockedStories) return null;
-    const migrated = migrateReminderSettings({ ...value, unlockedStories, bgmEnabled: true });
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  // Shop and diary branches both used v5/v6; fields, not version alone, distinguish them.
-  // v7 has all three arrays as required fields. Missing data is corruption,
-  // not an invitation to silently replace history or purchases with defaults.
-  if (isRecord(value) && [4, 5, 6, 7].includes(value.schemaVersion as number)) {
-    if (value.schemaVersion === 7 &&
-      (value.diaryLogs === undefined || value.purchasedSideStoryIds === undefined || value.announcedSideStoryIds === undefined)) return null;
-    if (value.isSideStoryUnlocked !== undefined && typeof value.isSideStoryUnlocked !== "boolean") return null;
-    const unlockedStories = parseLegacyUnlockedStories(value.unlockedStories, catalog, true);
-    if (!unlockedStories) return null;
-    const { isSideStoryUnlocked, ...previous } = value;
-    const diaryLogs = value.diaryLogs === undefined ? [] : value.diaryLogs;
-    const purchased = value.purchasedSideStoryIds === undefined ? [] : value.purchasedSideStoryIds;
-    if (!isConversationIds(purchased)) return null;
-    const migrated = migrateReminderSettings({
-      ...previous,
-      schemaVersion: APP_SCHEMA_VERSION,
-      bgmEnabled: true,
-      unlockedStories,
-      activeTimer: isRecord(value.activeTimer) ? { ...value.activeTimer, startInfo: null } : value.activeTimer,
-      purchasedSideStoryIds: isSideStoryUnlocked === true ? [...new Set([...purchased, 101])] : purchased,
-      announcedSideStoryIds: value.announcedSideStoryIds === undefined ? [] : value.announcedSideStoryIds,
-      diaryLogs: Array.isArray(diaryLogs)
-        ? diaryLogs.map((log) => {
-            if (!isRecord(log) || !isTimestamp(log.completedAt)) return log;
-            return {
-              ...log,
-              startInfo: null,
-              logDate: value.schemaVersion === 5 && log.completedDate === undefined
-                ? localDateKey(log.completedAt) : log.completedDate,
-              // v5 did not store the original timezone, so only the current local date is recoverable.
-              completedDate: value.schemaVersion === 5 && log.completedDate === undefined ? localDateKey(log.completedAt) : log.completedDate,
-            };
-          })
-        : diaryLogs,
-    });
-    return validateAppState(migrated, catalog) ? migrated : null;
-  }
-  return isRecord(value) ? migrateLegacyState(value, catalog) : null;
 }
 
 export type AppStateRepository = {
@@ -586,9 +347,6 @@ export function createAppStateRepository(
       const state = parsePersistedState(raw, catalog);
       if (!state) throw preserve(raw);
       writable = true;
-      if (JSON.parse(raw).schemaVersion !== APP_SCHEMA_VERSION) {
-        await repository.save(state);
-      }
       return state;
     },
 

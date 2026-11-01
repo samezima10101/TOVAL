@@ -23,6 +23,13 @@ import UserSettings, {
 import { Fonts } from "@/src/constants/theme";
 import useInputReveal from "@/src/hooks/useInputReveal";
 
+// DEBUG_STORY_PREVIEW: 削除時はこのブロックと下の表示行、専用ファイルを削除する。
+const DebugStoryPreview: import("react").ComponentType | null = __DEV__
+  // 開発時だけ読み込み、本番バンドルから依存ごと除外する。
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? require("@/src/debug/StoryPreview").default
+  : null;
+
 export default function MenuScreen() {
   const { top } = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
@@ -81,6 +88,8 @@ export default function MenuScreen() {
         <UserSettings editor={userSettings} onRevealInput={revealInput} />
         <DefaultTimerSettings />
         <NotificationSettings />
+        {/* DEBUG_STORY_PREVIEW */}
+        {DebugStoryPreview ? <DebugStoryPreview /> : null}
       </ScrollView>
       <UserSettingsToolbar editor={userSettings} bottom={toolbarBottom} />
     </View>

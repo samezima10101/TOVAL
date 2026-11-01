@@ -12,7 +12,7 @@ My-Juneは、1件のタスクに集中するタイマーと、完了に応じて
 
 ## 開発
 
-Node 22.15.0 / npm 10.9.2を使用する。
+Nodeは22.13以降の22系・24.3以降の24系・26系、npmは10系・11系を使用する。推奨Nodeは`.nvmrc`、対応範囲は`package.json`を参照する。
 
 ```bash
 npm ci
@@ -37,7 +37,7 @@ npm run bundle:ios
 | `src/components/`・`src/hooks/` | UI部品、計測・会話・BGMとタブ効果音のフック |
 | `src/domain/` | 時間計算、完了・報酬、日記、会話・購入の判定 |
 | `src/state/AppStateProvider.tsx` | 共有状態、保存キュー、保存成功後の状態反映 |
-| `src/storage/appStateRepository.ts` | AsyncStorageへの保存、検証、移行、破損保全 |
+| `src/storage/appStateRepository.ts` | AsyncStorageへの保存、検証、破損保全 |
 | `src/content/stories/`・`src/content/shop.ts` | メイン各話、サイド会話、店員の本文 |
 | `src/config/` | 会話の価格・入荷条件、BGMの割り当て・BGMと効果音の初期音量 |
 
@@ -48,9 +48,11 @@ npm run bundle:ios
 | [完成基準](docs/completion-criteria.md) | 今回の仕様、対象範囲、合格条件、残作業 |
 | [手動チェックリスト](docs/manual-acceptance-checklist.md) | iPhoneでの確認手順、検証用データ、実施結果 |
 | [編集ガイド](docs/editing-guide.md) | 会話・価格・入荷条件、音源・音量、フォント・枠・キーボード部品の編集 |
-| [データ仕様](docs/data-integrations.md) | 保存項目、更新順序、旧形式の移行、破損保全 |
+| [データ仕様](docs/data-integrations.md) | 保存項目、更新順序、初版の保存形式、破損保全 |
 | [開発運用手順](docs/development-operations.md) | 環境の再現、診断、起動、バンドル生成 |
 
 README.mdは人間のレビュー向けのプロジェクト紹介に使用する。AI向けの指示・開発用の文書一覧はこのファイルにまとめる。仕様・完成判定は完成基準へ、確認結果と未確認事項は手動チェックリストへ記載する。文書は現行情報を更新し、日付ごとの変更ログや同じ説明を別ファイルへ増やさない。
+
+保存形式の互換処理を追加する前に、その形式のデータを持つ利用者がすでにいるか確認する。体験版の保存形式を初版v1とし、配布前のテストデータは引き継がない。利用者のいない旧形式への移行コードは追加しない。
 
 会話本文は[src/content/stories](src/content/stories/)の各話ファイルを直接編集する。本文・価格・条件の変更時は保存済み権利の識別IDを維持し、詳細は編集ガイドとデータ仕様を確認する。検証は完成基準A10に従い、自動テストは追加・復元せず、静的診断と手動チェックリストを用いる。実施していない確認を合格として記録しない。

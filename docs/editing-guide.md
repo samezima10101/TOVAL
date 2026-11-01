@@ -1,6 +1,6 @@
 # コンテンツ・音・表示の編集ガイド
 
-日常的に変更する場所と、共通部品を使う際の制約をまとめる。完成条件は[完成基準](completion-criteria.md)、操作確認と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)、保存・移行は[データ仕様](data-integrations.md)、コマンドは[開発運用手順](development-operations.md)を参照する。
+日常的に変更する場所と、共通部品を使う際の制約をまとめる。完成条件は[完成基準](completion-criteria.md)、操作確認と実施結果は[手動チェックリスト](manual-acceptance-checklist.md)、保存形式は[データ仕様](data-integrations.md)、コマンドは[開発運用手順](development-operations.md)を参照する。
 
 ## 会話本文・価格・入荷条件
 
@@ -25,7 +25,7 @@
 
 画像は`assets/faces/`以下。既存の`normal`・`talk`・`doubt`は互換用に従来の画像を維持する。例: `left: "surprised1", right: "sparkle1"`。
 
-- 話ID1〜14、サイドID101〜103、分岐IDは保存済み権利の識別子なので維持する。第1話は`episode-01-encourage`／`episode-01-bow`、第2〜14話は`episode-NN-route-a`／`episode-NN-route-b`。削除・改名には別途移行設計が必要。
+- 話ID1〜14、サイドID101〜103、分岐IDは保存済み権利の識別子なので維持する。第1話は`episode-01-encourage`／`episode-01-bow`、第2〜14話は`episode-NN-route-a`／`episode-NN-route-b`。削除・改名時は、そのIDの保存済み権利を持つ利用者がいるか確認し、必要な場合に移行を設計する。
 - 価格は0以上の安全な整数NT。メインは話ごとの`additionalRoutePriceNt`、サイドは`priceNt`を変更する。0 NTでも確認後に解放する。
 - 各話の初回分岐選択はA/Bどちらも無料、未選択のもう一方だけが購入対象。選択地点より前に閉じた場合は未選択のまま。
 - `requiredUnlockedEpisodeId`は`null`（条件なし）または実在するメイン話ID。`unlockedStories`に含まれれば満たし、読了は不要。
@@ -33,7 +33,7 @@
 - 本文・価格の変更で既購入の権利をリセット・再課金しない。購入済みサイドは条件変更後も表示・再生し、告知済みIDも維持する。
 - 表示価格・残高判定・消費額、一覧の入荷表示・購入可否はそれぞれ共通判定を使う。通常の設定変更では`conversation.ts`・`sideStory.ts`や保存処理を変更しない。
 
-設定変更は開発アプリをReloadして反映する。配布アプリには更新ビルドが必要で、アプリ内管理画面やクラウド管理はない。保存キー・schemaVersion・旧形式の扱いは[データ仕様](data-integrations.md)に集約する。
+設定変更は開発アプリをReloadして反映する。配布アプリには更新ビルドが必要で、アプリ内管理画面やクラウド管理はない。保存キー・schemaVersion・未対応形式の扱いは[データ仕様](data-integrations.md)に集約する。
 
 ## 章一覧と会話画面
 
@@ -76,7 +76,7 @@
 
 [AudioSettings](../src/components/menu/AudioSettings.tsx)内の`VolumeSetting`を両音量で共有する。標準スライダーは0〜100%・1%刻み。操作中は即時プレビュー、指を離すと保存し、VoiceOverなど非ドラッグ操作は変更時に保存する。保存中の追加操作を抑止し、失敗時は対象だけを保存済み値へ戻して同じ希望値で再試行する。プレビューは永続化せず、音量の変更だけでBGMをreplace/seek・音声モード再初期化しない。
 
-`bgmVolume`・`seVolume`は独立した0〜1の有限数で、共通の`isValidAudioVolume`で検証する。初期値の変更は保存済み音量の上書きには使わない。保存API・プレビューは[AppStateProvider](../src/state/AppStateProvider.tsx)、移行は[データ仕様](data-integrations.md)を参照する。
+`bgmVolume`・`seVolume`は独立した0〜1の有限数で、共通の`isValidAudioVolume`で検証する。初期値の変更は保存済み音量の上書きには使わない。保存API・プレビューは[AppStateProvider](../src/state/AppStateProvider.tsx)、保存形式は[データ仕様](data-integrations.md)を参照する。
 
 [タブレイアウト](<../app/(tabs)/_layout.tsx>)の`tabPress`から[useTabSound](../src/hooks/useTabSound.ts)を呼ぶ。4タブの選択中再タップでも1回鳴らし、プログラム遷移では鳴らさない。単一SEプレイヤーで連打時は先頭から再生し、ループ・押下ごとのプレイヤー追加をしない。SEでBGMの音源・音量・位置を変えず、非アクティブ時・タブを離れる時は停止して保留要求を破棄する。
 
@@ -158,6 +158,14 @@
 上限超過の旧値は切り詰めず、ネイティブへ`Math.max(maxLength, 現在値.length)`を渡して削除可能にする。設定上限を超える間はOK無効・キーボード完了などの保存入口も無言で停止し、文字数超過アラートは出さない。空白だけの必須入力と保存失敗のエラーは維持する。キャンセル・他項目の保存で旧値を変更しない。
 
 ユーザー情報は項目ごとに下書きを保持し、非編集中の未保存項目に「未保存」を表示する。親が同じ編集状態を`UserSettings`とScrollView外の`UserSettingsToolbar`へ渡し、✕／OKは選択中項目だけへ作用する。ログは選んだ日記本文だけを編集し、他のメモや開始時刻・集中時間を保持する。保存失敗では下書きを保持して再フォーカスし、成功・キャンセルでキーボードを閉じる。
+
+## 開発用ストーリープレビュー
+
+Expo Goなどの開発モードでは、メニュー末尾の「デバッグ：ストーリー確認」→「ストーリーを選ぶ」から、未解放・未購入でもメイン全話とサイド会話を閲覧できる。メインの分岐は会話中に自由に選択し、閉じる／読了で選択一覧へ戻る。再選択すると冒頭から再生する。名前差込は現在の保存名を使う。
+
+専用実装は[src/debug/StoryPreview.tsx](../src/debug/StoryPreview.tsx)の1ファイルに集約し、通常の表示部品・文字送りを再利用する。保存API・解放・購入処理は呼ばず、閲覧・分岐選択でNT・進捗・権利を変更しない。通常画面の閲覧条件は維持する。メニュー上のModalなのでBGMはメニューの設定のままで、ストーリー画面への遷移や曲の切替の検証には使わない。
+
+本番では`__DEV__`による条件付き読み込みで入口と専用モジュールを除外する。完全に撤去するときは、専用ファイルを削除し、[app/(tabs)/menu.tsx](../app/(tabs)/menu.tsx)の`DEBUG_STORY_PREVIEW`コメントが付いた読み込みブロックと表示行を削除する。新規ルート・保存項目・Provider変更はない。ファイルだけ削除して呼び出しを残すと開発起動で参照エラーになるため、この2箇所も同時に外す。
 
 ## 編集後の確認
 
