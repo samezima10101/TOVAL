@@ -1,10 +1,10 @@
 # 開発運用手順
 
-更新日: 2026-10-24（日本時間）。対象環境はWindows、完成判定対象はiPhone。
+更新日: 2026-11-01（日本時間）。対象環境はWindows、完成判定対象はiPhone。
 
 ## 環境の再現
 
-Node **22.15.0** / npm **10.9.2** / Expo SDK **58**を使う。指定は[package.json](../package.json)・[.nvmrc](../.nvmrc)・[.npmrc](../.npmrc)、解決版は[package-lock.json](../package-lock.json)を参照する。Windowsでは`.nvmrc`だけでNodeは自動切替されない。
+Expo SDK **58**を使う。Nodeは**22.13以降の22系・24.3以降の24系・26系**、npmは**10系・11系**を許容する。[SDK 58の最低Node](https://docs.expo.dev/versions/v58.0.0/)は22.13.xで、依存パッケージの条件も含めた範囲を[package.json](../package.json)に指定している。[.npmrc](../.npmrc)のengine-strictは対応範囲外だけを拒否し、完全一致は求めない。推奨Nodeは[.nvmrc](../.nvmrc)の**22.23.4**。Windowsでは`.nvmrc`だけでNodeは自動切替されない。npmの完全一致やmiseの導入は必須にしない。依存の解決版は[package-lock.json](../package-lock.json)を参照する。
 
 ```powershell
 node --version
@@ -36,15 +36,15 @@ npm.cmd run start
 
 ## iPhone向けビルド
 
-`expo-notifications`、`@react-native-community/datetimepicker`、`@react-native-community/slider`を追加する前の開発ビルドは、ネイティブを再ビルドして端末へ入れ直す。Metro再起動・JS Reload・`bundle:ios`だけでは追加ネイティブモジュールは組み込まれない。
+`expo-keep-awake`、`expo-notifications`、`@react-native-community/datetimepicker`、`@react-native-community/slider`を追加する前の開発ビルドは、ネイティブを再ビルドして端末へ入れ直す。Metro再起動・JS Reload・`bundle:ios`だけでは追加ネイティブモジュールは組み込まれない。
 
-`dist/ios`はgitignore対象。バンドル生成はネイティブコンパイル・署名・IPA生成・実機検証を含まない。WindowsではXcodeによるiOS製品ビルド・シミュレーター検証は行えない。Expo Goでの確認は補助とし、受け入れはiPhone用ビルドで行う。
+`dist/ios`はgitignore対象。バンドル生成はネイティブコンパイル・署名・IPA生成・実機検証を含まない。WindowsではXcodeによるiOS製品ビルド・シミュレーター検証は行えない。現在はApple Developerの配布アカウントがなく、ユーザーはExpo Goで確認している。Expo Goでの確認は補助とし、受け入れはiPhone用ビルドで行う。[expo-keep-awake](https://docs.expo.dev/versions/v58.0.0/sdk/keep-awake/)で計測中だけ自動ロックを防ぐ。自動ロック防止は開発時にもExpo側で有効になり得るため、計測中の防止・停止時の解除を配布ビルドでも必ず確認する。
 
 通知は端末内の毎日予約で、リモートプッシュサーバー・プッシュトークン・APNs配信認証は不要。通知許可・時刻変更・重複予約の確認は[通知手順](manual-acceptance-checklist.md#daily-notifications)、BGM・効果音は[音量手順](manual-acceptance-checklist.md#bgm-volume)を使う。
 
 ## 変更時と配布前の確認
 
-- 変更前に既存差分と呼び出し元・保存／移行・ルートとの連携を調べ、保存済みデータと識別IDを維持する。ファイルベースのルートを通常のimport検索だけで未使用と判断しない。
-- [完成基準A01〜A11](completion-criteria.md)と[手動チェックリスト](manual-acceptance-checklist.md)で回帰を確認する。保存失敗・移行には実利用とは別の専用検証データを使う。
+- 変更前に既存差分と呼び出し元・保存・ルートとの連携を調べ、保存済みデータと識別IDを維持する。ファイルベースのルートを通常のimport検索だけで未使用と判断しない。
+- [完成基準A01〜A11](completion-criteria.md)と[手動チェックリスト](manual-acceptance-checklist.md)で回帰を確認する。保存失敗・破損には実利用とは別の専用検証データを使う。
 - 機種・iOS・ビルド・実施日・手順・期待結果・実際の結果を残す。過去のPC結果や限定的なユーザー報告を、変更後のiPhoneの合格へ置き換えない。
 - 正式素材・Figma反映とiPhone回帰は未完了。Apple配布アカウント、アプリ識別子、ビルド方式、TestFlightのテスター範囲は未確定で、EASビルド・TestFlightアップロードは未実施。最低OS・権限・署名・IPA起動も製品ビルドで確認する。

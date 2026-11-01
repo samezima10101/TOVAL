@@ -1,4 +1,4 @@
-export const APP_SCHEMA_VERSION = 14;
+export const APP_SCHEMA_VERSION = 1;
 export const MAX_TASK_NAME_LENGTH = 80;
 export const MAX_DIARY_LENGTH = 1000;
 export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
@@ -58,7 +58,7 @@ export type SessionStart = {
 };
 
 export type ActiveTimer = {
-  startInfo: SessionStart | null;
+  startInfo: SessionStart;
   sessionId: string;
   plannedSeconds: number;
   startedTaskName: string;
@@ -67,12 +67,12 @@ export type ActiveTimer = {
 };
 
 export type DiaryLog = {
-  startInfo: SessionStart | null;
+  startInfo: SessionStart;
   logDate: string;
   id: string;
   completedAt: number;
   completedDate: string;
-  completedTime?: string;
+  completedTime: string;
   totalTimerSeconds: number;
   diary: string;
   unlockedEpisodeId: EpisodeId | null;

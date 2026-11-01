@@ -36,8 +36,7 @@ type RecordModalProps = {
 };
 
 const WEEKDAYS = ["日", "月", "火", "水", "木", "金", "土"];
-function formatStartTime(time: string | undefined): string {
-  if (!time) return "記録なし";
+function formatStartTime(time: string): string {
   const [hours, minutes] = time.split(":").map(Number);
   return `${hours}時${minutes}分`;
 }
@@ -198,7 +197,7 @@ export default function LogModal({
                       ]}
                     >
                       <Text style={styles.time}>
-                        開始時刻: {formatStartTime(log.startInfo?.startedTime)}
+                        開始時刻: {formatStartTime(log.startInfo.startedTime)}
                       </Text>
                       {currentLogs.length > 1 ? (
                         <Text style={styles.summary}>

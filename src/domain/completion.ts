@@ -106,9 +106,7 @@ export function completeTimer(
       {
         id: state.activeTimer.sessionId,
         startInfo: state.activeTimer.startInfo,
-        // Legacy timers have no trustworthy button-press date. Keep the previous
-        // completion-date grouping rather than inventing a start.
-        logDate: state.activeTimer.startInfo?.startedDate ?? completionDate,
+        logDate: state.activeTimer.startInfo.startedDate,
         completedAt: finishedAt,
         completedDate: completionDate,
         completedTime: new Date(finishedAt).toTimeString().slice(0, 5),

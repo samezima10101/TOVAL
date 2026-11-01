@@ -1,3 +1,4 @@
+import { useKeepAwake } from "expo-keep-awake";
 import { StatusBar } from "expo-status-bar";
 import React from "react";
 import {
@@ -25,6 +26,11 @@ export default function TimerScreen() {
       <TimerContent />
     </View>
   );
+}
+
+function TimerKeepAwake() {
+  useKeepAwake();
+  return null;
 }
 
 function TimerContent() {
@@ -56,6 +62,8 @@ function TimerContent() {
 
   return (
     <View style={styles.screen}>
+      {/* 計測停止時は解除する。黒画面表示中も同じ計測状態を使う。 */}
+      {activeTimer.runningSince !== null ? <TimerKeepAwake /> : null}
       <View
         style={styles.backgroundCircle}
         pointerEvents="none"
