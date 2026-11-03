@@ -365,7 +365,7 @@ export const episode02: StoryEpisode = {
     },
     {
       id: "episode-02-after-6",
-      effect: "shout",
+      effect: { type: "shout", target: "alta" },
       speaker: "system",
       text: "--出力が規定値を超えているため、音声が認識できません。--",
       left: "annoyed1",

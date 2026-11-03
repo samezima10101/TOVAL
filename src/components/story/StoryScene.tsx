@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
-import { useEffect, useState, type ReactNode } from "react";
-import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useState, type ReactNode } from "react";
+import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
@@ -34,7 +34,6 @@ export default function StoryScene({
   dateLabel,
   slide,
   slideBackground = false,
-  effect,
 }: {
   title: string;
   onClose: () => void;
@@ -47,38 +46,19 @@ export default function StoryScene({
   dateLabel?: string;
   slide?: StoryLine["slide"];
   slideBackground?: boolean;
-  effect?: StoryLine["effect"];
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [characterShake] = useState(() => new Animated.Value(0));
-  useEffect(() => {
-    characterShake.setValue(0);
-    if (effect !== "shout") return;
-
-    const animation = Animated.sequence(
-      [-3, 3, -3, 3, -3, 3, -3, 0].map((toValue) =>
-        Animated.timing(characterShake, {
-          toValue,
-          duration: 25,
-          easing: Easing.linear,
-          useNativeDriver: true,
-        }),
-      ),
-    );
-    animation.start();
-    return () => {
-      animation.stop();
-      characterShake.setValue(0);
-    };
-  }, [characterShake, contentKey, effect]);
   const availableWidth = Math.max(
     0,
     size.width - BROADCAST_HORIZONTAL_MARGIN * 2,
   );
-  const backgroundHeight = Math.max(0, Math.min(
-    availableWidth / BACKGROUND_ASPECT_RATIO,
-    size.height * 0.52 - BROADCAST_BORDER_WIDTH * 2,
-  ));
+  const backgroundHeight = Math.max(
+    0,
+    Math.min(
+      availableWidth / BACKGROUND_ASPECT_RATIO,
+      size.height * 0.52 - BROADCAST_BORDER_WIDTH * 2,
+    ),
+  );
   const broadcastWidth = backgroundHeight * BACKGROUND_ASPECT_RATIO;
   const broadcastHeight = backgroundHeight + BROADCAST_BORDER_WIDTH * 2;
   const closeButton = (
@@ -144,18 +124,17 @@ export default function StoryScene({
           contentPosition="center"
           accessible={false}
         />
-        <Animated.View
+        <View
           style={[
             styles.characters,
             {
-              height: CHARACTER_HEIGHT * broadcastWidth / BACKGROUND_WIDTH,
-              transform: [{ translateY: characterShake }],
+              height: (CHARACTER_HEIGHT * broadcastWidth) / BACKGROUND_WIDTH,
             },
           ]}
           pointerEvents="none"
         >
           {characters}
-        </Animated.View>
+        </View>
         {slideBackground ? (
           <Image
             source={require("@/assets/slides/slide_background.png")}

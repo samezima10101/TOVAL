@@ -28,7 +28,7 @@ export type AltaExpression =
 export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {
-  effect?: "shout";
+  effect?: { type: "shout"; target: StoryCharacter };
   slideBackground?: boolean;
   slide?: "slide1" | "slide2" | "slide3" | "slide4";
   id: string;

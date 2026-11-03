@@ -211,7 +211,6 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
       episodeNumber={episode.id}
       slide={characterLine?.slide}
       slideBackground={characterLine?.slideBackground}
-      effect={line?.effect}
       dateLabel={unlockedStory?.unlockedDate.replaceAll("-", "/")}
       onClose={() => {
         if (!unlockingRef.current) handleClose();
@@ -227,6 +226,8 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
       }
       characters={
         <StoryCharacters
+          effect={line?.effect}
+          contentKey={line?.id}
           leftExpression={characterLine?.left}
           rightExpression={characterLine?.right}
         />

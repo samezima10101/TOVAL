@@ -1,6 +1,17 @@
-import { Image, ImageSourcePropType, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Animated,
+  Easing,
+  ImageSourcePropType,
+  StyleSheet,
+  View,
+} from "react-native";
 
-import { AltaExpression, GemExpression } from "@/src/domain/common/types";
+import {
+  AltaExpression,
+  GemExpression,
+  StoryLine,
+} from "@/src/domain/common/types";
 import {
   STORY_CHARACTER_BY_SPEAKER,
   STORY_CHARACTER_NAMES,
@@ -58,25 +69,54 @@ const faceAssets: {
 };
 
 type StoryCharactersProps = {
+  effect?: StoryLine["effect"];
+  contentKey?: string;
   leftExpression?: GemExpression;
   rightExpression?: AltaExpression;
 };
 
 export default function StoryCharacters({
+  effect,
+  contentKey,
   leftExpression = "normal",
   rightExpression = "normal",
 }: StoryCharactersProps) {
   const bossCharacter = STORY_CHARACTER_BY_SPEAKER.boss;
   const subCharacter = STORY_CHARACTER_BY_SPEAKER.sub;
+  const [shake] = useState(() => new Animated.Value(0));
+  const effectType = effect?.type;
+  const target = effect?.target;
+  useEffect(() => {
+    shake.setValue(0);
+    if (effectType !== "shout") return;
+    const animation = Animated.sequence(
+      [-3, 3, -3, 3, -3, 3, -3, 0].map((toValue) =>
+        Animated.timing(shake, {
+          toValue,
+          duration: 25,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ),
+    );
+    animation.start();
+    return () => {
+      animation.stop();
+      shake.setValue(0);
+    };
+  }, [shake, contentKey, effectType, target]);
 
   return (
     <View style={styles.charactersContainer}>
       {leftExpression === "none" ? (
         <View style={styles.characterImage} />
       ) : (
-        <Image
+        <Animated.Image
           source={faceAssets[bossCharacter][leftExpression]}
-          style={styles.characterImage}
+          style={[
+            styles.characterImage,
+            target === bossCharacter && { transform: [{ translateY: shake }] },
+          ]}
           resizeMode="contain"
           accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
         />
@@ -84,9 +124,12 @@ export default function StoryCharacters({
       {rightExpression === "none" ? (
         <View style={styles.characterImage} />
       ) : (
-        <Image
+        <Animated.Image
           source={faceAssets[subCharacter][rightExpression]}
-          style={styles.characterImage}
+          style={[
+            styles.characterImage,
+            target === subCharacter && { transform: [{ translateY: shake }] },
+          ]}
           resizeMode="contain"
           accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
         />
