@@ -132,6 +132,7 @@ function PreviewPlayback({
       <StoryScene
         title={episode.title}
         episodeNumber={kind === "main" ? episode.id : undefined}
+        slide={characterLine?.slide}
         onClose={reader.handleClose}
         disabled={reader.isProcessing}
         error={reader.error}

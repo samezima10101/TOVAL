@@ -7,8 +7,8 @@ import {
 } from "@/src/domain/storyData";
 
 const faceAssets: {
-  gem: Record<GemExpression, ImageSourcePropType>;
-  alta: Record<AltaExpression, ImageSourcePropType>;
+  gem: Record<Exclude<GemExpression, "none">, ImageSourcePropType>;
+  alta: Record<Exclude<AltaExpression, "none">, ImageSourcePropType>;
 } = {
   gem: {
     normal: require("@/assets/faces/G01-1.png"),
@@ -68,18 +68,18 @@ export default function StoryCharacters({
 
   return (
     <View style={styles.charactersContainer}>
-      <Image
+      {leftExpression === "none" ? <View style={styles.characterImage} /> : <Image
         source={faceAssets[bossCharacter][leftExpression]}
         style={styles.characterImage}
         resizeMode="contain"
         accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
-      />
-      <Image
+      />}
+      {rightExpression === "none" ? <View style={styles.characterImage} /> : <Image
         source={faceAssets[subCharacter][rightExpression]}
         style={styles.characterImage}
         resizeMode="contain"
         accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
-      />
+      />}
     </View>
   );
 }

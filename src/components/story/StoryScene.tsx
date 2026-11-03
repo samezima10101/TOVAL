@@ -5,6 +5,14 @@ import Svg, { Path } from "react-native-svg";
 
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
 import { Colors, Fonts } from "@/src/constants/theme";
+import type { StoryLine } from "@/src/domain/common/types";
+
+const slideAssets = {
+  slide1: require("@/assets/slides/ep02-1.png"),
+  slide2: require("@/assets/slides/ep02-2.png"),
+  slide3: require("@/assets/slides/ep02-3.png"),
+  slide4: require("@/assets/slides/ep02-4.png"),
+};
 
 const BROADCAST_HORIZONTAL_MARGIN = 16;
 
@@ -18,6 +26,7 @@ export default function StoryScene({
   children,
   episodeNumber,
   dateLabel,
+  slide,
 }: {
   title: string;
   onClose: () => void;
@@ -28,6 +37,7 @@ export default function StoryScene({
   children: ReactNode;
   episodeNumber?: number;
   dateLabel?: string;
+  slide?: StoryLine["slide"];
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const broadcastWidth = Math.max(
@@ -102,6 +112,15 @@ export default function StoryScene({
         <View style={styles.characters} pointerEvents="none">
           {characters}
         </View>
+        {slide ? (
+          <Image
+            key={slide}
+            source={slideAssets[slide]}
+            style={[styles.characters, { height: backgroundHeight }]}
+            contentFit="contain"
+            accessible={false}
+          />
+        ) : null}
         <View style={styles.broadcastHeader}>
           <Text style={styles.live} accessibilityLabel="ライブ映像">
             ○ LIVE

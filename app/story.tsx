@@ -209,6 +209,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
     <StoryScene
       title={`Episode ${String(episode.id).padStart(2, "0")} ${episode.title}`}
       episodeNumber={episode.id}
+      slide={characterLine?.slide}
       dateLabel={unlockedStory?.unlockedDate.replaceAll("-", "/")}
       onClose={() => {
         if (!unlockingRef.current) handleClose();
