@@ -15,8 +15,8 @@ export type GemExpression =
   | `surprised${1 | 2 | 3 | 4}`
   | `doubt${3 | 4}`
   | `beam${1 | 2}`
-  | "annoyed1"
-  | `nervous${1 | 2 | 3 | 4}`;
+  | `nervous${1 | 2 | 3 | 4}`
+  | `annoyed${1}`;
 export type AltaExpression =
   | LegacyExpression
   | NormalExpression
