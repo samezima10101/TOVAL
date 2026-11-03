@@ -15,6 +15,12 @@ const slideAssets = {
 };
 
 const BROADCAST_HORIZONTAL_MARGIN = 16;
+const BROADCAST_BORDER_WIDTH = 4;
+const storyBackground = require("@/assets/bg/story-bg.png");
+// Match story-bg.png and the corner decoration's viewBox.
+const BACKGROUND_ASPECT_RATIO = 1400 / 950;
+const CHARACTER_HEIGHT = 1000;
+const BACKGROUND_WIDTH = 1400;
 
 export default function StoryScene({
   title,
@@ -40,12 +46,16 @@ export default function StoryScene({
   slide?: StoryLine["slide"];
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const broadcastWidth = Math.max(
+  const availableWidth = Math.max(
     0,
     size.width - BROADCAST_HORIZONTAL_MARGIN * 2,
   );
-  const broadcastHeight = Math.min(broadcastWidth / 1.38, size.height * 0.52);
-  const backgroundHeight = Math.max(0, broadcastHeight - 8);
+  const backgroundHeight = Math.max(0, Math.min(
+    availableWidth / BACKGROUND_ASPECT_RATIO,
+    size.height * 0.52 - BROADCAST_BORDER_WIDTH * 2,
+  ));
+  const broadcastWidth = backgroundHeight * BACKGROUND_ASPECT_RATIO;
+  const broadcastHeight = backgroundHeight + BROADCAST_BORDER_WIDTH * 2;
   const closeButton = (
     <TouchableOpacity
       onPress={onClose}
@@ -97,7 +107,7 @@ export default function StoryScene({
         accessibilityLabel={title}
       >
         <Image
-          source={require("@/assets/bg/story-bg.png")}
+          source={storyBackground}
           style={{
             position: "absolute",
             top: 0,
@@ -105,11 +115,19 @@ export default function StoryScene({
             width: broadcastWidth,
             height: backgroundHeight,
           }}
-          contentFit="cover"
+          contentFit="contain"
           contentPosition="center"
           accessible={false}
         />
-        <View style={styles.characters} pointerEvents="none">
+        <View
+          style={[
+            styles.characters,
+            {
+              height: CHARACTER_HEIGHT * broadcastWidth / BACKGROUND_WIDTH,
+            },
+          ]}
+          pointerEvents="none"
+        >
           {characters}
         </View>
         {slide ? (
@@ -130,17 +148,17 @@ export default function StoryScene({
         <Svg
           style={styles.corners}
           width="100%"
-          height="100%"
-          viewBox="0 0 400 290"
-          preserveAspectRatio="none"
+          height={backgroundHeight}
+          viewBox="0 0 1400 950"
+          preserveAspectRatio="xMidYMid meet"
           pointerEvents="none"
           accessible={false}
         >
           <Path
-            d="M12 48 V20 L22 10 H70 M330 10 H378 L388 20 V48 M12 242 V270 L22 280 H70 M330 280 H378 L388 270 V242"
+            d="M42 168 V70 L77 35 H245 M1155 35 H1323 L1358 70 V168 M42 782 V880 L77 915 H245 M1155 915 H1323 L1358 880 V782"
             fill="none"
             stroke="#FFFFFF"
-            strokeWidth={3}
+            strokeWidth={10.5}
           />
         </Svg>
         <View style={styles.stamp} pointerEvents="none">
@@ -198,15 +216,16 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   broadcast: {
+    alignSelf: "center",
     marginHorizontal: BROADCAST_HORIZONTAL_MARGIN,
     marginTop: 12,
     overflow: "hidden",
     backgroundColor: "#103C54",
-    borderTopWidth: 4,
-    borderBottomWidth: 4,
+    borderTopWidth: BROADCAST_BORDER_WIDTH,
+    borderBottomWidth: BROADCAST_BORDER_WIDTH,
     borderColor: "#FFFFFF",
   },
-  characters: { position: "absolute", top: 0, right: 0, bottom: 0, left: 0 },
+  characters: { position: "absolute", top: 0, right: 0, left: 0 },
   broadcastHeader: {
     position: "absolute",
     top: 8,

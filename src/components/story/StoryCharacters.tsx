@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   characterImage: {
-    height: "95%",
+    height: "100%",
     width: "50%",
   },
 });
