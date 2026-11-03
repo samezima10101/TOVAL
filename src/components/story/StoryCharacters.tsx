@@ -1,14 +1,25 @@
-import { Image, ImageSourcePropType, StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  Animated,
+  Easing,
+  ImageSourcePropType,
+  StyleSheet,
+  View,
+} from "react-native";
 
-import { AltaExpression, GemExpression } from "@/src/domain/common/types";
+import {
+  AltaExpression,
+  GemExpression,
+  StoryLine,
+} from "@/src/domain/common/types";
 import {
   STORY_CHARACTER_BY_SPEAKER,
   STORY_CHARACTER_NAMES,
 } from "@/src/domain/storyData";
 
 const faceAssets: {
-  gem: Record<GemExpression, ImageSourcePropType>;
-  alta: Record<AltaExpression, ImageSourcePropType>;
+  gem: Record<Exclude<GemExpression, "none">, ImageSourcePropType>;
+  alta: Record<Exclude<AltaExpression, "none">, ImageSourcePropType>;
 } = {
   gem: {
     normal: require("@/assets/faces/G01-1.png"),
@@ -30,6 +41,7 @@ const faceAssets: {
     nervous2: require("@/assets/faces/gem/G05-2.png"),
     nervous3: require("@/assets/faces/gem/G05-3.png"),
     nervous4: require("@/assets/faces/gem/G05-4.png"),
+    annoyed1: require("@/assets/faces/gem/G06-1.png"),
   },
   alta: {
     normal: require("@/assets/faces/A01-1.png"),
@@ -51,35 +63,77 @@ const faceAssets: {
     sparkle2: require("@/assets/faces/alta/A04-2.png"),
     smirk3: require("@/assets/faces/alta/A05-3.png"),
     smirk4: require("@/assets/faces/alta/A05-4.png"),
+    shocked3: require("@/assets/faces/alta/A06-3.png"),
+    shocked4: require("@/assets/faces/alta/A06-4.png"),
   },
 };
 
 type StoryCharactersProps = {
+  effect?: StoryLine["effect"];
+  contentKey?: string;
   leftExpression?: GemExpression;
   rightExpression?: AltaExpression;
 };
 
 export default function StoryCharacters({
+  effect,
+  contentKey,
   leftExpression = "normal",
   rightExpression = "normal",
 }: StoryCharactersProps) {
   const bossCharacter = STORY_CHARACTER_BY_SPEAKER.boss;
   const subCharacter = STORY_CHARACTER_BY_SPEAKER.sub;
+  const [shake] = useState(() => new Animated.Value(0));
+  const effectType = effect?.type;
+  const target = effect?.target;
+  useEffect(() => {
+    shake.setValue(0);
+    if (effectType !== "shout") return;
+    const animation = Animated.sequence(
+      [-3, 3, -3, 3, -3, 3, -3, 0].map((toValue) =>
+        Animated.timing(shake, {
+          toValue,
+          duration: 25,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ),
+    );
+    animation.start();
+    return () => {
+      animation.stop();
+      shake.setValue(0);
+    };
+  }, [shake, contentKey, effectType, target]);
 
   return (
     <View style={styles.charactersContainer}>
-      <Image
-        source={faceAssets[bossCharacter][leftExpression]}
-        style={styles.characterImage}
-        resizeMode="contain"
-        accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
-      />
-      <Image
-        source={faceAssets[subCharacter][rightExpression]}
-        style={styles.characterImage}
-        resizeMode="contain"
-        accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
-      />
+      {leftExpression === "none" ? (
+        <View style={styles.characterImage} />
+      ) : (
+        <Animated.Image
+          source={faceAssets[bossCharacter][leftExpression]}
+          style={[
+            styles.characterImage,
+            target === bossCharacter && { transform: [{ translateY: shake }] },
+          ]}
+          resizeMode="contain"
+          accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
+        />
+      )}
+      {rightExpression === "none" ? (
+        <View style={styles.characterImage} />
+      ) : (
+        <Animated.Image
+          source={faceAssets[subCharacter][rightExpression]}
+          style={[
+            styles.characterImage,
+            target === subCharacter && { transform: [{ translateY: shake }] },
+          ]}
+          resizeMode="contain"
+          accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
+        />
+      )}
     </View>
   );
 }
@@ -92,7 +146,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   characterImage: {
-    height: "95%",
+    height: "100%",
     width: "50%",
   },
 });

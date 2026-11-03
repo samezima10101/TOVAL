@@ -60,7 +60,9 @@ export function StoryMessage({
     >
       <Text style={styles.speakerName}>
         {speakerName ??
-          (line.speaker === "both"
+          (line.speaker === "system"
+            ? "システム"
+            : line.speaker === "both"
             ? `２人`
             : STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[line.speaker]])}
       </Text>

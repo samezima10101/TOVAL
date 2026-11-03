@@ -132,12 +132,14 @@ function PreviewPlayback({
       <StoryScene
         title={episode.title}
         episodeNumber={kind === "main" ? episode.id : undefined}
+        slide={characterLine?.slide}
+        slideBackground={characterLine?.slideBackground}
         onClose={reader.handleClose}
         disabled={reader.isProcessing}
         error={reader.error}
         contentKey={reader.isWaitingForChoice ? "choices" : reader.line?.id}
         characters={kind === "main" ? (
-          <StoryCharacters leftExpression={characterLine?.left} rightExpression={characterLine?.right} />
+          <StoryCharacters effect={reader.line?.effect} contentKey={reader.line?.id} leftExpression={characterLine?.left} rightExpression={characterLine?.right} />
         ) : undefined}
       >
         <StoryMessage {...reader} />

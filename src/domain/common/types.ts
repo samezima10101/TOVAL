@@ -5,19 +5,32 @@ export const MAX_PLANNED_SECONDS = (23 * 60 + 55) * 60;
 
 export type EpisodeId = number;
 export type Speaker = "boss" | "sub";
-export type StorySpeaker = Speaker | "both";
+export type StorySpeaker = Speaker | "both" | "system";
 export type StoryCharacter = "gem" | "alta";
-type LegacyExpression = "normal" | "talk" | "doubt";
+type LegacyExpression = "normal" | "talk" | "doubt" | "none";
 type NormalExpression = `normal${1 | 2 | 3 | 4}`;
-export type GemExpression = LegacyExpression | NormalExpression
-  | `surprised${1 | 2 | 3 | 4}` | `doubt${3 | 4}`
-  | `beam${1 | 2}` | `nervous${1 | 2 | 3 | 4}`;
-export type AltaExpression = LegacyExpression | NormalExpression
-  | `grumpy${1 | 2 | 3 | 4}` | `grin${1 | 2 | 3 | 4}`
-  | `sparkle${1 | 2}` | `smirk${3 | 4}`;
+export type GemExpression =
+  | LegacyExpression
+  | NormalExpression
+  | `surprised${1 | 2 | 3 | 4}`
+  | `doubt${3 | 4}`
+  | `beam${1 | 2}`
+  | `nervous${1 | 2 | 3 | 4}`
+  | `annoyed${1}`;
+export type AltaExpression =
+  | LegacyExpression
+  | NormalExpression
+  | `grumpy${1 | 2 | 3 | 4}`
+  | `grin${1 | 2 | 3 | 4}`
+  | `sparkle${1 | 2}`
+  | `smirk${3 | 4}`
+  | `shocked${3 | 4}`;
 export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {
+  effect?: { type: "shout"; target: StoryCharacter };
+  slideBackground?: boolean;
+  slide?: "slide1" | "slide2" | "slide3" | "slide4";
   id: string;
   speaker: StorySpeaker;
   text: string;

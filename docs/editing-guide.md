@@ -12,11 +12,17 @@
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
 | ショップ／メモリーの章名・話の所属と順序 | [storyArchive.ts](../src/config/storyArchive.ts) |
 
-メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。立ち絵は話者によらず常に不透明で表示する。
+メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。none以外の立ち絵は話者によらず不透明で表示する。
 
 第1話は[会話原稿](https://docs.google.com/spreadsheets/d/1-7rnog6vxtoi-MvNjKZ7Wyb1b6-GHhV-gZp8AWJgMWU/edit)のタブ`01`を反映している。共通前14行・分岐A4行／B5行・共通後12行。シートの`gem`／`alta`は`boss`／`sub`へ対応させ、行種別が空でも本文と話者がある行は取り込む。原稿の`[userName]`・`［userName］`は本文に保持し、`useStoryReader`の`userName`オプションで文字送り前に置換する。メイン画面は保存済みの名前を渡し、未指定時は「ゲスト」。シート側にタイトル指定はないため既存タイトルを維持している。
 
-表情は`left`にジェム、`right`にアルタの名前を指定する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
+第2話は同じ原稿のタブ`02`を反映し、共通前31行・分岐A6行／B5行・共通後7行。行種別が空でも本文と話者がある行を含め、表情の空欄は直前の値を引き継ぐ。既存タイトル・話ID・分岐IDを維持する。`system`話者は「システム」と表示する。
+
+表情は`left`にジェム、`right`にアルタの名前を指定する。`none`は指定側の画像を描画せず、もう一方の位置を維持する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
+
+演出は台詞の`effect`で指定する。`effect: { type: "shout", target: "alta" }`はアルタのみ、target: "gem"はジェムのみを、台詞へ切り替わったとき上下3ポイント・25ms刻み8区間（計200ms）震わせて元の位置へ戻す。背景・もう一人・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は停止し位置を戻す。第2話の最後（episode-02-after-6）はアルタを指定。調整箇所はStoryCharactersのshake。
+
+行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。背景と同じ1400×950の素材を、背景と同じ領域へ比率維持のcontainで立ち絵の手前に表示する。`slideBackground: true`の行は、`assets/slides/slide_background.png`を背景と同じ領域でキャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常再生と開発プレビューで共用する。
 
 | キャラクター | 表情名と画像（各範囲は番号順） |
 | --- | --- |
@@ -55,7 +61,7 @@
 
 権利判定・購入・保存・退出ガード・再生フック・戻り先・背景は[story.tsx](../app/story.tsx)／[side-story.tsx](../app/side-story.tsx)が持つ。共通UIへ移さない。ショップ挨拶・退店は共通ヘッダーを使わず、同じ枠と本文表示を組み合わせる。`StoryDialogue`や引数の形を判別する別APIは作らない。
 
-メイン会話はStorySceneの上部にstory-bg.pngを縦横比を保ったcoverで中央配置し、左右を切り取る立ち絵映像、下部に会話枠を配置する。LIVE・白いコーナー・DAY番号・解放日を重ね、立ち絵は常に不透明。映像枠は左右16のmarginを入れ、残りの幅÷1.38と表示領域高の52%の小さい方の高さを使う。背景画像の元の16:9へ枠を合わせず、枠に合わせて中央からトリミングする。下部を覆う机の色面は置かない。下部は左右22・上12・下28の余白内でStoryMessageBoxのinFlowを使い、高さ190（狭い画面では縮小可）で上端を固定し、白い話者名・本文・右下の▼を表示する。長文・選択肢は枠内スクロール。通常のサイド／ショップ枠はstyles.frameの左右18・下60・高さ210。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
+メイン会話はStorySceneの上部にstory-bg.pngの全体を縦横比を保ったcontainで表示する立ち絵映像、下部に会話枠を配置する。LIVE・白いコーナー・DAY番号・解放日を重ね、none以外の立ち絵は不透明。映像枠は左右16以上の余白を取り、背景素材の1400×950の比率に合わせる。上下各4の白線を含む高さを表示領域高の52%以内に収め、高さが制限されるときは幅も同率で縮めて中央に配置する。背景・スライド・コーナー装飾は白線の内側の同じ領域に揃える。立ち絵は700×1000、背景は1400×950を基準に同率で拡縮する。立ち絵と背景の上端を揃え、高さの差により素材座標で50pxはみ出す立ち絵の下部はクリップする。画面上の立ち絵は幅が映像幅の50%、高さが映像幅×1000/1400となる。片側がnoneでも位置を保つ。下部を覆う机の色面は置かない。下部は左右22・上12・下28の余白内でStoryMessageBoxのinFlowを使い、高さ190（狭い画面では縮小可）で上端を固定し、白い話者名・本文・右下の▼を表示する。長文・選択肢は枠内スクロール。通常のサイド／ショップ枠はstyles.frameの左右18・下60・高さ210。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
 
 ## BGM・タブ効果音
 
