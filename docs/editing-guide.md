@@ -20,7 +20,9 @@
 
 表情は`left`にジェム、`right`にアルタの名前を指定する。`none`は指定側の画像を描画せず、もう一方の位置を維持する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
 
-行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。映像枠内へ比率維持のcontainで立ち絵の上に表示する。指定のない行ではスライドを消して通常表示へ戻る。通常再生と開発プレビューで共用する。
+演出は台詞の`effect`で指定する。`effect: "shout"`は台詞へ切り替わったとき、キャラクター層だけを上下3ポイント、25ms刻みの8区間（合計200ms）で震わせて元の位置へ戻す。背景・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は演出を停止して位置を戻す。現在は本文への演出指定を外しており、必要な台詞にeffectを付けて使う。調整箇所はStorySceneのcharacterShake。
+
+行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。背景と同じ1400×950の素材を、背景と同じ領域へ比率維持のcontainで立ち絵の手前に表示する。`slideBackground: true`の行は、`assets/slides/slide_background.png`を背景と同じ領域でキャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常再生と開発プレビューで共用する。
 
 | キャラクター | 表情名と画像（各範囲は番号順） |
 | --- | --- |

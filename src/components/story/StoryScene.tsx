@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
-import { useState, type ReactNode } from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { useEffect, useState, type ReactNode } from "react";
+import { Animated, Easing, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import Svg, { Path } from "react-native-svg";
 
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
@@ -33,6 +33,8 @@ export default function StoryScene({
   episodeNumber,
   dateLabel,
   slide,
+  slideBackground = false,
+  effect,
 }: {
   title: string;
   onClose: () => void;
@@ -44,8 +46,31 @@ export default function StoryScene({
   episodeNumber?: number;
   dateLabel?: string;
   slide?: StoryLine["slide"];
+  slideBackground?: boolean;
+  effect?: StoryLine["effect"];
 }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const [characterShake] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    characterShake.setValue(0);
+    if (effect !== "shout") return;
+
+    const animation = Animated.sequence(
+      [-3, 3, -3, 3, -3, 3, -3, 0].map((toValue) =>
+        Animated.timing(characterShake, {
+          toValue,
+          duration: 25,
+          easing: Easing.linear,
+          useNativeDriver: true,
+        }),
+      ),
+    );
+    animation.start();
+    return () => {
+      animation.stop();
+      characterShake.setValue(0);
+    };
+  }, [characterShake, contentKey, effect]);
   const availableWidth = Math.max(
     0,
     size.width - BROADCAST_HORIZONTAL_MARGIN * 2,
@@ -119,23 +144,34 @@ export default function StoryScene({
           contentPosition="center"
           accessible={false}
         />
-        <View
+        <Animated.View
           style={[
             styles.characters,
             {
               height: CHARACTER_HEIGHT * broadcastWidth / BACKGROUND_WIDTH,
+              transform: [{ translateY: characterShake }],
             },
           ]}
           pointerEvents="none"
         >
           {characters}
-        </View>
+        </Animated.View>
+        {slideBackground ? (
+          <Image
+            source={require("@/assets/slides/slide_background.png")}
+            style={[styles.characters, { height: backgroundHeight }]}
+            contentFit="contain"
+            contentPosition="center"
+            accessible={false}
+          />
+        ) : null}
         {slide ? (
           <Image
             key={slide}
             source={slideAssets[slide]}
             style={[styles.characters, { height: backgroundHeight }]}
             contentFit="contain"
+            contentPosition="center"
             accessible={false}
           />
         ) : null}

@@ -30,6 +30,7 @@ const faceAssets: {
     nervous2: require("@/assets/faces/gem/G05-2.png"),
     nervous3: require("@/assets/faces/gem/G05-3.png"),
     nervous4: require("@/assets/faces/gem/G05-4.png"),
+    annoyed1: require("@/assets/faces/gem/G06-1.png"),
   },
   alta: {
     normal: require("@/assets/faces/A01-1.png"),
@@ -51,6 +52,8 @@ const faceAssets: {
     sparkle2: require("@/assets/faces/alta/A04-2.png"),
     smirk3: require("@/assets/faces/alta/A05-3.png"),
     smirk4: require("@/assets/faces/alta/A05-4.png"),
+    shocked3: require("@/assets/faces/alta/A06-3.png"),
+    shocked4: require("@/assets/faces/alta/A06-4.png"),
   },
 };
 
@@ -68,18 +71,26 @@ export default function StoryCharacters({
 
   return (
     <View style={styles.charactersContainer}>
-      {leftExpression === "none" ? <View style={styles.characterImage} /> : <Image
-        source={faceAssets[bossCharacter][leftExpression]}
-        style={styles.characterImage}
-        resizeMode="contain"
-        accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
-      />}
-      {rightExpression === "none" ? <View style={styles.characterImage} /> : <Image
-        source={faceAssets[subCharacter][rightExpression]}
-        style={styles.characterImage}
-        resizeMode="contain"
-        accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
-      />}
+      {leftExpression === "none" ? (
+        <View style={styles.characterImage} />
+      ) : (
+        <Image
+          source={faceAssets[bossCharacter][leftExpression]}
+          style={styles.characterImage}
+          resizeMode="contain"
+          accessibilityLabel={STORY_CHARACTER_NAMES[bossCharacter]}
+        />
+      )}
+      {rightExpression === "none" ? (
+        <View style={styles.characterImage} />
+      ) : (
+        <Image
+          source={faceAssets[subCharacter][rightExpression]}
+          style={styles.characterImage}
+          resizeMode="contain"
+          accessibilityLabel={STORY_CHARACTER_NAMES[subCharacter]}
+        />
+      )}
     </View>
   );
 }
