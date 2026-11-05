@@ -1,74 +1,382 @@
-// 仮本文。編集方法: docs/editing-guide.md。話ID・分岐IDは購入記録の識別子。
-import type { StoryEpisode } from '@/src/domain/common/types';
+// 原稿タブ04を反映。話ID・分岐IDは保存済み権利の識別子。
+import type { StoryEpisode } from "@/src/domain/common/types";
 
 export const episode04: StoryEpisode = {
-  "id": 4,
-  "title": "小さな違い",
-  "commonBefore": [
+  id: 4,
+  title: "小さな違い",
+  commonBefore: [
     {
-      "id": "episode-04-before-1",
-      "speaker": "sub",
-      "text": "机の上に、昨日はなかったメモがあります。",
-      "left": "normal",
-      "right": "talk"
+      id: "episode-04-before-1",
+      speaker: "boss",
+      text: "お、[userName]、元気～？",
+      left: "normal2",
+      right: "normal3",
     },
     {
-      "id": "episode-04-before-2",
-      "speaker": "boss",
-      "text": "やったことを書いておいたんだ。忘れたくなくてね。",
-      "left": "talk",
-      "right": "normal"
-    }
-  ],
-  "routes": [
-    {
-      "id": "episode-04-route-a",
-      "label": "私も残してみます",
-      "lines": [
-        {
-          "id": "episode-04-a-1",
-          "speaker": "sub",
-          "text": "今日できたことを、一行だけ書いてみます。",
-          "left": "normal",
-          "right": "talk"
-        },
-        {
-          "id": "episode-04-a-2",
-          "speaker": "boss",
-          "text": "いいね。明日の自分に渡すメモだ。",
-          "left": "talk",
-          "right": "normal"
-        }
-      ]
+      id: "episode-04-before-2",
+      speaker: "boss",
+      text: "自分はね、もう、限界...",
+      left: "beam2",
+      right: "normal3",
     },
     {
-      "id": "episode-04-route-b",
-      "label": "誰が書いたのでしょう",
-      "lines": [
+      id: "episode-04-before-3",
+      speaker: "sub",
+      text: "自業自得ですよ。",
+      left: "beam2",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-04-before-4",
+      speaker: "sub",
+      text: "私たちの宇宙船は、外の出入り口から内側の通路に入るまでに、なぜか研究室を通らないといけない謎設計なのですが、",
+      left: "normal3",
+      right: "normal2",
+    },
+    {
+      id: "episode-04-before-5",
+      speaker: "sub",
+      text: "ジェムがそこに物を置きまくっていて、邪魔でしょうがなかったので片付けさせたんです。",
+      left: "nervous1",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-04-before-6",
+      speaker: "boss",
+      text: "疲れた～...",
+      left: "nervous2",
+      right: "grumpy3",
+    },
+    {
+      id: "episode-04-before-7",
+      speaker: "sub",
+      text: "...なんでしたっけ、こういう時に使える便利な日本語があるんですよ。",
+      left: "normal3",
+      right: "normal2",
+    },
+    {
+      id: "episode-04-before-8",
+      speaker: "sub",
+      text: "あ、「お疲れ様です」",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-04-before-9",
+      speaker: "boss",
+      text: "へえ、それ直訳するとどんな意味？",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-10",
+      speaker: "sub",
+      text: "...なんでしょう、「あなたは大変お疲れのようですね」...みたいな",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-04-before-11",
+      speaker: "boss",
+      text: "なにそれ、嫌味？",
+      left: "doubt4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-12",
+      speaker: "sub",
+      text: "違いますよ。相手の頑張りを労う言葉です。",
+      left: "doubt3",
+      right: "normal4",
+    },
+    {
+      id: "episode-04-before-13",
+      speaker: "boss",
+      text: "はあ、「頑張りましたね」的な？",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-14",
+      speaker: "sub",
+      text: "んー、どうやら仕事の成果を評価するわけじゃなさそうなんですよね。",
+      left: "normal3",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-04-before-15",
+      speaker: "sub",
+      text: "こんにちは、さようなら、ありがとう、頑張れ、全部「お疲れ様です」で表すことができるそうです。",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-04-before-16",
+      speaker: "boss",
+      text: "やば、共通点が何もわからない。",
+      left: "doubt4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-17",
+      speaker: "boss",
+      text: "でもそれめっちゃ便利じゃん、とりあえず「お疲れ様です」って言っとけばいいんでしょ？",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-18",
+      speaker: "sub",
+      text: "ん～それがそうでもなくて...我々には理解できませんが、日本語話者にはわかる共通の意味があるんでしょうね",
+      left: "normal3",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-04-before-19",
+      speaker: "boss",
+      text: "出たよ...そういうの、翻訳の時に困るんだよね～...",
+      left: "nervous2",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-20",
+      speaker: "boss",
+      text: "[userName]、ここに表示されてる文章はね、我々の音声を機械に自動翻訳させてるんだ。",
+      left: "normal2",
+      right: "normal1",
+    },
+    {
+      id: "episode-04-before-21",
+      speaker: "boss",
+      text: "日本語の情報ってたくさんあるから学習させるの超簡単じゃんって思ってたんだけど、我々の言語と違いすぎて苦労したよ...",
+      left: "beam1",
+      right: "normal1",
+    },
+    {
+      id: "episode-04-before-22",
+      speaker: "sub",
+      text: "圧倒的文字数の多さ、時制のルールが曖昧、敬語...",
+      left: "beam1",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-04-before-23",
+      speaker: "boss",
+      text: "[userName]、もっと日本語をシンプルにしていこう。言語を変えることができるのは使っている君たちなんだからさ。",
+      left: "normal2",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-before-24",
+      speaker: "sub",
+      text: "どんだけ日本語の翻訳に苦しめられてきたんですか...",
+      left: "normal1",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-04-before-25",
+      speaker: "sub",
+      text: "[userName]は、日本語はもっと簡単になった方がいいと思いますか？ それとも、今の形で十分だと思いますか？",
+      left: "normal1",
+      right: "normal2",
+    },
+  ],
+  routes: [
+    {
+      id: "episode-04-route-a",
+      label: "もっと簡単になった方がいい",
+      lines: [
         {
-          "id": "episode-04-b-1",
-          "speaker": "sub",
-          "text": "この字、本当に昨日の私の字でしょうか。",
-          "left": "normal",
-          "right": "talk"
+          id: "episode-04-a-1",
+          speaker: "boss",
+          text: "だよね～。やっぱり言葉なんて伝わればそれでいいと思うんだよ。",
+          left: "normal2",
+          right: "normal3",
         },
         {
-          "id": "episode-04-b-2",
-          "speaker": "boss",
-          "text": "君が書いたものなら、どこか見覚えがあるんじゃない？",
-          "left": "talk",
-          "right": "normal"
-        }
-      ]
-    }
-  ],
-  "commonAfter": [
+          id: "episode-04-a-2",
+          speaker: "sub",
+          text: "ん～、でもこの形で現代まで残ってるってことは、それなりの理由があるんじゃないですかね？",
+          left: "normal1",
+          right: "normal2",
+        },
+        {
+          id: "episode-04-a-3",
+          speaker: "sub",
+          text: "例えば、敬語は単に敬意を表すのではなく、その人との距離感も表すことがあるそうです。",
+          left: "normal3",
+          right: "normal2",
+        },
+        {
+          id: "episode-04-a-4",
+          speaker: "sub",
+          text: "今までは敬語で話していたけど、タメ語が出てくるようになったことで、その人との親密さの変化まで知ることができるんですよ。",
+          left: "normal3",
+          right: "normal4",
+        },
+        {
+          id: "episode-04-a-5",
+          speaker: "boss",
+          text: "あ～　その文の「意味」以外にも伝える情報があるんだね～",
+          left: "normal4",
+          right: "normal3",
+        },
+      ],
+    },
     {
-      "id": "episode-04-after-1",
-      "speaker": "sub",
-      "text": "……同じように見えても、何かは残るんですね。",
-      "left": "normal",
-      "right": "talk"
-    }
-  ]
+      id: "episode-04-route-b",
+      label: "今の形で十分",
+      lines: [
+        {
+          id: "episode-04-b-1",
+          speaker: "sub",
+          text: "まあ、ジェムは母語話者じゃないので翻訳が面倒だと感じているでしょうが、",
+          left: "doubt3",
+          right: "normal4",
+        },
+        {
+          id: "episode-04-b-2",
+          speaker: "sub",
+          text: "生まれた時から使っていればむしろ変える方が面倒かもしれませんね",
+          left: "normal1",
+          right: "normal2",
+        },
+        {
+          id: "episode-04-b-3",
+          speaker: "boss",
+          text: "え～敬語は母語話者でも大変って聞くけどな～",
+          left: "normal2",
+          right: "normal3",
+        },
+        {
+          id: "episode-04-b-4",
+          speaker: "boss",
+          text: "それに、敬語があるから上司と部下、店と客、みたいな不平等さが生まれてると思うんだよね。",
+          left: "normal2",
+          right: "normal3",
+        },
+        {
+          id: "episode-04-b-5",
+          speaker: "boss",
+          text: "もっと対等な関係の方がよくない？",
+          left: "normal2",
+          right: "normal3",
+        },
+        {
+          id: "episode-04-b-6",
+          speaker: "sub",
+          text: "はあ、言葉が先か意識が先か、ってかんじですけどね",
+          left: "normal3",
+          right: "normal4",
+        },
+      ],
+    },
+  ],
+  commonAfter: [
+    {
+      id: "episode-04-after-1",
+      speaker: "boss",
+      text: "...そういえば、「お疲れ様です」は敬語？",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-after-2",
+      speaker: "sub",
+      text: "そうですね、くだけたいい方なら「おつかれ」...でしょうか",
+      left: "normal3",
+      right: "normal4",
+    },
+    {
+      id: "episode-04-after-3",
+      speaker: "boss",
+      text: "じゃあアルタ、おつかれ～",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-after-4",
+      speaker: "sub",
+      text: "...ふむ、今のはどの意味でしょうか...?",
+      left: "normal3",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-04-after-5",
+      speaker: "boss",
+      text: "さあ？",
+      left: "beam1",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-after-6",
+      speaker: "sub",
+      text: "じゃあ、お疲れ様です。",
+      left: "normal3",
+      right: "smirk4",
+    },
+    {
+      id: "episode-04-after-7",
+      speaker: "boss",
+      text: "おい！",
+      left: "doubt4",
+      right: "grin3",
+    },
+    {
+      id: "episode-04-after-8",
+      speaker: "sub",
+      text: "自分、日本語だと敬語キャラなんで",
+      left: "doubt3",
+      right: "grin4",
+    },
+    {
+      id: "episode-04-after-9",
+      speaker: "boss",
+      text: "ああ、そういえばエトが敬語に変えてたね",
+      left: "doubt4",
+      right: "normal3",
+    },
+    {
+      id: "episode-04-after-10",
+      speaker: "boss",
+      text: "...おっと...話しすぎた...",
+      left: "nervous2",
+      right: "grumpy3",
+    },
+    {
+      id: "episode-04-after-11",
+      speaker: "sub",
+      text: "そろそろ切りましょうか。",
+      left: "nervous1",
+      right: "normal2",
+    },
+    {
+      id: "episode-04-after-12",
+      speaker: "sub",
+      text: "[userName]、今日も一日お疲れ様でした。",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-04-after-13",
+      speaker: "boss",
+      text: "また明日ね～～",
+      left: "normal2",
+      right: "normal1",
+    },
+    {
+      id: "episode-04-after-14",
+      speaker: "both",
+      text: "・・・",
+      left: "normal1",
+      right: "normal1",
+    },
+    {
+      id: "episode-04-after-15",
+      speaker: "sub",
+      text: "ジェム～？気が抜け...",
+      left: "nervous1",
+      right: "grin4",
+    },
+  ],
 };
