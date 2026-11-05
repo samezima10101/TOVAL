@@ -1,74 +1,361 @@
-// 仮本文。編集方法: docs/editing-guide.md。話ID・分岐IDは購入記録の識別子。
-import type { StoryEpisode } from '@/src/domain/common/types';
+// 原稿タブ03を反映。話ID・分岐IDは保存済み権利の識別子。
+import type { StoryEpisode } from "@/src/domain/common/types";
 
 export const episode03: StoryEpisode = {
-  "id": 3,
-  "title": "部下の決意",
-  "commonBefore": [
+  id: 3,
+  title: "部下の決意",
+  commonBefore: [
     {
-      "id": "episode-03-before-1",
-      "speaker": "sub",
-      "text": "・・・おかしい、同じ一日を繰り返してる。",
-      "left": "normal",
-      "right": "talk"
+      id: "episode-03-before-1",
+      speaker: "boss",
+      text: "あ、[userName]... やっほ～",
+      left: "nervous2",
+      right: "grumpy3",
     },
     {
-      "id": "episode-03-before-2",
-      "speaker": "boss",
-      "text": "うん？ どした？",
-      "left": "talk",
-      "right": "normal"
-    }
-  ],
-  "routes": [
-    {
-      "id": "episode-03-route-a",
-      "label": "確かめてみたいです",
-      "lines": [
-        {
-          "id": "episode-03-a-1",
-          "speaker": "sub",
-          "text": "昨日のことを覚えているか、確かめてみたいんです。",
-          "left": "normal",
-          "right": "talk"
-        },
-        {
-          "id": "episode-03-a-2",
-          "speaker": "boss",
-          "text": "じゃあ、何か小さな印を残してみようか。",
-          "left": "talk",
-          "right": "normal"
-        }
-      ]
+      id: "episode-03-before-2",
+      speaker: "boss",
+      text: "昨日はごめんね、変な切り方しちゃって...",
+      left: "normal2",
+      right: "grumpy1",
     },
     {
-      "id": "episode-03-route-b",
-      "label": "少し疲れただけかも",
-      "lines": [
+      id: "episode-03-before-3",
+      speaker: "boss",
+      text: "まさかアルタがあんなに怖がりだなんて知らなくってさ～",
+      left: "beam1",
+      right: "grumpy1",
+    },
+    {
+      id: "episode-03-before-4",
+      speaker: "sub",
+      text: "だから自分は分析官としてあらゆるリスクを考慮する必要があり...",
+      left: "beam1",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-03-before-5",
+      speaker: "sub",
+      text: "...はあ、地球人に説明できないことをいいことに...",
+      left: "beam2",
+      right: "angry2",
+    },
+    {
+      id: "episode-03-before-6",
+      speaker: "sub",
+      text: "[userName]、自分は怖がりでは決してないんです。論理的思考を放棄して未知のものに恐怖を...",
+      left: "beam2",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-03-before-7",
+      speaker: "boss",
+      text: "そんなことより、アルタ、日記のこと聞かなくていいの？",
+      left: "nervous4",
+      right: "grumpy3",
+    },
+    {
+      id: "episode-03-before-8",
+      speaker: "sub",
+      text: "あ、そうそう！忘れてました",
+      left: "smile3",
+      right: "normal4",
+    },
+    {
+      id: "episode-03-before-9",
+      speaker: "sub",
+      text: "[userName]は日記機能、普段使ってますか？",
+      left: "normal3",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-10",
+      speaker: "sub",
+      text: "ほら、タイマーの終了ボタンを押した後に「記録しませんか」と表示されるやつです。",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-11",
+      speaker: "sub",
+      text: "我々は日記機能の利用状況やその内容を地球調査の際に使うことがあるんですけど、",
+      left: "normal3",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-12",
+      speaker: "sub",
+      text: "これがユーザーによって使用方法や内容が千差万別で、本当に面白くて...!",
+      left: "nervous1",
+      right: "sparkle2",
+    },
+    {
+      id: "episode-03-before-13",
+      speaker: "sub",
+      text: "「p.20~24 問い3」「7,523歩」みたいに進捗をメモする人、明日の予定やタスクを書き留める人",
+      left: "nervous1",
+      right: "sparkle2",
+    },
+    {
+      id: "episode-03-before-14",
+      speaker: "sub",
+      text: "あとこれは推測ですが、タスクの達成感で支離滅裂な文章を紡ぐ人...",
+      left: "nervous3",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-15",
+      speaker: "boss",
+      text: "「うおおおおお」とかね",
+      left: "nervous4",
+      right: "normal3",
+    },
+    {
+      id: "episode-03-before-16",
+      speaker: "boss",
+      text: "それ、日記になんか書かないと次進めないって思ってるのかもな～...",
+      left: "surprised2",
+      right: "normal3",
+    },
+    {
+      id: "episode-03-before-17",
+      speaker: "boss",
+      text: "もうちょっとわかりやすいUIに変えとくか...",
+      left: "surprised2",
+      right: "normal3",
+    },
+    {
+      id: "episode-03-before-18",
+      speaker: "sub",
+      text: "いや、サンプルの数が少なくなっちゃうんでそのままでいいです。",
+      left: "surprised3",
+      right: "normal4",
+    },
+    {
+      id: "episode-03-before-19",
+      speaker: "sub",
+      text: "...って今日のメインはその話じゃなくてですね、",
+      left: "normal1",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-03-before-20",
+      speaker: "sub",
+      text: "そんな日記機能ですが、名前の通り日記として長文を記録するユーザーもいるんです。",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-21",
+      speaker: "boss",
+      text: "あーいるよね、誤字脱字が全然なくて長～～いふりかえりを毎日書く人。",
+      left: "normal4",
+      right: "normal3",
+    },
+    {
+      id: "episode-03-before-22",
+      speaker: "sub",
+      text: "はい。でもそのようなユーザーは大抵数日で離脱してしまうんです。",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-23",
+      speaker: "sub",
+      text: "タイマーを起動する時間が0時に近づいていき、連続していた記録がある日突然0になってしまうんですよ。",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-24",
+      speaker: "boss",
+      text: "日記の文量とタイマーの時間は変わらないのにね。",
+      left: "normal2",
+      right: "normal1",
+    },
+    {
+      id: "episode-03-before-25",
+      speaker: "sub",
+      text: "地球人の実態がよくわかるので熱心に取り組んでいただけるのはうれしいのですが、",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-26",
+      speaker: "sub",
+      text: "あー、まあ詳しくは言えないんですけど",
+      left: "nervous3",
+      right: "grumpy2",
+    },
+    {
+      id: "episode-03-before-27",
+      speaker: "sub",
+      text: "調査の性質上、5分だけでも、数日間忘れてしまってもいいので、戻ってきて続けてもらいたいんですよね。",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-28",
+      speaker: "sub",
+      text: "そこで[userName]に質問なんですけど、",
+      left: "normal1",
+      right: "normal2",
+    },
+    {
+      id: "episode-03-before-29",
+      speaker: "sub",
+      text: "[userName]は連続記録が止まったり、タイマーの時間を少なくしたり、そういうことに抵抗感を感じますか？",
+      left: "normal1",
+      right: "normal2",
+    },
+  ],
+  routes: [
+    {
+      id: "episode-03-route-a",
+      label: "抵抗感を感じる",
+      lines: [
         {
-          "id": "episode-03-b-1",
-          "speaker": "sub",
-          "text": "同じことばかり考えてしまって。",
-          "left": "normal",
-          "right": "talk"
+          id: "episode-03-a-1",
+          speaker: "boss",
+          text: "分かるな～　カレンダーで1日だけ空白があったり、取り組み時間の棒グラフが1日だけ短かったり、",
+          left: "normal2",
+          right: "normal3",
         },
         {
-          "id": "episode-03-b-2",
-          "speaker": "boss",
-          "text": "今日はゆっくり休んでから考えてもいいんじゃない？",
-          "left": "talk",
-          "right": "normal"
-        }
-      ]
-    }
-  ],
-  "commonAfter": [
+          id: "episode-03-a-2",
+          speaker: "boss",
+          text: "そういう”自分が頑張らなかった記録”が残るのが許せないんだよね。",
+          left: "normal2",
+          right: "normal3",
+        },
+        {
+          id: "episode-03-a-3",
+          speaker: "boss",
+          text: "だけど、思わぬ出来事って生きてれば起きちゃうからさ、自分はそういう記録が残っても仕方ない、次頑張ろうって思うようにしてるよ",
+          left: "beam1",
+          right: "normal3",
+        },
+        {
+          id: "episode-03-a-4",
+          speaker: "sub",
+          text: "はあ、それで開き直りすぎた結果がこれですか。",
+          left: "normal3",
+          right: "grumpy4",
+        },
+        {
+          id: "episode-03-a-5",
+          speaker: "boss",
+          text: "な、なんのこと？",
+          left: "nervous4",
+          right: "grumpy3",
+        },
+      ],
+    },
     {
-      "id": "episode-03-after-1",
-      "speaker": "sub",
-      "text": "……明日は、ひとつだけ違うことをしてみます。",
-      "left": "normal",
-      "right": "talk"
-    }
-  ]
+      id: "episode-03-route-b",
+      label: "あまり抵抗感はない",
+      lines: [
+        {
+          id: "episode-03-b-1",
+          speaker: "sub",
+          text: "お、それを聞けて安心しました。その調子で頑張って...",
+          left: "normal1",
+          right: "normal2",
+        },
+        {
+          id: "episode-03-b-2",
+          speaker: "sub",
+          text: "いや、頑張りすぎないでくださいね。",
+          left: "normal1",
+          right: "grin1",
+        },
+        {
+          id: "episode-03-b-3",
+          speaker: "sub",
+          text: "まあ、抵抗感がなさすぎてもそれはそれで問題なのですが...",
+          left: "nervous3",
+          right: "grumpy4",
+        },
+        {
+          id: "episode-03-b-4",
+          speaker: "boss",
+          text: "な、なんでこっち見るの？",
+          left: "nervous4",
+          right: "grumpy3",
+        },
+      ],
+    },
+  ],
+  commonAfter: [
+    {
+      id: "episode-03-after-1",
+      speaker: "sub",
+      text: "ジェム、最後に研究室を掃除したのいつですか？",
+      left: "nervous3",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-03-after-2",
+      speaker: "boss",
+      text: "・・・",
+      left: "nervous1",
+      right: "grumpy3",
+    },
+    {
+      id: "episode-03-after-3",
+      speaker: "sub",
+      text: "あの無駄にでかい箱をいつまで置いておくつもりですか？",
+      left: "nervous1",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-03-after-4",
+      speaker: "boss",
+      text: "あれは...結構頻繁に使うから片付けると面倒なんだよ...",
+      left: "nervous2",
+      right: "grumpy3",
+    },
+    {
+      id: "episode-03-after-5",
+      speaker: "sub",
+      text: "・・・",
+      left: "nervous3",
+      right: "grumpy1",
+    },
+    {
+      id: "episode-03-after-6",
+      speaker: "boss",
+      text: "・・・何してんの？",
+      left: "nervous4",
+      right: "grumpy1",
+    },
+    {
+      id: "episode-03-after-7",
+      speaker: "sub",
+      text: "今日から巡検録にジェムの勤怠状況について記録します。",
+      left: "surprised3",
+      right: "grumpy4",
+    },
+    {
+      id: "episode-03-after-8",
+      speaker: "boss",
+      text: "よし、ピッカピカにするぞ～～～",
+      left: "beam2",
+      right: "grumpy3",
+    },
+    {
+      id: "episode-03-after-9",
+      speaker: "sub",
+      text: "みなさんも日記機能を上手に使ってみてくださいね。",
+      left: "beam2",
+      right: "grin2",
+    },
+    {
+      id: "episode-03-after-10",
+      speaker: "sub",
+      text: "では、また明日",
+      left: "beam2",
+      right: "sparkle2",
+    },
+  ],
 };

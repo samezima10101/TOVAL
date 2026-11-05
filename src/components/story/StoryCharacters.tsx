@@ -42,6 +42,7 @@ const faceAssets: {
     nervous3: require("@/assets/faces/gem/G05-3.png"),
     nervous4: require("@/assets/faces/gem/G05-4.png"),
     annoyed1: require("@/assets/faces/gem/G06-1.png"),
+    smile3: require("@/assets/faces/gem/G07-3.png"),
   },
   alta: {
     normal: require("@/assets/faces/A01-1.png"),
@@ -65,6 +66,7 @@ const faceAssets: {
     smirk4: require("@/assets/faces/alta/A05-4.png"),
     shocked3: require("@/assets/faces/alta/A06-3.png"),
     shocked4: require("@/assets/faces/alta/A06-4.png"),
+    angry2: require("@/assets/faces/alta/A07-2.png"),
   },
 };
 

@@ -16,7 +16,8 @@ export type GemExpression =
   | `doubt${3 | 4}`
   | `beam${1 | 2}`
   | `nervous${1 | 2 | 3 | 4}`
-  | `annoyed${1}`;
+  | `annoyed${1}`
+  | "smile3";
 export type AltaExpression =
   | LegacyExpression
   | NormalExpression
@@ -24,7 +25,8 @@ export type AltaExpression =
   | `grin${1 | 2 | 3 | 4}`
   | `sparkle${1 | 2}`
   | `smirk${3 | 4}`
-  | `shocked${3 | 4}`;
+  | `shocked${3 | 4}`
+  | "angry2";
 export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {
