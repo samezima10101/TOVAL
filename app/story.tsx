@@ -27,7 +27,7 @@ import { useAppState } from "@/src/state/AppStateProvider";
 import IntroInput from "@/src/tutorial/IntroInput";
 import { useTutorial } from "@/src/tutorial/TutorialContext";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
-import { getIntroSegment } from "@/src/tutorial/content/intro";
+import { getIntroSegment } from "@/src/content/stories/episode00";
 
 function parseEpisodeId(
   value: string | string[] | undefined,

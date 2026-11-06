@@ -1,6 +1,6 @@
 import { Colors, Fonts } from "@/src/constants/theme";
-import type { TutorialTarget } from "@/src/tutorial/content/steps";
-import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
+import type { TutorialTarget } from "@/src/tutorial/steps";
+import { useTutorialTarget } from "@/src/tutorial/TutorialContext";
 import { Image } from "expo-image";
 import {
   ActivityIndicator,

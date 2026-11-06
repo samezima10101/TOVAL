@@ -9,7 +9,7 @@ import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
-import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
+import { useTutorialTarget } from "@/src/tutorial/TutorialContext";
 
 export default function AppFrame({
   children,

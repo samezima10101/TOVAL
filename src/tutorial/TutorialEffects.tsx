@@ -1,6 +1,13 @@
-import { useEffect, useState } from "react";
-import { Animated, Easing, StyleSheet, View } from "react-native";
-import useTutorialReducedMotion from "./useTutorialReducedMotion";
+import { useEffect, useLayoutEffect, useState, type PropsWithChildren } from "react";
+import {
+  AccessibilityInfo,
+  Animated,
+  Easing,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 
 export type Spotlight = {
   key: string;
@@ -11,7 +18,7 @@ export type Spotlight = {
 };
 
 // Block everything except the current action's measured native control.
-export default function CoachMark({
+export function CoachMark({
   spot,
   interactive = false,
   fullScreen = false,
@@ -92,7 +99,6 @@ export default function CoachMark({
             pointerEvents="none"
             style={[
               styles.outline,
-              interactive && styles.actionOutline,
               {
                 opacity,
                 top: spot.y,
@@ -118,5 +124,65 @@ const styles = StyleSheet.create({
     borderColor: "#BDF9F5",
     borderRadius: 10,
   },
-  actionOutline: { borderColor: "#BDF9F5" },
 });
+
+// Keep the entire box mounted and readable during step transitions.
+export function TutorialTransition({
+  contentKey,
+  style,
+  children,
+}: PropsWithChildren<{ contentKey: string; style?: StyleProp<ViewStyle> }>) {
+  const [progress] = useState(() => new Animated.Value(1));
+  const reduceMotion = useTutorialReducedMotion();
+
+  useLayoutEffect(() => {
+    progress.setValue(reduceMotion ? 1 : 0);
+    if (reduceMotion) return;
+    const animation = Animated.timing(progress, {
+      toValue: 1,
+      duration: 140,
+      useNativeDriver: true,
+      isInteraction: false,
+    });
+    animation.start();
+    return () => animation.stop();
+  }, [contentKey, progress, reduceMotion]);
+
+  return (
+    <Animated.View
+      style={[style, {
+        opacity: progress.interpolate({ inputRange: [0, 1], outputRange: [0.75, 1] }),
+        transform: [{
+          translateY: progress.interpolate({ inputRange: [0, 1], outputRange: [4, 0] }),
+        }],
+      }]}
+    >
+      {children}
+    </Animated.View>
+  );
+}
+
+function useTutorialReducedMotion() {
+  const [reduceMotion, setReduceMotion] = useState(true);
+  useEffect(() => {
+    let active = true;
+    let changed = false;
+    const subscription = AccessibilityInfo.addEventListener(
+      "reduceMotionChanged",
+      (enabled) => {
+        changed = true;
+        if (active) setReduceMotion(enabled);
+      },
+    );
+    void AccessibilityInfo.isReduceMotionEnabled()
+      .then((enabled) => {
+        if (active && !changed) setReduceMotion(enabled);
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+      subscription.remove();
+    };
+  }, []);
+  return reduceMotion;
+}

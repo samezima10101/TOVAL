@@ -12,8 +12,8 @@
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
 | ショップ／メモリーの章名・話の所属と順序 | [storyArchive.ts](../src/config/storyArchive.ts) |
 | 第0話の本文・表情・入力位置 | [episode00.ts](../src/content/stories/episode00.ts) |
-| 初回会話の分割・名前／タスク入力 | [intro.ts](../src/tutorial/content/intro.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
-| 操作練習の台詞・強調対象・進行条件 | [steps.ts](../src/tutorial/content/steps.ts)・[TutorialOverlay.tsx](../src/tutorial/TutorialOverlay.tsx) |
+| 初回会話の分割・名前／タスク入力 | [episode00.ts](../src/content/stories/episode00.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
+| 操作練習の台詞・強調対象・進行条件 | [steps.ts](../src/tutorial/steps.ts)・[TutorialOverlay.tsx](../src/tutorial/TutorialOverlay.tsx) |
 
 メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。none以外の立ち絵は話者によらず不透明で表示する。
 
@@ -50,11 +50,13 @@
 
 ## 初回チュートリアル
 
-`CoachMark.tsx`は実操作を待つ対象（`interactive`）だけに青緑色`#65E1D4`の2ポイント外枠を表示し、800msで不透明度100%→25%、800msで100%へ戻す。枠の内側は透明で、位置・大きさ・対象UIを動かさず、枠自体はタップを受け取らない。説明だけの段階は既存色の静止枠。段階終了・非表示・対象変更ではループを停止する。`useTutorialReducedMotion.ts`をボックスの切り替えと共有し、「視差効果を減らす」が有効なら静止枠にする。
+専用ファイルは6件。`TutorialContext.ts`に画面接続の型・フック、`TutorialProvider.tsx`に進行・初回保存、`TutorialOverlay.tsx`に配置・操作、`TutorialEffects.tsx`に強調枠・アニメーション、`IntroInput.tsx`に初回入力、`steps.ts`に操作練習の台詞をまとめる。第0話の本文と分割は`src/content/stories/episode00.ts`、再実行の入口はメニュー画面で管理し、同内容を専用ファイルへ重複させない。
+
+`TutorialEffects.tsx`の`CoachMark`は実操作を待つ対象（`interactive`）だけに青緑色`#BDF9F5`の2ポイント外枠を表示し、800msで不透明度100%→25%、800msで100%へ戻す。枠の内側は透明で、位置・大きさ・対象UIを動かさず、枠自体はタップを受け取らない。説明だけの段階は既存色の静止枠。段階終了・非表示・対象変更ではループを停止する。内部フック`useTutorialReducedMotion`をボックスの切り替えと共有し、「視差効果を減らす」が有効なら静止枠にする。
 
 終了の確認は`TutorialProvider.tsx`の`close`に集約する。`skipped`は確認アラートを表示し、キャンセルでは保存・遷移せず、「スキップする」を選んだ後だけ終了処理へ進む。右端のボタン・入力ダイアログ・ストーリー／タイマーの戻る操作は同じ処理を使い、`completed`は確認なしで完了する。`TutorialOverlay`のスキップボタンは案内ボックスから分けて右上へ配置し、VoiceOverでも案内と一緒に操作できるようにする。
 
-原稿タブ`00`の16台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。`INTRO_LINES`の`input`行を`src/tutorial/content/intro.ts`で区切り、初回は既存の`app/story.tsx`へ`source=tutorial`で渡す。その位置で`IntroInput.tsx`の入力ダイアログを重ね、終了後はタブ`tutorial`を基にした30段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
+原稿タブ`00`の16台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。`INTRO_LINES`の`input`行を`episode00.ts`の`getIntroSegment`で区切り、初回は既存の`app/story.tsx`へ`source=tutorial`で渡す。その位置で`IntroInput.tsx`の入力ダイアログを重ね、終了後はタブ`tutorial`を基にした30段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
 
 同じファイルの`episode00`は入力行を除いた見返し用の16台詞。メモリーのChapter 1・第0話と、開発用ストーリープレビューから既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
 
@@ -64,9 +66,9 @@
 
 `TutorialProvider`は同じ`scene`内では段階だけを切り替え、時間設定・振り返りのModalを閉じ直さない。画面をまたぐ移動だけを`pendingIndex`へ保持し、現在のネイティブModalが閉じ終わってから画面を切り替える。強調対象も話番号でなく対象IDで保持し、同じ対象の説明中に強調枠やボックス位置を初期化しない。時間設定はホーム、タイマーと振り返りは`/timer`、終了説明はホームへ接続する。時間設定の開始段階へ戻った場合は5分で開き、それ以前の設定説明へ戻った場合は25分からやり直す。練習中の振り返り表示は段階から決め、前後の移動で本番の保存を呼ばない。残り時間・延長時間も一時状態の固定値を既存TimerDialへ渡す。
 
-ボックス全体（枠・背景・本文・操作）の切り替えは`TutorialTransition.tsx`で140msのフェード（不透明度75%→100%）と4ポイントの移動を行う。ボックス自体を消さず、連続タップでは前のアニメーションを停止して最新の本文へ切り替える。iPhoneの「視差効果を減らす」が有効な場合はアニメーションを行わず、設定変更も反映する。
+ボックス全体（枠・背景・本文・操作）の切り替えは`TutorialEffects.tsx`の`TutorialTransition`で140msのフェード（不透明度75%→100%）と4ポイントの移動を行う。ボックス自体を消さず、連続タップでは前のアニメーションを停止して最新の本文へ切り替える。iPhoneの「視差効果を減らす」が有効な場合はアニメーションを行わず、設定変更も反映する。
 
-初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`・`tutorialStorage.ts`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`TutorialMenuCard.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の入力保存と案内への連続遷移を検証する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。通常のメニュー再実行は操作練習から始まる。
+初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`app/(tabs)/menu.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の入力保存と案内への連続遷移を検証する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。通常のメニュー再実行は操作練習から始まる。
 
 ホームとメニューのタブ間移動は`router.navigate`を使う。`router.dismissTo`が送るPOP_TOはSDK 58のタブでは処理されないため、ストーリー・タイマーなどタブの外側のスタックから戻る場合だけに使う。タブ内かどうかは`useSegments()`の先頭が`(tabs)`かで判定する。`useRootNavigationState()`の最上位ルートはSDK内部の`__root`なので、直接`(tabs)`と比較しない。開始と終了の両方で同じ判定を使い、手動タブ押下を発生させない。
 

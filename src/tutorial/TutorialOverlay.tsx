@@ -12,10 +12,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Fonts } from "@/src/constants/theme";
 import { useAppState } from "@/src/state/AppStateProvider";
-import CoachMark, { type Spotlight } from "./CoachMark";
+import { CoachMark, TutorialTransition, type Spotlight } from "./TutorialEffects";
 import { useTutorial, type TutorialSurface } from "./TutorialContext";
-import { TUTORIAL_STEPS } from "./content/steps";
-import TutorialTransition from "./TutorialTransition";
+import { TUTORIAL_STEPS } from "./steps";
 
 export default function TutorialOverlay({
   surface,

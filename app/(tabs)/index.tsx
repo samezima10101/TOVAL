@@ -21,7 +21,7 @@ import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { useTutorial } from "@/src/tutorial/TutorialContext";
-import { TUTORIAL_STEPS } from "@/src/tutorial/content/steps";
+import { TUTORIAL_STEPS } from "@/src/tutorial/steps";
 
 // Match monitor_frame.svg's 360 × 270 viewBox; resize both axes together.
 const MONITOR_ASPECT_RATIO = 4 / 3;

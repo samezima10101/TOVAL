@@ -22,7 +22,9 @@ import UserSettings, {
 } from "@/src/components/menu/UserSettings";
 import { Fonts } from "@/src/constants/theme";
 import useInputReveal from "@/src/hooks/useInputReveal";
-import TutorialMenuCard from "@/src/tutorial/TutorialMenuCard";
+import { useTutorial } from "@/src/tutorial/TutorialContext";
+import PrimaryButton from "@/src/components/common/PrimaryButton";
+import { SettingsCard, SettingsTitle } from "@/src/components/menu/SettingsLayout";
 
 // DEBUG_STORY_PREVIEW: 削除時はこのブロックと下の表示行、専用ファイルを削除する。
 const DebugStoryPreview: import("react").ComponentType | null = __DEV__
@@ -33,6 +35,7 @@ const DebugStoryPreview: import("react").ComponentType | null = __DEV__
 
 export default function MenuScreen() {
   const { top } = useSafeAreaInsets();
+  const { replay } = useTutorial();
   const { height: windowHeight } = useWindowDimensions();
   const tabBarHeight = useBottomTabBarHeight();
   const screenRef = useRef<ViewInstance>(null);
@@ -85,7 +88,17 @@ export default function MenuScreen() {
         <Text style={styles.title} accessibilityRole="header">
           メニュー
         </Text>
-        <TutorialMenuCard />
+        <SettingsCard>
+          <SettingsTitle>チュートリアル</SettingsTitle>
+          <Text style={styles.tutorialDescription}>
+            タイマーの使い方をもう一度練習できます。練習ではNT・記録は増えません。
+          </Text>
+          <PrimaryButton
+            title="もう一度練習する"
+            accessibilityLabel="チュートリアルをもう一度行う"
+            onPress={replay}
+          />
+        </SettingsCard>
         <AudioSettings />
         <UserSettings editor={userSettings} onRevealInput={revealInput} />
         <DefaultTimerSettings />
@@ -100,5 +113,6 @@ export default function MenuScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 24 },
+  tutorialDescription: { color: "#FFFFFF", fontFamily: Fonts.regular, lineHeight: 22 },
   title: { color: "#FFFFFF", fontFamily: Fonts.bold, fontSize: 24 },
 });

@@ -18,11 +18,13 @@ import DiaryModal from "@/src/components/timer/DiaryModal";
 import TimerDial from "@/src/components/timer/TimerDial";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
-import { useTutorial } from "@/src/tutorial/TutorialContext";
+import {
+  useTutorial,
+  useTutorialModal,
+  useTutorialTarget,
+} from "@/src/tutorial/TutorialContext";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
-import useTutorialModal from "@/src/tutorial/useTutorialModal";
-import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
-import { TUTORIAL_STEPS } from "@/src/tutorial/content/steps";
+import { TUTORIAL_STEPS } from "@/src/tutorial/steps";
 
 export default function TimerScreen() {
   const { top } = useSafeAreaInsets();

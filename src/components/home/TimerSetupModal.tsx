@@ -13,11 +13,13 @@ import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Fonts } from "@/src/constants/theme";
 import { DEFAULT_TIMER_MINUTES } from "@/src/domain/timer";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
-import { useTutorial } from "@/src/tutorial/TutorialContext";
+import {
+  useTutorial,
+  useTutorialModal,
+  useTutorialTarget,
+} from "@/src/tutorial/TutorialContext";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
-import { TUTORIAL_STEPS } from "@/src/tutorial/content/steps";
-import useTutorialModal from "@/src/tutorial/useTutorialModal";
-import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
+import { TUTORIAL_STEPS } from "@/src/tutorial/steps";
 
 type Props = {
   visible: boolean;

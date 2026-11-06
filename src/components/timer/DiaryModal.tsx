@@ -12,10 +12,12 @@ import {
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { MAX_DIARY_LENGTH } from "@/src/domain/common/types";
-import { useTutorial } from "@/src/tutorial/TutorialContext";
+import {
+  useTutorial,
+  useTutorialModal,
+  useTutorialTarget,
+} from "@/src/tutorial/TutorialContext";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
-import useTutorialModal from "@/src/tutorial/useTutorialModal";
-import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
 
 type DiaryModalProps = {
   visible: boolean;

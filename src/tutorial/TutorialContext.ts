@@ -1,7 +1,8 @@
-import { createContext, useContext } from "react";
+import { createContext, useCallback, useContext, useEffect } from "react";
 
-import type { TutorialAction, TutorialTarget } from "./content/steps";
-import type { TutorialResult } from "./tutorialStorage";
+import { TUTORIAL_STEPS, type TutorialAction, type TutorialTarget } from "./steps";
+
+export type TutorialResult = "completed" | "skipped";
 
 export type TutorialSurface =
   | "screen"
@@ -49,4 +50,36 @@ export function useTutorial() {
   const context = useContext(TutorialContext);
   if (!context) throw new Error("TutorialProvider is required.");
   return context;
+}
+
+// Attach to an existing native view without changing its layout.
+export function useTutorialTarget(id?: TutorialTarget) {
+  const context = useContext(TutorialContext);
+  const register = context?.register;
+  const ref = useCallback(
+    (node: Measurable | null) => {
+      if (id) register?.(id, node);
+    },
+    [id, register],
+  );
+  const step = context?.practicing ? TUTORIAL_STEPS[context.index] : null;
+  return {
+    anchor: id ? { ref, collapsable: false } : {},
+    blocked: Boolean(
+      id &&
+      context?.active &&
+      (!step?.action || step.target !== id || context.busy || context.closing || context.transitioning),
+    ),
+  };
+}
+
+export function useTutorialModal(surface: TutorialSurface) {
+  const { active, modalShown, modalDismissed } = useTutorial();
+  useEffect(() => () => modalDismissed(surface), [surface, modalDismissed]);
+  return {
+    onShow: () => {
+      if (active) modalShown(surface);
+    },
+    onDismiss: () => modalDismissed(surface),
+  };
 }

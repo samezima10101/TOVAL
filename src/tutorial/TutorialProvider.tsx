@@ -1,3 +1,4 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   router,
   useGlobalSearchParams,
@@ -17,6 +18,7 @@ import { Alert, Keyboard, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import { getIntroSegment } from "@/src/content/stories/episode00";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { localDateKey, localTimeKey } from "@/src/domain/common/date";
 import type { ActiveTimer } from "@/src/domain/common/types";
@@ -29,18 +31,25 @@ import {
   TutorialContext,
   type Measurable,
   type TutorialSurface,
+  type TutorialResult,
 } from "./TutorialContext";
-import { getIntroSegment } from "./content/intro";
 import {
   TUTORIAL_STEPS,
   type TutorialAction,
   type TutorialTarget,
-} from "./content/steps";
-import {
-  hasFinishedTutorial,
-  saveTutorialResult,
-  type TutorialResult,
-} from "./tutorialStorage";
+} from "./steps";
+
+// Independent of the app-state schema: practice never writes timer/reward data.
+const TUTORIAL_STORAGE_KEY = "@my-june/tutorial-v1";
+
+async function hasFinishedTutorial(): Promise<boolean> {
+  const result = await AsyncStorage.getItem(TUTORIAL_STORAGE_KEY);
+  if (result === null) return false;
+  if (result !== "completed" && result !== "skipped") {
+    throw new Error("チュートリアルの保存状態を読み込めませんでした。");
+  }
+  return true;
+}
 
 export default function TutorialProvider({ children }: PropsWithChildren) {
   const app = useAppState();
@@ -182,7 +191,7 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
 
   const finish = (result: TutorialResult) =>
     run(async () => {
-      if (initial) await saveTutorialResult(result);
+      if (initial) await AsyncStorage.setItem(TUTORIAL_STORAGE_KEY, result);
       Keyboard.dismiss();
       setClosing(true);
     });
@@ -347,22 +356,12 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
           runningSince: null,
         };
       },
-      setTimerRouteFocused: async (focused, changedAt) => {
-        if (!focused && changedAt !== undefined) advance("finish");
-      },
+      setTimerRouteFocused: async () => undefined,
       cancelTimer: async () => {
         throw new Error("案内に沿って操作してください。");
       },
       finishTimer: async () => {
-        if (!practicing || step.action !== "save")
-          throw new Error("案内に沿って操作してください。");
-        advance("save");
-        return {
-          status: "completed",
-          state: app.state!,
-          earnedNt: 0,
-          unlockedEpisode: null,
-        };
+        throw new Error("案内に沿って操作してください。");
       },
     };
   }, [
