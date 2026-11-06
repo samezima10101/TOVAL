@@ -19,7 +19,7 @@ export default function useTutorialTarget(id?: TutorialTarget) {
     blocked: Boolean(
       id &&
       context?.active &&
-      (!step?.action || step.target !== id || context.busy || context.closing),
+      (!step?.action || step.target !== id || context.busy || context.closing || context.transitioning),
     ),
   };
 }

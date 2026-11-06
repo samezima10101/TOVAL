@@ -21,12 +21,14 @@ export type TutorialState = {
   intro: boolean;
   closing: boolean;
   busy: boolean;
+  transitioning: boolean;
   error: string | null;
   index: number;
   introPart: number;
   introInput: boolean;
   powerSaving: boolean;
   advance: (action?: TutorialAction) => void;
+  back: () => void;
   replay: () => void;
   close: (result: TutorialResult) => void;
   nextIntro: () => void;

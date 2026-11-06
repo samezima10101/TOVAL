@@ -1,6 +1,7 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
 import { Image } from "expo-image";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { useIsFocused } from "expo-router/react-navigation";
 import React from "react";
 import {
   StyleSheet,
@@ -32,6 +33,7 @@ export default function HomeScreen() {
   const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
   const tutorial = useTutorial();
+  const isFocused = useIsFocused();
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
   const [monitorSpace, setMonitorSpace] = React.useState({
     width: width - 48,
@@ -75,7 +77,7 @@ export default function HomeScreen() {
   const handleStartTimer = async (plannedSeconds: number) => {
     await startTimer(plannedSeconds);
     setIsTimerSetupOpen(false);
-    push("/timer");
+    if (!tutorial.practicing) push("/timer");
   };
 
   const handleResumeTimer = () => {
@@ -285,12 +287,16 @@ export default function HomeScreen() {
       />
       <TimerSetupModal
         visible={
-          !tutorial.closing &&
+          isFocused && !tutorial.closing && !tutorial.transitioning &&
           (tutorial.practicing
             ? TUTORIAL_STEPS[tutorial.index].scene === "setup"
             : isTimerSetupOpen)
         }
-        initialMinutes={state.defaultTimerMinutes}
+        initialMinutes={
+          tutorial.practicing && TUTORIAL_STEPS[tutorial.index].id === "begin"
+            ? 5
+            : state.defaultTimerMinutes
+        }
         hasActiveTimer={Boolean(state.activeTimer)}
         onClose={() => setIsTimerSetupOpen(false)}
         onStart={handleStartTimer}

@@ -13,7 +13,7 @@ import {
   useState,
   type PropsWithChildren,
 } from "react";
-import { Keyboard, StyleSheet, Text } from "react-native";
+import { Alert, Keyboard, StyleSheet, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
@@ -59,18 +59,21 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [index, setIndex] = useState(0);
+  const [pendingIndex, setPendingIndex] = useState<number | null>(null);
   const [introPart, setIntroPart] = useState(0);
   const [introInput, setIntroInput] = useState(false);
   const [startedAt, setStartedAt] = useState(0);
   const [powerSaving, setPowerSaving] = useState(false);
   const [modal, setModal] = useState<TutorialSurface | null>(null);
   const busyRef = useRef(false);
+  const skipConfirmationRef = useRef(false);
   const indexRef = useRef(0);
   const readRevision = useRef(0);
   const anchors = useRef<Partial<Record<TutorialTarget, Measurable>>>({});
   const step = TUTORIAL_STEPS[index];
   const active = phase !== "idle";
   const practicing = phase === "practice";
+  const transitioning = pendingIndex !== null;
   const destination = initial ? "/" : "/menu";
 
   const load = useCallback(() => {
@@ -123,8 +126,15 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
         router.replace({ pathname: "/story", params: { source: "tutorial" } }),
       );
       return () => cancelAnimationFrame(frame);
-    } else if (practicing && step.scene === "home" && pathname !== "/") {
-      return goToTab("/");
+    } else if (practicing && !transitioning && modal === null) {
+      if (step.scene === "timer" || step.scene === "diary") {
+        if (pathname !== "/timer") {
+          const frame = requestAnimationFrame(() => router.navigate("/timer"));
+          return () => cancelAnimationFrame(frame);
+        }
+      } else if (pathname !== "/") {
+        return goToTab("/");
+      }
     }
   }, [
     navigation?.key,
@@ -137,7 +147,19 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
     source,
     destination,
     step.scene,
+    transitioning,
   ]);
+
+  // Close native Modals only when leaving their scene, never between its lines.
+  useEffect(() => {
+    if (pendingIndex === null || modal !== null) return;
+    const frame = requestAnimationFrame(() => {
+      setIndex(pendingIndex);
+      setPendingIndex(null);
+      setPowerSaving(false);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [pendingIndex, modal]);
 
   const run = useCallback((operation: () => Promise<void>) => {
     if (busyRef.current) return;
@@ -158,12 +180,41 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
       });
   }, []);
 
-  const close = (result: TutorialResult) =>
+  const finish = (result: TutorialResult) =>
     run(async () => {
       if (initial) await saveTutorialResult(result);
       Keyboard.dismiss();
       setClosing(true);
     });
+
+  const close = (result: TutorialResult) => {
+    if (busyRef.current || closing || transitioning || !active) return;
+    if (result === "completed") {
+      finish(result);
+      return;
+    }
+    if (skipConfirmationRef.current) return;
+    skipConfirmationRef.current = true;
+    const cancel = () => {
+      skipConfirmationRef.current = false;
+    };
+    Alert.alert(
+      "チュートリアルをスキップしますか？",
+      "（チュートリアルはメニュー画面からあとで行うことができます）",
+      [
+        { text: "キャンセル", style: "cancel", onPress: cancel },
+        {
+          text: "スキップする",
+          style: "destructive",
+          onPress: () => {
+            skipConfirmationRef.current = false;
+            finish("skipped");
+          },
+        },
+      ],
+      { cancelable: true, onDismiss: cancel },
+    );
+  };
 
   const advance = useCallback(
     (action?: TutorialAction) => {
@@ -171,16 +222,32 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
         !practicing ||
         closing ||
         busyRef.current ||
+        skipConfirmationRef.current ||
         indexRef.current !== index ||
         step.action !== action
       )
         return;
       if (index === TUTORIAL_STEPS.length - 1) return;
       indexRef.current = index + 1;
-      setIndex(index + 1);
+      if (TUTORIAL_STEPS[index + 1].scene === step.scene) setIndex(index + 1);
+      else setPendingIndex(index + 1);
     },
-    [practicing, closing, index, step.action],
+    [practicing, closing, index, step.action, step.scene],
   );
+
+  const back = () => {
+    if (
+      !practicing ||
+      closing ||
+      busyRef.current ||
+      skipConfirmationRef.current ||
+      indexRef.current !== index ||
+      index === 0
+    ) return;
+    indexRef.current = index - 1;
+    if (TUTORIAL_STEPS[index - 1].scene === step.scene) setIndex(index - 1);
+    else setPendingIndex(index - 1);
+  };
 
   const modalShown = useCallback(
     (surface: TutorialSurface) => setModal(surface),
@@ -318,12 +385,14 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
         intro: phase === "intro",
         closing,
         busy,
+        transitioning,
         error,
         index,
         introPart,
         introInput,
         powerSaving,
         advance,
+        back,
         replay,
         close,
         nextIntro,

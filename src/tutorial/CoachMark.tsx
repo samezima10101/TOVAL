@@ -12,9 +12,11 @@ export type Spotlight = {
 export default function CoachMark({
   spot,
   interactive = false,
+  fullScreen = false,
 }: {
   spot: Spotlight | null;
   interactive?: boolean;
+  fullScreen?: boolean;
 }) {
   return (
     <View
@@ -77,7 +79,7 @@ export default function CoachMark({
           />
         </>
       ) : (
-        <View style={[StyleSheet.absoluteFill, styles.dim]} />
+        <View style={[StyleSheet.absoluteFill, !fullScreen && styles.dim]} />
       )}
     </View>
   );

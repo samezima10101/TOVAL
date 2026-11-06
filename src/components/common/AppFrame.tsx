@@ -9,6 +9,7 @@ import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
+import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
 
 export default function AppFrame({
   children,
@@ -20,6 +21,7 @@ export default function AppFrame({
 }>) {
   const { state, timerSaveError, retryTimerSave } = useAppState();
   const today = useLocalToday();
+  const nt = useTutorialTarget("nt");
   const retryTimer = () => {
     void retryTimerSave().catch(() =>
       Alert.alert(
@@ -45,6 +47,7 @@ export default function AppFrame({
       >
         <View style={styles.header} pointerEvents="box-none">
           <View
+            {...nt.anchor}
             style={styles.badge}
             pointerEvents="none"
             accessible

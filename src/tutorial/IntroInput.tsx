@@ -119,5 +119,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 14,
   },
-  skip: { minHeight: 44, justifyContent: "center", alignItems: "center" },
+  skip: {
+    minHeight: 44,
+    alignSelf: "flex-end",
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });

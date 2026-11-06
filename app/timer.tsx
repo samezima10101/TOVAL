@@ -1,5 +1,6 @@
 import { useKeepAwake } from "expo-keep-awake";
 import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "expo-router/react-navigation";
 import React from "react";
 import {
   Modal,
@@ -21,6 +22,7 @@ import { useTutorial } from "@/src/tutorial/TutorialContext";
 import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
 import useTutorialModal from "@/src/tutorial/useTutorialModal";
 import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
+import { TUTORIAL_STEPS } from "@/src/tutorial/content/steps";
 
 export default function TimerScreen() {
   const { top } = useSafeAreaInsets();
@@ -39,6 +41,8 @@ function TimerKeepAwake() {
 
 function TimerContent() {
   const tutorial = useTutorial();
+  const isFocused = useIsFocused();
+  const step = TUTORIAL_STEPS[tutorial.index];
   const dial = useTutorialTarget("dial");
   const cancel = useTutorialTarget("cancel");
   const power = useTutorialTarget("power");
@@ -63,7 +67,9 @@ function TimerContent() {
     handleCancel,
     handleFinish,
   } = useTimerLogic({
-    preventExit: tutorial.practicing && !tutorial.closing,
+    preventExit:
+      tutorial.practicing && !tutorial.closing &&
+      (step.scene === "timer" || step.scene === "diary"),
     onExitRequest: () => tutorial.close("skipped"),
   });
 
@@ -132,7 +138,10 @@ function TimerContent() {
           <PrimaryButton
             title="終了"
             tutorialTarget="finish"
-            onPress={() => void openDiary()}
+            onPress={() => {
+              if (tutorial.practicing) tutorial.advance("finish");
+              else void openDiary();
+            }}
             disabled={!snapshot.isComplete || isProcessing}
             loading={isProcessing}
             accessibilityLabel="タイマーを終了して記録"
@@ -168,7 +177,7 @@ function TimerContent() {
       {/* 別ルートにするとフォーカスを失い計測が止まるため、標準Modalで共通ヘッダー・フッターごと覆う。 */}
       <Modal
         {...powerModal}
-        visible={isPowerSaving && !tutorial.closing}
+        visible={isPowerSaving && !tutorial.closing && !tutorial.transitioning}
         animationType="none"
         presentationStyle="fullScreen"
         backdropColor="#000000"
@@ -202,11 +211,17 @@ function TimerContent() {
       </Modal>
       <DiaryModal
         onRetrySave={timerSaveError ? () => void retrySave() : undefined}
-        visible={isDiaryOpen && !tutorial.closing}
+        visible={
+          !tutorial.closing && !tutorial.transitioning && isFocused &&
+          (tutorial.practicing ? step.scene === "diary" : isDiaryOpen)
+        }
         saving={isProcessing}
         error={error}
         onClose={closeDiary}
-        onSave={handleFinish}
+        onSave={async (diary) => {
+          if (tutorial.practicing) tutorial.advance("save");
+          else await handleFinish(diary);
+        }}
       />
     </View>
   );

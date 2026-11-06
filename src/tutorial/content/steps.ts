@@ -8,7 +8,8 @@ export type TutorialTarget =
   | "finish"
   | "cancel"
   | "diary"
-  | "save";
+  | "save"
+  | "nt";
 export type TutorialAction =
   | "open-setup"
   | "set-five"
@@ -24,18 +25,26 @@ type TutorialStep = {
   target?: TutorialTarget;
   action?: TutorialAction;
   overtime?: boolean;
+  fullScreen?: boolean;
 };
 
 // Source: scripts_TOVAL, tab tutorial. Wording follows the current controls.
 // Five minutes pass instantly in practice; no production timer is created.
 export const TUTORIAL_STEPS: readonly TutorialStep[] = [
   {
+    id: "home",
+    speaker: "alta",
+    scene: "home",
+    fullScreen: true,
+    text: "では習慣化の流れを実際にやってみましょう。ここがホーム画面です。",
+  },
+  {
     id: "start",
     speaker: "alta",
     scene: "home",
     target: "start",
     action: "open-setup",
-    text: "では習慣化の流れを実際にやってみましょう。\nまず、「はじめる」ボタンを押してください。",
+    text: "ではまず、はじめるボタンを押してください",
   },
   {
     id: "setup",
@@ -71,13 +80,14 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: "started",
     speaker: "alta",
     scene: "timer",
-    target: "dial",
+    fullScreen: true,
     text: "そうするとこのようにタイマーが始まります。\n今回は練習なので、5分間待たずに操作を体験できます。",
   },
   {
     id: "timer",
     speaker: "alta",
     scene: "timer",
+    fullScreen: true,
     text: "では、タイマー画面について説明します。",
   },
   {
@@ -147,18 +157,21 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: "nt",
     speaker: "alta",
     scene: "timer",
+    target: "nt",
     text: "タイマーを終了すると、「NT」というポイントを獲得することができます。",
   },
   {
     id: "nt-rate",
     speaker: "alta",
     scene: "timer",
+    target: "nt",
     text: "1秒1NTで換算され、目標時間＋延長時間分のNTを獲得します。\nこの練習ではNTや記録は追加されません。",
   },
   {
     id: "nt-use",
     speaker: "gem",
     scene: "timer",
+    target: "nt",
     text: "ちなみにNTの使い道はいろいろあるから、いっぱい貯めとくといいかも～",
   },
   {
@@ -187,14 +200,14 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: "diary",
     speaker: "alta",
     scene: "diary",
-    target: "diary",
+    fullScreen: true,
     text: "ここでタスクの振り返りをメモすることができます。",
   },
   {
     id: "diary-optional",
     speaker: "gem",
     scene: "diary",
-    target: "diary",
+    fullScreen: true,
     text: "何ページまで進んだ～とか、今日はどこまで歩いた～とかね。\n書かなくても大丈夫～",
   },
   {
@@ -209,24 +222,28 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: "complete",
     speaker: "alta",
     scene: "done",
+    fullScreen: true,
     text: "以上でチュートリアルは終了です。",
   },
   {
     id: "ready",
     speaker: "alta",
     scene: "done",
+    fullScreen: true,
     text: "では準備ができたら、先ほどの流れでタスクを行ってみてください。",
   },
   {
     id: "waiting-gem",
     speaker: "gem",
     scene: "done",
+    fullScreen: true,
     text: "終わったら我々についてもっと詳しく話すね。\nじゃ、待ってるよ～",
   },
   {
     id: "waiting-alta",
     speaker: "alta",
     scene: "done",
+    fullScreen: true,
     text: "お待ちしております。\nチュートリアルはメニューからいつでもやり直せます。",
   },
 ];
