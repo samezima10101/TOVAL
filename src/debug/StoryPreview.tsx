@@ -14,7 +14,7 @@ import StoryScene from "@/src/components/story/StoryScene";
 import { Fonts } from "@/src/constants/theme";
 import type { StoryEpisode } from "@/src/domain/common/types";
 import { SHOP_CONVERSATIONS } from "@/src/domain/sideStory";
-import { STORY_EPISODES } from "@/src/domain/storyData";
+import { STORY_ARCHIVE_CATALOG } from "@/src/domain/storyData";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -75,7 +75,7 @@ export default function StoryPreview() {
               <ScrollView contentContainerStyle={styles.list}>
                 <Text style={styles.description}>話を選ぶと冒頭から再生します。分岐は会話中に選べます。</Text>
                 <SettingsTitle>メインストーリー</SettingsTitle>
-                {STORY_EPISODES.map((episode) => (
+                {STORY_ARCHIVE_CATALOG.episodes.map((episode) => (
                   <StoryOption
                     key={episode.id}
                     title={`第${episode.id}話　${episode.title}`}

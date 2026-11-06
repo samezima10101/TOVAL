@@ -28,7 +28,7 @@
 | `taskName` | string、初期空。登録・改名時trim、進捗は維持 |
 | `totalNt` / `totalCompletions` | 非負の安全な整数、初期0。完了で加算、NTは購入で減算 |
 | `lastCompletionDate` | 最後の終了日のYYYY-MM-DDまたはnull |
-| `unlockedStories` | `{ episodeId, unlockedDate }[]`、初期空。実在する話ID・日付、話ID重複なし |
+| `unlockedStories` | `{ episodeId, unlockedDate }[]`、初期空。第1〜14話の実在する話ID・日付、話ID重複なし。常時再生可能な第0話は保存せず、日次解放にも含めない |
 | `storyRouteProgress` | 話ID→`{ firstSelectedRouteId?, extraUnlockedRouteIds }`、初期空。初回無料選択と追加購入を分離 |
 | `purchasedSideStoryIds` / `announcedSideStoryIds` | 購入済み／入荷告知済みの商品ID。重複なしの正の安全な整数配列、初期空 |
 | `diaryLogs` | 完了ログ配列、初期空 |

@@ -11,7 +11,8 @@
 | サイド101〜103と店員の挨拶・入荷告知・退店本文 | [shop.ts](../src/content/shop.ts) |
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
 | ショップ／メモリーの章名・話の所属と順序 | [storyArchive.ts](../src/config/storyArchive.ts) |
-| 初回会話00の本文・表情・名前／タスク入力 | [intro.ts](../src/tutorial/content/intro.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
+| 第0話の本文・表情・入力位置 | [episode00.ts](../src/content/stories/episode00.ts) |
+| 初回会話の分割・名前／タスク入力 | [intro.ts](../src/tutorial/content/intro.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
 | 操作練習の台詞・強調対象・進行条件 | [steps.ts](../src/tutorial/content/steps.ts)・[TutorialOverlay.tsx](../src/tutorial/TutorialOverlay.tsx) |
 
 メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。none以外の立ち絵は話者によらず不透明で表示する。
@@ -49,11 +50,13 @@
 
 ## 初回チュートリアル
 
-原稿タブ`00`の16台詞・2入力と、タブ`tutorial`を基にした29段階を`src/tutorial/`へ分離する。00は既存の`app/story.tsx`へ`source=tutorial`で渡し、通常会話と同じStoryScene・表情・文字送りで再生する。`intro.ts`の`input`行で会話を分割し、その位置で`IntroInput.tsx`の入力ダイアログを重ねる。`boss`／`sub`はメイン会話と同じ対応。
+原稿タブ`00`の16台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。`INTRO_LINES`の`input`行を`src/tutorial/content/intro.ts`で区切り、初回は既存の`app/story.tsx`へ`source=tutorial`で渡す。その位置で`IntroInput.tsx`の入力ダイアログを重ね、終了後はタブ`tutorial`を基にした29段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
+
+同じファイルの`episode00`は入力行を除いた見返し用の16台詞。メモリーのChapter 1・第0話と、開発用ストーリープレビューから既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
 
 `steps.ts`の`scene`は案内中の既存画面／ダイアログ、`target`はコーチマークの対象、`action`は実操作を待つ条件。`action`がない段階は「次へ」で進む。ホーム・タイマー・時間設定・省電力・日記を複製せず、それぞれに`TutorialOverlay`を重ねる。対象へ`useTutorialTarget`のrefを付け、PrimaryButtonでは`tutorialTarget`を指定する。テキストボックスは実測した対象の上か下へ配置し、本文だけスクロールする。5分への変更と開始を分け、残り時間・延長時間は一時状態の固定値を既存TimerDialへ渡す。左右の説明・ボタン名は現行UIに合わせる。
 
-初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`・`tutorialStorage.ts`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`TutorialMenuCard.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の会話を再確認する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。通常の再実行は操作練習から始まる。
+初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`・`tutorialStorage.ts`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`TutorialMenuCard.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の入力保存と案内への連続遷移を検証する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。通常のメニュー再実行は操作練習から始まる。
 
 ホームとメニューのタブ間移動は`router.navigate`を使う。`router.dismissTo`が送るPOP_TOはSDK 58のタブでは処理されないため、ストーリー・タイマーなどタブの外側のスタックから戻る場合だけに使う。タブ内かどうかは`useSegments()`の先頭が`(tabs)`かで判定する。`useRootNavigationState()`の最上位ルートはSDK内部の`__root`なので、直接`(tabs)`と比較しない。開始と終了の両方で同じ判定を使い、手動タブ押下を発生させない。
 
@@ -61,7 +64,7 @@
 
 `MEMORY_CHAPTERS`・`SHOP_CHAPTERS`の`title`・`storyIds`を変更する。既存IDをいずれか1章へ重複なく配置し、保存IDは変えない。現行は全会話を各Chapter 1へまとめ、空のChapter 2〜8は準備中。ショップで表示できる会話が0件の章は未入荷とする。
 
-[StoryArchive](../src/components/common/StoryArchive.tsx)が4列の章番号・固定タイトル帯・左のホイール一覧・右の詳細と操作を共有する。画面全体は固定し、一覧と詳細文だけをスクロールする。選択が変わると帯の文字・詳細・操作対象を更新し、章変更時は最初の話へ戻す。購入中は選択を固定する。章内番号は表示順であり、解放・購入には元のIDを使う。
+[StoryArchive](../src/components/common/StoryArchive.tsx)が4列の章番号・固定タイトル帯・左のホイール一覧・右の詳細と操作を共有する。画面全体は固定し、一覧と詳細文だけをスクロールする。選択が変わると帯の文字・詳細・操作対象を更新し、章変更時は最初の話へ戻す。購入中は選択を固定する。メモリーの話番号は第0〜14話のID、ショップの章内番号は表示順を使い、解放・購入には元のIDを使う。
 
 詳細紹介は共通前半の最初の台詞を使い、未解放メインのタイトル・本文は隠す。`ROUTE UNLOCK`は分岐権利数、`OPEN`は既存の解放日。既読数として扱わない。
 
@@ -183,7 +186,7 @@
 
 ## 開発用ストーリープレビュー
 
-Expo Goなどの開発モードでは、メニュー末尾の「デバッグ：ストーリー確認」→「ストーリーを選ぶ」から、未解放・未購入でもメイン全話とサイド会話を閲覧できる。メインの分岐は会話中に自由に選択し、閉じる／読了で選択一覧へ戻る。再選択すると冒頭から再生する。名前差込は現在の保存名を使う。
+Expo Goなどの開発モードでは、メニュー末尾の「デバッグ：ストーリー確認」→「ストーリーを選ぶ」から、第0話・未解放のメイン全話・未購入のサイド会話を閲覧できる。メインの分岐は会話中に自由に選択し、閉じる／読了で選択一覧へ戻る。再選択すると冒頭から再生する。名前差込は現在の保存名を使う。第0話では入力ダイアログや操作練習を開始しない。
 
 専用実装は[src/debug/StoryPreview.tsx](../src/debug/StoryPreview.tsx)の1ファイルに集約し、通常の表示部品・文字送りを再利用する。保存API・解放・購入処理は呼ばず、閲覧・分岐選択でNT・進捗・権利を変更しない。通常画面の閲覧条件は維持する。メニュー上のModalなのでBGMはメニューの設定のままで、ストーリー画面への遷移や曲の切替の検証には使わない。
 

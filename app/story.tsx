@@ -14,7 +14,7 @@ import { getAdditionalRoutePriceNt } from "@/src/config/conversationSettings";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { EpisodeId } from "@/src/domain/common/types";
 import {
-  STORY_CATALOG,
+  STORY_ARCHIVE_CATALOG,
   StoryCatalog,
   getStoryEpisode,
   getStoryRoute,
@@ -45,7 +45,7 @@ function parseRouteId(
 }
 
 export default function StoryScreen({
-  catalog = STORY_CATALOG,
+  catalog = STORY_ARCHIVE_CATALOG,
 }: {
   catalog?: StoryCatalog;
 }) {
@@ -100,17 +100,19 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const intro = tutorialMode ? getIntroSegment(tutorial.introPart) : undefined;
   const episode =
     intro?.episode ??
-    (episodeId ? getStoryEpisode(episodeId, catalog) : undefined);
-  const progress = episodeId ? state?.storyRouteProgress[episodeId] : undefined;
+    (episodeId !== null ? getStoryEpisode(episodeId, catalog) : undefined);
+  const progress =
+    episodeId !== null ? state?.storyRouteProgress[episodeId] : undefined;
   const savedInitialRouteId =
-    episodeId && source !== "memory"
+    episodeId !== null && source !== "memory"
       ? progress?.firstSelectedRouteId
       : undefined;
   const initialRouteId = routeId ?? savedInitialRouteId;
-  const unlockedStory = episodeId
-    ? state?.unlockedStories.find((story) => story.episodeId === episodeId)
-    : undefined;
-  const isUnlocked = tutorialMode || Boolean(unlockedStory);
+  const unlockedStory =
+    episodeId !== null
+      ? state?.unlockedStories.find((story) => story.episodeId === episodeId)
+      : undefined;
+  const isUnlocked = tutorialMode || episodeId === 0 || Boolean(unlockedStory);
   const route =
     episode && routeId ? getStoryRoute(episode, routeId) : undefined;
   const routeIsUnlocked = Boolean(
@@ -136,10 +138,11 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
       source,
       initialRouteId,
       userName: state?.userName,
-      selectInitialRoute: episodeId
-        ? (selectedRouteId) =>
-            selectInitialStoryRoute(episodeId, selectedRouteId)
-        : undefined,
+      selectInitialRoute:
+        episodeId !== null && episodeId !== 0
+          ? (selectedRouteId) =>
+              selectInitialStoryRoute(episodeId, selectedRouteId)
+          : undefined,
       onClose: tutorialMode ? tutorial.nextIntro : exit.requestExit,
       processingRef: readingRef,
       exitRequestedRef: exit.leavingRef,
@@ -194,7 +197,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const confirmUnlock = async () => {
     if (
       !pendingUnlockRoute ||
-      !episodeId ||
+      episodeId === null ||
       unlockingRef.current ||
       exit.leavingRef.current
     ) {
