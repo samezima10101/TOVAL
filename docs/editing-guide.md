@@ -11,6 +11,8 @@
 | サイド101〜103と店員の挨拶・入荷告知・退店本文 | [shop.ts](../src/content/shop.ts) |
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
 | ショップ／メモリーの章名・話の所属と順序 | [storyArchive.ts](../src/config/storyArchive.ts) |
+| 初回会話00の本文・表情・名前／タスク入力 | [intro.ts](../src/tutorial/content/intro.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
+| 操作練習の台詞・強調対象・進行条件 | [steps.ts](../src/tutorial/content/steps.ts)・[TutorialOverlay.tsx](../src/tutorial/TutorialOverlay.tsx) |
 
 メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。none以外の立ち絵は話者によらず不透明で表示する。
 
@@ -44,6 +46,16 @@
 設定変更は開発アプリをReloadして反映する。配布アプリには更新ビルドが必要で、アプリ内管理画面やクラウド管理はない。保存キー・schemaVersion・未対応形式の扱いは[データ仕様](data-integrations.md)に集約する。
 
 第3話は同じ原稿のタブ`03`を反映し、共通前29行・分岐A5行／B4行・共通後10行。行種別が空でも本文と話者がある行を含め、本文・選択肢・左右表情・`[userName]`を保持する。既存タイトル・話ID・分岐IDを維持する。追加表情はジェム`smile3` → `gem/G07-3.png`、アルタ`angry2` → `alta/A07-2.png`。
+
+## 初回チュートリアル
+
+原稿タブ`00`の16台詞・2入力と、タブ`tutorial`を基にした29段階を`src/tutorial/`へ分離する。00は既存の`app/story.tsx`へ`source=tutorial`で渡し、通常会話と同じStoryScene・表情・文字送りで再生する。`intro.ts`の`input`行で会話を分割し、その位置で`IntroInput.tsx`の入力ダイアログを重ねる。`boss`／`sub`はメイン会話と同じ対応。
+
+`steps.ts`の`scene`は案内中の既存画面／ダイアログ、`target`はコーチマークの対象、`action`は実操作を待つ条件。`action`がない段階は「次へ」で進む。ホーム・タイマー・時間設定・省電力・日記を複製せず、それぞれに`TutorialOverlay`を重ねる。対象へ`useTutorialTarget`のrefを付け、PrimaryButtonでは`tutorialTarget`を指定する。テキストボックスは実測した対象の上か下へ配置し、本文だけスクロールする。5分への変更と開始を分け、残り時間・延長時間は一時状態の固定値を既存TimerDialへ渡す。左右の説明・ボタン名は現行UIに合わせる。
+
+初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`・`tutorialStorage.ts`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`TutorialMenuCard.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の会話を再確認する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。通常の再実行は操作練習から始まる。
+
+ホームとメニューのタブ間移動は`router.navigate`を使う。`router.dismissTo`が送るPOP_TOはSDK 58のタブでは処理されないため、ストーリー・タイマーなどタブの外側のスタックから戻る場合だけに使う。タブ内かどうかは`useSegments()`の先頭が`(tabs)`かで判定する。`useRootNavigationState()`の最上位ルートはSDK内部の`__root`なので、直接`(tabs)`と比較しない。開始と終了の両方で同じ判定を使い、手動タブ押下を発生させない。
 
 ## 章一覧と会話画面
 

@@ -9,6 +9,7 @@ import { getScreenBgm } from "@/src/config/audioSettings";
 import useScreenBgm from "@/src/hooks/useScreenBgm";
 import { AppStateProvider, useAppState } from "@/src/state/AppStateProvider";
 import { ReminderNotificationProvider } from "@/src/state/ReminderNotificationProvider";
+import TutorialProvider from "@/src/tutorial/TutorialProvider";
 
 export const unstable_settings = { initialRouteName: "(tabs)" };
 
@@ -38,17 +39,16 @@ function AppShell() {
 
   return (
     <AppStartupGate>
-      <Stack
-        screenOptions={{ headerShown: false }}
-        screenLayout={({ children }) => (
-          <AppFrame
-            bgmError={bgm.error}
-            onRetryBgm={bgm.retry}
-          >
-            {children}
-          </AppFrame>
-        )}
-      />
+      <TutorialProvider>
+        <Stack
+          screenOptions={{ headerShown: false }}
+          screenLayout={({ children }) => (
+            <AppFrame bgmError={bgm.error} onRetryBgm={bgm.retry}>
+              {children}
+            </AppFrame>
+          )}
+        />
+      </TutorialProvider>
     </AppStartupGate>
   );
 }

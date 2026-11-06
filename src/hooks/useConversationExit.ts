@@ -7,6 +7,7 @@ import React from "react";
 export default function useConversationExit(
   destination: "/" | "/memory" | "/shop",
   isBlocked: () => boolean,
+  options?: { canLeave: boolean; onRequestExit: () => void },
 ): { requestExit: () => void; leavingRef: React.RefObject<boolean> } {
   const [leaving, setLeaving] = React.useState(false);
   const leavingRef = React.useRef(false);
@@ -15,7 +16,10 @@ export default function useConversationExit(
     leavingRef.current = true;
     setLeaving(true);
   };
-  usePreventRemove(!leaving, requestExit);
+  usePreventRemove(
+    !leaving && !options?.canLeave,
+    options?.onRequestExit ?? requestExit,
+  );
   React.useEffect(() => {
     if (leaving) router.dismissTo(destination);
   }, [destination, leaving]);

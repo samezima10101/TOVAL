@@ -6,8 +6,8 @@ import {
   Text,
   useWindowDimensions,
   View,
-  type ViewInstance,
   type ScrollViewInstance,
+  type ViewInstance,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -22,12 +22,13 @@ import UserSettings, {
 } from "@/src/components/menu/UserSettings";
 import { Fonts } from "@/src/constants/theme";
 import useInputReveal from "@/src/hooks/useInputReveal";
+import TutorialMenuCard from "@/src/tutorial/TutorialMenuCard";
 
 // DEBUG_STORY_PREVIEW: 削除時はこのブロックと下の表示行、専用ファイルを削除する。
 const DebugStoryPreview: import("react").ComponentType | null = __DEV__
-  // 開発時だけ読み込み、本番バンドルから依存ごと除外する。
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  ? require("@/src/debug/StoryPreview").default
+  ? // 開発時だけ読み込み、本番バンドルから依存ごと除外する。
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@/src/debug/StoryPreview").default
   : null;
 
 export default function MenuScreen() {
@@ -84,6 +85,7 @@ export default function MenuScreen() {
         <Text style={styles.title} accessibilityRole="header">
           メニュー
         </Text>
+        <TutorialMenuCard />
         <AudioSettings />
         <UserSettings editor={userSettings} onRevealInput={revealInput} />
         <DefaultTimerSettings />

@@ -8,6 +8,7 @@ import { Colors, Fonts } from "@/src/constants/theme";
 import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
+import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
 
 export default function AppFrame({
   children,
@@ -37,7 +38,11 @@ export default function AppFrame({
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={["top"]} style={styles.headerOverlay} pointerEvents="box-none">
+      <SafeAreaView
+        edges={["top"]}
+        style={styles.headerOverlay}
+        pointerEvents="box-none"
+      >
         <View style={styles.header} pointerEvents="box-none">
           <View
             style={styles.badge}
@@ -100,6 +105,7 @@ export default function AppFrame({
           />
         </View>
       </SafeAreaView>
+      <TutorialOverlay surface="screen" />
     </View>
   );
 }

@@ -24,6 +24,10 @@ import {
 import useConversationExit from "@/src/hooks/useConversationExit";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
+import IntroInput from "@/src/tutorial/IntroInput";
+import { useTutorial } from "@/src/tutorial/TutorialContext";
+import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
+import { getIntroSegment } from "@/src/tutorial/content/intro";
 
 function parseEpisodeId(
   value: string | string[] | undefined,
@@ -46,6 +50,7 @@ export default function StoryScreen({
   catalog?: StoryCatalog;
 }) {
   const { top } = useSafeAreaInsets();
+  const tutorial = useTutorial();
   const params = useLocalSearchParams<{
     episode?: string;
     source?: string;
@@ -55,14 +60,21 @@ export default function StoryScreen({
     <View style={{ flex: 1, paddingTop: top + 76 }}>
       <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
       <StoryPlayback
-        key={JSON.stringify([params.episode, params.source, params.route])}
+        key={JSON.stringify([
+          params.episode,
+          params.source,
+          params.route,
+          params.source === "tutorial" ? tutorial.introPart : null,
+        ])}
         catalog={catalog}
       />
+      <TutorialOverlay surface="story" />
     </View>
   );
 }
 
 function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
+  const tutorial = useTutorial();
   const { state, selectInitialStoryRoute, unlockAdditionalStoryRoute } =
     useAppState();
   const [pendingUnlockRouteId, setPendingUnlockRouteId] = React.useState<
@@ -84,7 +96,11 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
         ? "home"
         : "unlock";
   const routeId = parseRouteId(params.route);
-  const episode = episodeId ? getStoryEpisode(episodeId, catalog) : undefined;
+  const tutorialMode = params.source === "tutorial" && tutorial.active;
+  const intro = tutorialMode ? getIntroSegment(tutorial.introPart) : undefined;
+  const episode =
+    intro?.episode ??
+    (episodeId ? getStoryEpisode(episodeId, catalog) : undefined);
   const progress = episodeId ? state?.storyRouteProgress[episodeId] : undefined;
   const savedInitialRouteId =
     episodeId && source !== "memory"
@@ -94,7 +110,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const unlockedStory = episodeId
     ? state?.unlockedStories.find((story) => story.episodeId === episodeId)
     : undefined;
-  const isUnlocked = Boolean(unlockedStory);
+  const isUnlocked = tutorialMode || Boolean(unlockedStory);
   const route =
     episode && routeId ? getStoryRoute(episode, routeId) : undefined;
   const routeIsUnlocked = Boolean(
@@ -107,6 +123,12 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
   const exit = useConversationExit(
     source === "memory" ? "/memory" : "/",
     () => unlockingRef.current || readingRef.current,
+    params.source === "tutorial"
+      ? {
+          canLeave: !tutorial.intro || tutorial.closing,
+          onRequestExit: () => tutorial.close("skipped"),
+        }
+      : undefined,
   );
   const reader = useStoryReader(
     isUnlocked && canPlayDirectRoute ? episode : undefined,
@@ -118,7 +140,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
         ? (selectedRouteId) =>
             selectInitialStoryRoute(episodeId, selectedRouteId)
         : undefined,
-      onClose: exit.requestExit,
+      onClose: tutorialMode ? tutorial.nextIntro : exit.requestExit,
       processingRef: readingRef,
       exitRequestedRef: exit.leavingRef,
     },
@@ -213,10 +235,15 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
       slideBackground={characterLine?.slideBackground}
       dateLabel={unlockedStory?.unlockedDate.replaceAll("-", "/")}
       onClose={() => {
-        if (!unlockingRef.current) handleClose();
+        if (tutorialMode) tutorial.close("skipped");
+        else if (!unlockingRef.current) handleClose();
       }}
-      disabled={isProcessing || isUnlocking}
-      error={error}
+      disabled={
+        isProcessing ||
+        isUnlocking ||
+        (tutorialMode && (tutorial.busy || tutorial.closing))
+      }
+      error={tutorialMode ? tutorial.error : error}
       contentKey={
         isWaitingForChoice
           ? pendingUnlockRoute
@@ -233,7 +260,13 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
         />
       }
     >
-      <StoryMessage {...reader} />
+      <StoryMessage
+        {...reader}
+        isProcessing={isProcessing || (tutorialMode && tutorial.busy)}
+      />
+      {tutorialMode && tutorial.introInput && intro?.field ? (
+        <IntroInput field={intro.field} />
+      ) : null}
 
       {isWaitingForChoice && pendingUnlockRoute && state ? (
         <StoryUnlockConfirmation

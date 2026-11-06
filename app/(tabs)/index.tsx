@@ -19,6 +19,8 @@ import { Fonts } from "@/src/constants/theme";
 import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
+import { useTutorial } from "@/src/tutorial/TutorialContext";
+import { TUTORIAL_STEPS } from "@/src/tutorial/content/steps";
 
 // Match monitor_frame.svg's 360 × 270 viewBox; resize both axes together.
 const MONITOR_ASPECT_RATIO = 4 / 3;
@@ -29,6 +31,7 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
+  const tutorial = useTutorial();
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
   const [monitorSpace, setMonitorSpace] = React.useState({
     width: width - 48,
@@ -244,7 +247,12 @@ export default function HomeScreen() {
 
         <PrimaryButton
           title="はじめる"
-          onPress={() => setIsTimerSetupOpen(true)}
+          tutorialTarget="start"
+          onPress={() =>
+            tutorial.practicing
+              ? tutorial.advance("open-setup")
+              : setIsTimerSetupOpen(true)
+          }
           disabled={needsTask}
           style={shortScreen ? styles.startButtonCompact : styles.startButton}
           accessibilityLabel="集中モードの時間を設定"
@@ -254,6 +262,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={[styles.shopButton, shortScreen && styles.shopButtonCompact]}
             onPress={() => push("/shop")}
+            disabled={tutorial.active}
             accessibilityRole="button"
             accessibilityLabel="ショップを開く"
           >
@@ -268,14 +277,19 @@ export default function HomeScreen() {
       </View>
 
       <TaskNameModal
-        visible={needsTask}
+        visible={needsTask && !tutorial.active}
         required
         initialValue={state.taskName}
         onClose={() => undefined}
         onSave={setTaskName}
       />
       <TimerSetupModal
-        visible={isTimerSetupOpen}
+        visible={
+          !tutorial.closing &&
+          (tutorial.practicing
+            ? TUTORIAL_STEPS[tutorial.index].scene === "setup"
+            : isTimerSetupOpen)
+        }
         initialMinutes={state.defaultTimerMinutes}
         hasActiveTimer={Boolean(state.activeTimer)}
         onClose={() => setIsTimerSetupOpen(false)}

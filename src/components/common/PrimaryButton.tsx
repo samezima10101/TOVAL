@@ -1,4 +1,6 @@
 import { Colors, Fonts } from "@/src/constants/theme";
+import type { TutorialTarget } from "@/src/tutorial/content/steps";
+import useTutorialTarget from "@/src/tutorial/useTutorialTarget";
 import { Image } from "expo-image";
 import {
   ActivityIndicator,
@@ -16,6 +18,7 @@ export default function PrimaryButton({
   loading = false,
   accessibilityLabel,
   maxFontSizeMultiplier,
+  tutorialTarget,
 }: {
   title: string;
   onPress: () => void;
@@ -24,10 +27,13 @@ export default function PrimaryButton({
   loading?: boolean;
   accessibilityLabel?: string;
   maxFontSizeMultiplier?: number;
+  tutorialTarget?: TutorialTarget;
 }) {
-  const unavailable = disabled || loading;
+  const { anchor, blocked } = useTutorialTarget(tutorialTarget);
+  const unavailable = disabled || loading || blocked;
   return (
     <TouchableOpacity
+      {...anchor}
       style={[styles.button, style, unavailable && styles.disabled]}
       onPress={onPress}
       disabled={unavailable}
@@ -49,7 +55,12 @@ export default function PrimaryButton({
       >
         {title}
       </Text>
-      {loading ? <ActivityIndicator color={Colors.surface} style={StyleSheet.absoluteFill} /> : null}
+      {loading ? (
+        <ActivityIndicator
+          color={Colors.surface}
+          style={StyleSheet.absoluteFill}
+        />
+      ) : null}
     </TouchableOpacity>
   );
 }
