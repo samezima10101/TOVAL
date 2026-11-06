@@ -1,10 +1,10 @@
 import {
-  useEffect,
   useLayoutEffect,
   useState,
   type PropsWithChildren,
 } from "react";
-import { AccessibilityInfo, Animated, type StyleProp, type ViewStyle } from "react-native";
+import { Animated, type StyleProp, type ViewStyle } from "react-native";
+import useTutorialReducedMotion from "./useTutorialReducedMotion";
 
 // Keep the entire box mounted and readable during step transitions.
 export default function TutorialTransition({
@@ -13,28 +13,7 @@ export default function TutorialTransition({
   children,
 }: PropsWithChildren<{ contentKey: string; style?: StyleProp<ViewStyle> }>) {
   const [progress] = useState(() => new Animated.Value(1));
-  const [reduceMotion, setReduceMotion] = useState(true);
-
-  useEffect(() => {
-    let active = true;
-    let changed = false;
-    const subscription = AccessibilityInfo.addEventListener(
-      "reduceMotionChanged",
-      (enabled) => {
-        changed = true;
-        if (active) setReduceMotion(enabled);
-      },
-    );
-    void AccessibilityInfo.isReduceMotionEnabled()
-      .then((enabled) => {
-        if (active && !changed) setReduceMotion(enabled);
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-      subscription.remove();
-    };
-  }, []);
+  const reduceMotion = useTutorialReducedMotion();
 
   useLayoutEffect(() => {
     progress.setValue(reduceMotion ? 1 : 0);

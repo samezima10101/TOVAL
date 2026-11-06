@@ -122,14 +122,14 @@ export const TUTORIAL_STEPS: readonly TutorialStep[] = [
     id: "lock",
     speaker: "alta",
     scene: "timer",
-    text: "電源ボタンで画面を消してしまうと、タイマー、BGMともに止まってしまいます。",
+    text: "ちなみに注意点として、電源ボタンで画面を消してしまうと、タイマー、BGMともに止まってしまいます。",
   },
   {
     id: "power-reminder",
     speaker: "alta",
     scene: "timer",
     target: "power",
-    text: "画面を暗くする際は必ず省電力モードにすることをお忘れなく。",
+    text: "画面を暗くする際は、必ず省電力モードにすることを忘れないでくださいね。",
   },
   {
     id: "finish-info",

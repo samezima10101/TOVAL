@@ -1,4 +1,6 @@
-import { StyleSheet, View } from "react-native";
+import { useEffect, useState } from "react";
+import { Animated, Easing, StyleSheet, View } from "react-native";
+import useTutorialReducedMotion from "./useTutorialReducedMotion";
 
 export type Spotlight = {
   key: string;
@@ -18,6 +20,27 @@ export default function CoachMark({
   interactive?: boolean;
   fullScreen?: boolean;
 }) {
+  const [opacity] = useState(() => new Animated.Value(1));
+  const reduceMotion = useTutorialReducedMotion();
+  const targetKey = spot?.key;
+  useEffect(() => {
+    opacity.setValue(1);
+    if (!interactive || !targetKey || reduceMotion) return;
+    const timing = (toValue: number) =>
+      Animated.timing(opacity, {
+        toValue,
+        duration: 800,
+        easing: Easing.inOut(Easing.sin),
+        useNativeDriver: true,
+        isInteraction: false,
+      });
+    const animation = Animated.loop(
+      Animated.sequence([timing(0.25), timing(1)]),
+    );
+    animation.start();
+    return () => animation.stop();
+  }, [interactive, targetKey, reduceMotion, opacity]);
+
   return (
     <View
       style={StyleSheet.absoluteFill}
@@ -65,11 +88,13 @@ export default function CoachMark({
               }}
             />
           ) : null}
-          <View
+          <Animated.View
             pointerEvents="none"
             style={[
               styles.outline,
+              interactive && styles.actionOutline,
               {
+                opacity,
                 top: spot.y,
                 left: spot.x,
                 width: spot.width,
@@ -93,4 +118,5 @@ const styles = StyleSheet.create({
     borderColor: "#BDF9F5",
     borderRadius: 10,
   },
+  actionOutline: { borderColor: "#BDF9F5" },
 });

@@ -50,6 +50,8 @@
 
 ## 初回チュートリアル
 
+`CoachMark.tsx`は実操作を待つ対象（`interactive`）だけに青緑色`#65E1D4`の2ポイント外枠を表示し、800msで不透明度100%→25%、800msで100%へ戻す。枠の内側は透明で、位置・大きさ・対象UIを動かさず、枠自体はタップを受け取らない。説明だけの段階は既存色の静止枠。段階終了・非表示・対象変更ではループを停止する。`useTutorialReducedMotion.ts`をボックスの切り替えと共有し、「視差効果を減らす」が有効なら静止枠にする。
+
 終了の確認は`TutorialProvider.tsx`の`close`に集約する。`skipped`は確認アラートを表示し、キャンセルでは保存・遷移せず、「スキップする」を選んだ後だけ終了処理へ進む。右端のボタン・入力ダイアログ・ストーリー／タイマーの戻る操作は同じ処理を使い、`completed`は確認なしで完了する。`TutorialOverlay`のスキップボタンは案内ボックスから分けて右上へ配置し、VoiceOverでも案内と一緒に操作できるようにする。
 
 原稿タブ`00`の16台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。`INTRO_LINES`の`input`行を`src/tutorial/content/intro.ts`で区切り、初回は既存の`app/story.tsx`へ`source=tutorial`で渡す。その位置で`IntroInput.tsx`の入力ダイアログを重ね、終了後はタブ`tutorial`を基にした30段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
