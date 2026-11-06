@@ -9,7 +9,11 @@ import StoryArchive, {
 } from "@/src/components/common/StoryArchive";
 import { MEMORY_CHAPTERS } from "@/src/config/storyArchive";
 import { formatLocalDate } from "@/src/domain/common/date";
-import { isStoryRouteUnlocked, STORY_EPISODES } from "@/src/domain/storyData";
+import {
+  isStoryRouteUnlocked,
+  STORY_ARCHIVE_CATALOG,
+  STORY_EPISODES,
+} from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function MemoryScreen() {
@@ -30,11 +34,13 @@ export default function MemoryScreen() {
     id: chapter.id,
     title: chapter.title,
     emptyLabel: "準備中",
-    items: chapter.storyIds.flatMap((id, index) => {
-      const episode = STORY_EPISODES.find((entry) => entry.id === id);
+    items: chapter.storyIds.flatMap((id) => {
+      const episode = STORY_ARCHIVE_CATALOG.episodes.find(
+        (entry) => entry.id === id,
+      );
       if (!episode) return [];
       const unlockedDate = unlocked.get(id);
-      const isUnlocked = Boolean(unlockedDate);
+      const isUnlocked = id === 0 || Boolean(unlockedDate);
       const unlockedRoutes =
         episode.routes?.filter((route) =>
           isStoryRouteUnlocked(state.storyRouteProgress[id], route.id),
@@ -42,18 +48,24 @@ export default function MemoryScreen() {
       return [
         {
           id,
-          number: index + 1,
+          number: id,
           title: isUnlocked ? episode.title : "未解放のストーリー",
           description: isUnlocked
             ? (episode.commonBefore[0]?.text ?? "")
             : "その日の最初のタスクを完了すると、次のストーリーが解放されます。",
-          status: unlockedDate
-            ? `解放日: ${formatLocalDate(unlockedDate)}`
-            : "タスク完了で解放",
-          metadata: [
-            `ROUTE UNLOCK: ${unlockedRoutes}/${episode.routes?.length ?? 0}`,
-            `OPEN: ${unlockedDate?.replaceAll("-", ".") ?? "--"}`,
-          ],
+          status:
+            id === 0
+              ? "初回起動時の会話"
+              : unlockedDate
+                ? `解放日: ${formatLocalDate(unlockedDate)}`
+                : "タスク完了で解放",
+          metadata:
+            id === 0
+              ? []
+              : [
+                  `ROUTE UNLOCK: ${unlockedRoutes}/${episode.routes?.length ?? 0}`,
+                  `OPEN: ${unlockedDate?.replaceAll("-", ".") ?? "--"}`,
+                ],
           isUnlocked,
           action: isUnlocked ? "再生する" : "未解放",
           actionLabel: isUnlocked

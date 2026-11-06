@@ -1,4 +1,4 @@
-import React, {
+import {
   createContext,
   ReactNode,
   useCallback,
@@ -10,28 +10,41 @@ import React, {
 } from "react";
 import { AppState as NativeAppState } from "react-native";
 
-import { DEFAULT_BGM_VOLUME, DEFAULT_SE_VOLUME, isValidAudioVolume } from "@/src/config/audioSettings";
+import {
+  DEFAULT_BGM_VOLUME,
+  DEFAULT_SE_VOLUME,
+  isValidAudioVolume,
+} from "@/src/config/audioSettings";
+import { localDateKey, localTimeKey } from "@/src/domain/common/date";
 import {
   ActiveTimer,
   AppState,
   EpisodeId,
   MAX_PLANNED_SECONDS,
 } from "@/src/domain/common/types";
-import { selectStoryRoute, purchaseStoryRoute, purchaseSideStory } from "@/src/domain/conversation";
 import {
   cancelTimer as cancelTimerState,
   completeTimer,
   CompletionOutcome,
 } from "@/src/domain/completion";
-import { isValidDefaultTimerMinutes, pauseTimer, resumeTimer } from "@/src/domain/timer";
-import { localDateKey, localTimeKey } from "@/src/domain/common/date";
-import { editDiary } from "@/src/domain/diary";
-import { isValidNotificationTime, normalizeReminderSettings, type NotificationTime } from "@/src/domain/reminder";
-import { listAvailableConversations } from "@/src/domain/sideStory";
 import {
-  STORY_CATALOG,
-  StoryCatalog,
-} from "@/src/domain/storyData";
+  purchaseSideStory,
+  purchaseStoryRoute,
+  selectStoryRoute,
+} from "@/src/domain/conversation";
+import { editDiary } from "@/src/domain/diary";
+import {
+  isValidNotificationTime,
+  normalizeReminderSettings,
+  type NotificationTime,
+} from "@/src/domain/reminder";
+import { listAvailableConversations } from "@/src/domain/sideStory";
+import { STORY_CATALOG, StoryCatalog } from "@/src/domain/storyData";
+import {
+  isValidDefaultTimerMinutes,
+  pauseTimer,
+  resumeTimer,
+} from "@/src/domain/timer";
 import {
   appStateRepository,
   AppStateRepository,
@@ -55,7 +68,7 @@ export class NoActiveTimerError extends Error {
   }
 }
 
-type AppStateContextValue = {
+export type AppStateContextValue = {
   state: AppState | null;
   status: HydrationStatus;
   hydrationError: Error | null;
@@ -74,17 +87,26 @@ type AppStateContextValue = {
   setNotificationTime: (time: NotificationTime) => Promise<void>;
   setDefaultTimerMinutes: (minutes: number) => Promise<void>;
   updateDiary: (logId: string, diary: string) => Promise<void>;
-  selectInitialStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
-  unlockAdditionalStoryRoute: (episodeId: EpisodeId, routeId: string) => Promise<void>;
+  selectInitialStoryRoute: (
+    episodeId: EpisodeId,
+    routeId: string,
+  ) => Promise<void>;
+  unlockAdditionalStoryRoute: (
+    episodeId: EpisodeId,
+    routeId: string,
+  ) => Promise<void>;
   unlockSideStory: (conversationId: number) => Promise<void>;
   announceSideStories: (conversationIds: readonly number[]) => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
-  finishTimer: (finishedAt?: number, diary?: string) => Promise<CompletionOutcome>;
+  finishTimer: (
+    finishedAt?: number,
+    diary?: string,
+  ) => Promise<CompletionOutcome>;
 };
 
-const AppStateContext = createContext<AppStateContextValue | undefined>(
+export const AppStateContext = createContext<AppStateContextValue | undefined>(
   undefined,
 );
 
@@ -145,30 +167,36 @@ export function AppStateProvider({
     setState(nextState);
   }, []);
 
-  const saveAndCommit = useCallback(async (nextState: AppState) => {
-    const revision = timerRevisionRef.current;
-    try {
-      await repository.save(nextState);
-    } catch (error) {
-      if (error instanceof PreservedDataError) {
-        setHydrationError(error);
-        setStatus("error");
-        stateRef.current = null;
+  const saveAndCommit = useCallback(
+    async (nextState: AppState) => {
+      const revision = timerRevisionRef.current;
+      try {
+        await repository.save(nextState);
+      } catch (error) {
+        if (error instanceof PreservedDataError) {
+          setHydrationError(error);
+          setStatus("error");
+          stateRef.current = null;
+        }
+        throw error;
       }
-      throw error;
-    }
-    // A native lifecycle/focus event may pause the live segment while a write
-    // is in flight. Never restore that older running segment on completion.
-    const live = stateRef.current?.activeTimer;
-    commitState(revision !== timerRevisionRef.current && live &&
-      nextState.activeTimer?.sessionId === live.sessionId
-      ? { ...nextState, activeTimer: live }
-      : nextState);
-    if (!nextState.activeTimer) {
-      timerSaveBlockedRef.current = false;
-      setTimerSaveError(null);
-    }
-  }, [commitState, repository]);
+      // A native lifecycle/focus event may pause the live segment while a write
+      // is in flight. Never restore that older running segment on completion.
+      const live = stateRef.current?.activeTimer;
+      commitState(
+        revision !== timerRevisionRef.current &&
+          live &&
+          nextState.activeTimer?.sessionId === live.sessionId
+          ? { ...nextState, activeTimer: live }
+          : nextState,
+      );
+      if (!nextState.activeTimer) {
+        timerSaveBlockedRef.current = false;
+        setTimerSaveError(null);
+      }
+    },
+    [commitState, repository],
+  );
 
   const enqueue = useCallback(<T,>(operation: () => Promise<T>): Promise<T> => {
     const previous = queueRef.current;
@@ -191,13 +219,20 @@ export function AppStateProvider({
   const applyTimerEligibility = useCallback(
     ({ appIsActive, routeFocused, changedAt }: TimerEligibilityChange) => {
       if (appIsActive !== undefined) appIsActiveRef.current = appIsActive;
-      if (routeFocused !== undefined) timerRouteFocusedRef.current = routeFocused;
+      if (routeFocused !== undefined)
+        timerRouteFocusedRef.current = routeFocused;
       timerRevisionRef.current += 1;
       const observed = stateRef.current;
       // Pausing is a synchronous safety operation, independent of storage and
       // the mutation queue. Business changes still require a successful write.
-      if (observed?.activeTimer && (!appIsActiveRef.current || !timerRouteFocusedRef.current)) {
-        commitState({ ...observed, activeTimer: pauseTimer(observed.activeTimer, changedAt) });
+      if (
+        observed?.activeTimer &&
+        (!appIsActiveRef.current || !timerRouteFocusedRef.current)
+      ) {
+        commitState({
+          ...observed,
+          activeTimer: pauseTimer(observed.activeTimer, changedAt),
+        });
       }
       return enqueue(async () => {
         const current = stateRef.current;
@@ -207,16 +242,28 @@ export function AppStateProvider({
           // after success, using the current eligibility and current time.
           await saveAndCommit(current);
           const live = stateRef.current;
-          if (live?.activeTimer && appIsActiveRef.current && timerRouteFocusedRef.current) {
-            commitState({ ...live, activeTimer: resumeTimer(live.activeTimer, Date.now()) });
+          if (
+            live?.activeTimer &&
+            appIsActiveRef.current &&
+            timerRouteFocusedRef.current
+          ) {
+            commitState({
+              ...live,
+              activeTimer: resumeTimer(live.activeTimer, Date.now()),
+            });
           }
         } catch (error) {
           timerSaveBlockedRef.current = true;
           const live = stateRef.current;
           if (live?.activeTimer) {
-            commitState({ ...live, activeTimer: pauseTimer(live.activeTimer, Date.now()) });
+            commitState({
+              ...live,
+              activeTimer: pauseTimer(live.activeTimer, Date.now()),
+            });
           }
-          setTimerSaveError("タイマーの停止・再開を保存できませんでした。計測を停止しています。再試行が成功すると、計測できる画面で再開します。");
+          setTimerSaveError(
+            "タイマーの停止・再開を保存できませんでした。計測を停止しています。再試行が成功すると、計測できる画面で再開します。",
+          );
           throw error;
         }
       });
@@ -315,15 +362,16 @@ export function AppStateProvider({
   }, []);
 
   const setBgmVolume = useCallback(
-    (volume: number) => enqueue(async () => {
-      if (!isValidAudioVolume(volume)) {
-        throw new RangeError("BGM音量は0から100%の間で設定してください。");
-      }
-      const current = requireState();
-      if (current.bgmVolume !== volume) {
-        await saveAndCommit({ ...current, bgmVolume: volume });
-      }
-    }),
+    (volume: number) =>
+      enqueue(async () => {
+        if (!isValidAudioVolume(volume)) {
+          throw new RangeError("BGM音量は0から100%の間で設定してください。");
+        }
+        const current = requireState();
+        if (current.bgmVolume !== volume) {
+          await saveAndCommit({ ...current, bgmVolume: volume });
+        }
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
@@ -333,100 +381,127 @@ export function AppStateProvider({
   }, []);
 
   const setSeVolume = useCallback(
-    (volume: number) => enqueue(async () => {
-      if (!isValidAudioVolume(volume)) {
-        throw new RangeError("効果音音量は0から100%の間で設定してください。");
-      }
-      const current = requireState();
-      if (current.seVolume !== volume) {
-        await saveAndCommit({ ...current, seVolume: volume });
-      }
-    }),
+    (volume: number) =>
+      enqueue(async () => {
+        if (!isValidAudioVolume(volume)) {
+          throw new RangeError("効果音音量は0から100%の間で設定してください。");
+        }
+        const current = requireState();
+        if (current.seVolume !== volume) {
+          await saveAndCommit({ ...current, seVolume: volume });
+        }
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
   const setUserName = useCallback(
-    (userName: string) => enqueue(async () => {
-      const current = requireState();
-      const normalized = normalizeReminderSettings({ ...current, userName });
-      if (current.userName !== normalized.userName) {
-        await saveAndCommit({ ...current, userName: normalized.userName });
-      }
-    }),
+    (userName: string) =>
+      enqueue(async () => {
+        const current = requireState();
+        const normalized = normalizeReminderSettings({ ...current, userName });
+        if (current.userName !== normalized.userName) {
+          await saveAndCommit({ ...current, userName: normalized.userName });
+        }
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
   const setNotificationTime = useCallback(
-    ({ notificationHour, notificationMinute }: NotificationTime) => enqueue(async () => {
-      if (!isValidNotificationTime(notificationHour, notificationMinute)) {
-        throw new RangeError("通知時間は0:00から23:59の間で設定してください。");
-      }
-      const current = requireState();
-      // A time-only edit also preserves historical names over the editing limit.
-      if (current.notificationHour !== notificationHour || current.notificationMinute !== notificationMinute) {
-        await saveAndCommit({ ...current, notificationHour, notificationMinute });
-      }
-    }),
+    ({ notificationHour, notificationMinute }: NotificationTime) =>
+      enqueue(async () => {
+        if (!isValidNotificationTime(notificationHour, notificationMinute)) {
+          throw new RangeError(
+            "通知時間は0:00から23:59の間で設定してください。",
+          );
+        }
+        const current = requireState();
+        // A time-only edit also preserves historical names over the editing limit.
+        if (
+          current.notificationHour !== notificationHour ||
+          current.notificationMinute !== notificationMinute
+        ) {
+          await saveAndCommit({
+            ...current,
+            notificationHour,
+            notificationMinute,
+          });
+        }
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
   const setDefaultTimerMinutes = useCallback(
-    (minutes: number) => enqueue(async () => {
-      if (!isValidDefaultTimerMinutes(minutes)) {
-        throw new RangeError("デフォルト時間は0分から23時間55分まで、5分単位で設定してください。");
-      }
-      const current = requireState();
-      if (current.defaultTimerMinutes !== minutes) {
-        await saveAndCommit({ ...current, defaultTimerMinutes: minutes });
-      }
-    }),
+    (minutes: number) =>
+      enqueue(async () => {
+        if (!isValidDefaultTimerMinutes(minutes)) {
+          throw new RangeError(
+            "デフォルト時間は0分から23時間55分まで、5分単位で設定してください。",
+          );
+        }
+        const current = requireState();
+        if (current.defaultTimerMinutes !== minutes) {
+          await saveAndCommit({ ...current, defaultTimerMinutes: minutes });
+        }
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
   const updateDiary = useCallback(
-    (logId: string, diary: string) => enqueue(async () => {
-      await saveAndCommit(editDiary(requireState(), logId, diary));
-    }),
+    (logId: string, diary: string) =>
+      enqueue(async () => {
+        await saveAndCommit(editDiary(requireState(), logId, diary));
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
   const selectInitialStoryRoute = useCallback(
-    (episodeId: EpisodeId, routeId: string) => enqueue(async () => {
-      const current = requireState();
-      const next = selectStoryRoute(current, episodeId, routeId, catalog);
-      if (next !== current) await saveAndCommit(next);
-    }),
+    (episodeId: EpisodeId, routeId: string) =>
+      enqueue(async () => {
+        const current = requireState();
+        const next = selectStoryRoute(current, episodeId, routeId, catalog);
+        if (next !== current) await saveAndCommit(next);
+      }),
     [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const unlockAdditionalStoryRoute = useCallback(
-    (episodeId: EpisodeId, routeId: string) => enqueue(async () => {
-      const current = requireState();
-      const next = purchaseStoryRoute(current, episodeId, routeId, catalog);
-      if (next !== current) await saveAndCommit(next);
-    }),
+    (episodeId: EpisodeId, routeId: string) =>
+      enqueue(async () => {
+        const current = requireState();
+        const next = purchaseStoryRoute(current, episodeId, routeId, catalog);
+        if (next !== current) await saveAndCommit(next);
+      }),
     [catalog, enqueue, requireState, saveAndCommit],
   );
 
   const unlockSideStory = useCallback(
-    (conversationId: number) => enqueue(async () => {
-      const current = requireState();
-      const next = purchaseSideStory(current, conversationId);
-      if (next !== current) await saveAndCommit(next);
-    }),
+    (conversationId: number) =>
+      enqueue(async () => {
+        const current = requireState();
+        const next = purchaseSideStory(current, conversationId);
+        if (next !== current) await saveAndCommit(next);
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 
   const announceSideStories = useCallback(
-    (conversationIds: readonly number[]) => enqueue(async () => {
-      const current = requireState();
-      const newIds = listAvailableConversations(current)
-        .filter((item) => conversationIds.includes(item.id) && !current.announcedSideStoryIds.includes(item.id))
-        .map((item) => item.id);
-      if (!newIds.length) return;
-      const nextState = { ...current, announcedSideStoryIds: [...current.announcedSideStoryIds, ...newIds] };
-      await saveAndCommit(nextState);
-    }),
+    (conversationIds: readonly number[]) =>
+      enqueue(async () => {
+        const current = requireState();
+        const newIds = listAvailableConversations(current)
+          .filter(
+            (item) =>
+              conversationIds.includes(item.id) &&
+              !current.announcedSideStoryIds.includes(item.id),
+          )
+          .map((item) => item.id);
+        if (!newIds.length) return;
+        const nextState = {
+          ...current,
+          announcedSideStoryIds: [...current.announcedSideStoryIds, ...newIds],
+        };
+        await saveAndCommit(nextState);
+      }),
     [enqueue, requireState, saveAndCommit],
   );
 

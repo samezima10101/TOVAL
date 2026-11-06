@@ -6,6 +6,7 @@ import { StyleSheet, View } from "react-native";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTabSound from "@/src/hooks/useTabSound";
 import { useAppState } from "@/src/state/AppStateProvider";
+import { useTutorial } from "@/src/tutorial/TutorialContext";
 
 function TabIcon({
   source,
@@ -33,12 +34,18 @@ function TabIcon({
 export default function TabLayout() {
   const { seVolume } = useAppState();
   const playTabSound = useTabSound(seVolume);
+  const tutorial = useTutorial();
 
   return (
     <Tabs
       // AppFrame's footer handles the bottom safe area below this bar.
       safeAreaInsets={{ bottom: 0 }}
-      screenListeners={{ tabPress: playTabSound }}
+      screenListeners={{
+        tabPress: (event) => {
+          if (tutorial.active) event.preventDefault();
+          else playTabSound();
+        },
+      }}
       screenOptions={{
         headerShown: false,
         sceneStyle: { backgroundColor: "transparent" },

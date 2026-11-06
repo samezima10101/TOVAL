@@ -45,6 +45,6 @@ npm.cmd run start
 ## 変更時と配布前の確認
 
 - 変更前に既存差分と呼び出し元・保存・ルートとの連携を調べ、保存済みデータと識別IDを維持する。ファイルベースのルートを通常のimport検索だけで未使用と判断しない。
-- [完成基準A01〜A11](completion-criteria.md)と[手動チェックリスト](manual-acceptance-checklist.md)で回帰を確認する。保存失敗・破損には実利用とは別の専用検証データを使う。
+- [完成基準A01〜A12](completion-criteria.md)と[手動チェックリスト](manual-acceptance-checklist.md)で回帰を確認する。保存失敗・破損には実利用とは別の専用検証データを使う。
 - 機種・iOS・ビルド・実施日・手順・期待結果・実際の結果を残す。過去のPC結果や限定的なユーザー報告を、変更後のiPhoneの合格へ置き換えない。
 - 正式素材・Figma反映とiPhone回帰は未完了。Apple配布アカウント、アプリ識別子、ビルド方式、TestFlightのテスター範囲は未確定で、EASビルド・TestFlightアップロードは未実施。最低OS・権限・署名・IPA起動も製品ビルドで確認する。

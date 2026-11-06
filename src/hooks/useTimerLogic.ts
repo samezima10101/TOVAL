@@ -7,9 +7,18 @@ import { formatDuration, getTimerSnapshot } from "@/src/domain/timer";
 import useTimerTick from "@/src/hooks/useTimerTick";
 import { useAppState } from "@/src/state/AppStateProvider";
 
-export default function useTimerLogic() {
-  const { state, cancelTimer, finishTimer, setTimerRouteFocused, timerSaveError, retryTimerSave } =
-    useAppState();
+export default function useTimerLogic(options?: {
+  preventExit: boolean;
+  onExitRequest: () => void;
+}) {
+  const {
+    state,
+    cancelTimer,
+    finishTimer,
+    setTimerRouteFocused,
+    timerSaveError,
+    retryTimerSave,
+  } = useAppState();
   const now = useTimerTick();
 
   const [isProcessing, setIsProcessing] = React.useState(false);
@@ -17,14 +26,25 @@ export default function useTimerLogic() {
   const [finishedAt, setFinishedAt] = React.useState<number | null>(null);
   const processingRef = React.useRef(false);
   const leavingRef = React.useRef(false);
-  const [destination, setDestination] = React.useState<"home" | number | null>(null);
+  const [destination, setDestination] = React.useState<"home" | number | null>(
+    null,
+  );
   // While a completion/cancellation is saving, OS back must not unmount the
   // owner and let its pending continuation navigate from another screen.
-  usePreventRemove(isProcessing && destination === null, () => undefined);
+  usePreventRemove(
+    destination === null && (isProcessing || Boolean(options?.preventExit)),
+    () => {
+      if (!processingRef.current) options?.onExitRequest();
+    },
+  );
   React.useEffect(() => {
     if (destination === null) return;
     if (destination === "home") router.dismissTo("/");
-    else router.replace({ pathname: "/story", params: { episode: String(destination), source: "unlock" } });
+    else
+      router.replace({
+        pathname: "/story",
+        params: { episode: String(destination), source: "unlock" },
+      });
   }, [destination]);
   const activeTimer = state?.activeTimer ?? null;
   const retrySave = async () => {
@@ -35,7 +55,9 @@ export default function useTimerLogic() {
       await retryTimerSave();
       setError(null);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : "保存できませんでした。");
+      setError(
+        cause instanceof Error ? cause.message : "保存できませんでした。",
+      );
     } finally {
       processingRef.current = false;
       setIsProcessing(false);
@@ -104,7 +126,8 @@ export default function useTimerLogic() {
   };
 
   const openDiary = async () => {
-    if (processingRef.current || leavingRef.current || finishedAt !== null) return;
+    if (processingRef.current || leavingRef.current || finishedAt !== null)
+      return;
     processingRef.current = true;
     const pressedAt = Date.now();
     setError(null);
@@ -114,7 +137,9 @@ export default function useTimerLogic() {
       await setTimerRouteFocused(false, pressedAt);
     } catch (cause) {
       setError(
-        cause instanceof Error ? cause.message : "タイマーを停止できませんでした。",
+        cause instanceof Error
+          ? cause.message
+          : "タイマーを停止できませんでした。",
       );
     } finally {
       processingRef.current = false;
@@ -129,7 +154,8 @@ export default function useTimerLogic() {
   };
 
   const handleFinish = async (diary = "") => {
-    if (processingRef.current || leavingRef.current || finishedAt === null) return;
+    if (processingRef.current || leavingRef.current || finishedAt === null)
+      return;
     processingRef.current = true;
     leavingRef.current = true;
     setError(null);

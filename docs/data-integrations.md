@@ -1,10 +1,13 @@
 # データ・連携仕様
 
-更新日: 2026-11-01（日本時間）。体験版の初版保存形式は **v1**。合格条件は[完成基準](completion-criteria.md)、検証データ・結果は[手動チェックリスト](manual-acceptance-checklist.md)、本文・素材の変更は[編集ガイド](editing-guide.md)を参照する。
+更新日: 2026-11-06（日本時間）。体験版の初版保存形式は **v1**。合格条件は[完成基準](completion-criteria.md)、検証データ・結果は[手動チェックリスト](manual-acceptance-checklist.md)、本文・素材の変更は[編集ガイド](editing-guide.md)を参照する。
 
 ## 保存単位と更新順序
 
 - AsyncStorageの`@my-june/app-state-v1`へAppState全体を1件のJSONで保存する。`schemaVersion: 1`を使用する。DB・クラウド同期・別ログファイルはない。
+- チュートリアルの初回判定だけは独立キー`@my-june/tutorial-v1`へ文字列`completed`または`skipped`を保存する。キーなしは未完了。段階・練習タイマー・練習日記は保存せず、終了前にアプリを閉じた場合は会話00からやり直す。会話中に保存済みの名前・タスクはAppState側へ保持する。再実行では初回判定を書き換えない。AppStateの退避・初期化の対象にこの別キーは含まない。
+- 初回判定の未知値・読込失敗は上書きせず再読込を案内し、「今回はアプリへ進む」ではキーを変えず通常利用へ進む。完了／スキップの保存失敗ではチュートリアルを閉じず、同じ操作を再試行できる。
+- 既存画面のチュートリアル中は、内側のAppStateContextへ練習用タイマーと25分の初期設定をメモリ内で渡す。既存の画面・タイマーフックを使い、開始／停止／終了操作だけ専用の関数へ向ける。本番Providerのタイマー・報酬・保存処理は呼び出さず、名前・タスクの入力だけは元の保存APIを使う。終了時はダイアログを閉じ、戻り先への遷移後に元の状態へ戻す。
 - [AppStateProvider](../src/state/AppStateProvider.tsx)の変更操作はPromiseキューで直列化し、最新の`stateRef`から次状態を作る。原則は **検証→次状態→Repository保存→共有状態反映**。保存失敗では業務状態を確定せず、後続キューは継続する。Provider外の別プロセスとの排他制御はない。
 - 例外は計測停止。ライフサイクル／フォーカス変更時にキューを待たず区間を閉じ、メモリへ同期反映する。保存中に止まった同じセッションを古い実行状態へ戻さない。停止／再開保存に失敗すると再試行成功まで停止し、再開は保存後に最新の資格を確認して現在時刻から行う。
 - 読込時は実行中タイマーを停止へ正規化して保存する。未確定区間・終了中の不明な時間は加算しない。保存済み累積は保持し、最後の停止以降の未保存区間は損失を許容する。
@@ -25,7 +28,7 @@
 | `taskName` | string、初期空。登録・改名時trim、進捗は維持 |
 | `totalNt` / `totalCompletions` | 非負の安全な整数、初期0。完了で加算、NTは購入で減算 |
 | `lastCompletionDate` | 最後の終了日のYYYY-MM-DDまたはnull |
-| `unlockedStories` | `{ episodeId, unlockedDate }[]`、初期空。実在する話ID・日付、話ID重複なし |
+| `unlockedStories` | `{ episodeId, unlockedDate }[]`、初期空。第1〜14話の実在する話ID・日付、話ID重複なし。常時再生可能な第0話は保存せず、日次解放にも含めない |
 | `storyRouteProgress` | 話ID→`{ firstSelectedRouteId?, extraUnlockedRouteIds }`、初期空。初回無料選択と追加購入を分離 |
 | `purchasedSideStoryIds` / `announcedSideStoryIds` | 購入済み／入荷告知済みの商品ID。重複なしの正の安全な整数配列、初期空 |
 | `diaryLogs` | 完了ログ配列、初期空 |

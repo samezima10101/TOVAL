@@ -8,6 +8,8 @@ import { Colors, Fonts } from "@/src/constants/theme";
 import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
+import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
+import { useTutorialTarget } from "@/src/tutorial/TutorialContext";
 
 export default function AppFrame({
   children,
@@ -19,6 +21,7 @@ export default function AppFrame({
 }>) {
   const { state, timerSaveError, retryTimerSave } = useAppState();
   const today = useLocalToday();
+  const nt = useTutorialTarget("nt");
   const retryTimer = () => {
     void retryTimerSave().catch(() =>
       Alert.alert(
@@ -37,9 +40,14 @@ export default function AppFrame({
 
   return (
     <View style={styles.container}>
-      <SafeAreaView edges={["top"]} style={styles.headerOverlay} pointerEvents="box-none">
+      <SafeAreaView
+        edges={["top"]}
+        style={styles.headerOverlay}
+        pointerEvents="box-none"
+      >
         <View style={styles.header} pointerEvents="box-none">
           <View
+            {...nt.anchor}
             style={styles.badge}
             pointerEvents="none"
             accessible
@@ -100,6 +108,7 @@ export default function AppFrame({
           />
         </View>
       </SafeAreaView>
+      <TutorialOverlay surface="screen" />
     </View>
   );
 }

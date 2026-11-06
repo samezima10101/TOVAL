@@ -1,5 +1,6 @@
 import { useKeepAwake } from "expo-keep-awake";
 import { StatusBar } from "expo-status-bar";
+import { useIsFocused } from "expo-router/react-navigation";
 import React from "react";
 import {
   Modal,
@@ -17,6 +18,13 @@ import DiaryModal from "@/src/components/timer/DiaryModal";
 import TimerDial from "@/src/components/timer/TimerDial";
 import { Colors, Fonts } from "@/src/constants/theme";
 import useTimerLogic from "@/src/hooks/useTimerLogic";
+import {
+  useTutorial,
+  useTutorialModal,
+  useTutorialTarget,
+} from "@/src/tutorial/TutorialContext";
+import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
+import { TUTORIAL_STEPS } from "@/src/tutorial/steps";
 
 export default function TimerScreen() {
   const { top } = useSafeAreaInsets();
@@ -34,8 +42,19 @@ function TimerKeepAwake() {
 }
 
 function TimerContent() {
+  const tutorial = useTutorial();
+  const isFocused = useIsFocused();
+  const step = TUTORIAL_STEPS[tutorial.index];
+  const dial = useTutorialTarget("dial");
+  const cancel = useTutorialTarget("cancel");
+  const power = useTutorialTarget("power");
+  const powerModal = useTutorialModal("power");
   const [isPowerSaving, setIsPowerSaving] = React.useState(false);
-  const restoreTimerScreen = () => setIsPowerSaving(false);
+  const restoreTimerScreen = () => {
+    setIsPowerSaving(false);
+    tutorial.setPowerSaving(false);
+    tutorial.advance("power");
+  };
   const {
     activeTimer,
     snapshot,
@@ -49,7 +68,12 @@ function TimerContent() {
     closeDiary,
     handleCancel,
     handleFinish,
-  } = useTimerLogic();
+  } = useTimerLogic({
+    preventExit:
+      tutorial.practicing && !tutorial.closing &&
+      (step.scene === "timer" || step.scene === "diary"),
+    onExitRequest: () => tutorial.close("skipped"),
+  });
 
   if (!activeTimer || !snapshot) {
     return <View style={styles.screen} />;
@@ -57,7 +81,10 @@ function TimerContent() {
 
   const remainingProgress =
     activeTimer.plannedSeconds > 0 && !snapshot.isComplete
-      ? Math.max(0, 1 - snapshot.elapsedMs / (activeTimer.plannedSeconds * 1000))
+      ? Math.max(
+          0,
+          1 - snapshot.elapsedMs / (activeTimer.plannedSeconds * 1000),
+        )
       : 0;
 
   return (
@@ -81,19 +108,20 @@ function TimerContent() {
         <View style={styles.header}>
           {!snapshot.isComplete ? (
             <TouchableOpacity
+              {...cancel.anchor}
               onPress={handleCancel}
               style={styles.cancelButton}
-              disabled={isProcessing}
+              disabled={isProcessing || tutorial.active}
               accessibilityRole="button"
               accessibilityLabel="タイマーをキャンセル"
-              accessibilityState={{ disabled: isProcessing }}
+              accessibilityState={{ disabled: isProcessing || tutorial.active }}
             >
               <Text style={styles.cancelText}>✕ キャンセル</Text>
             </TouchableOpacity>
           ) : null}
         </View>
 
-        <View style={styles.timerWrapper}>
+        <View style={styles.timerWrapper} {...dial.anchor}>
           <TimerDial
             progress={remainingProgress}
             timerText={timerText}
@@ -105,18 +133,29 @@ function TimerContent() {
 
         <View style={styles.footer}>
           {error ? (
-            <Text style={styles.error} accessibilityRole="alert">{error}</Text>
+            <Text style={styles.error} accessibilityRole="alert">
+              {error}
+            </Text>
           ) : null}
           <PrimaryButton
             title="終了"
-            onPress={() => void openDiary()}
+            tutorialTarget="finish"
+            onPress={() => {
+              if (tutorial.practicing) tutorial.advance("finish");
+              else void openDiary();
+            }}
             disabled={!snapshot.isComplete || isProcessing}
             loading={isProcessing}
             accessibilityLabel="タイマーを終了して記録"
             maxFontSizeMultiplier={1.3}
           />
           <TouchableOpacity
-            onPress={() => setIsPowerSaving(true)}
+            {...power.anchor}
+            disabled={power.blocked}
+            onPress={() => {
+              setIsPowerSaving(true);
+              tutorial.setPowerSaving(true);
+            }}
             style={styles.powerSavingButton}
             accessibilityRole="button"
             accessibilityLabel="省電力モード"
@@ -139,7 +178,8 @@ function TimerContent() {
       </View>
       {/* 別ルートにするとフォーカスを失い計測が止まるため、標準Modalで共通ヘッダー・フッターごと覆う。 */}
       <Modal
-        visible={isPowerSaving}
+        {...powerModal}
+        visible={isPowerSaving && !tutorial.closing && !tutorial.transitioning}
         animationType="none"
         presentationStyle="fullScreen"
         backdropColor="#000000"
@@ -169,14 +209,21 @@ function TimerContent() {
             />
           </View>
         ) : null}
+        {isPowerSaving ? <TutorialOverlay surface="power" /> : null}
       </Modal>
       <DiaryModal
         onRetrySave={timerSaveError ? () => void retrySave() : undefined}
-        visible={isDiaryOpen}
+        visible={
+          !tutorial.closing && !tutorial.transitioning && isFocused &&
+          (tutorial.practicing ? step.scene === "diary" : isDiaryOpen)
+        }
         saving={isProcessing}
         error={error}
         onClose={closeDiary}
-        onSave={handleFinish}
+        onSave={async (diary) => {
+          if (tutorial.practicing) tutorial.advance("save");
+          else await handleFinish(diary);
+        }}
       />
     </View>
   );

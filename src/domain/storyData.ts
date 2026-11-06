@@ -1,3 +1,4 @@
+import { episode00 } from '@/src/content/stories/episode00';
 import { episode01 } from '@/src/content/stories/episode01';
 import { episode02 } from '@/src/content/stories/episode02';
 import { episode03 } from '@/src/content/stories/episode03';
@@ -40,6 +41,10 @@ export const STORY_EPISODES: readonly StoryEpisode[] = [
 ];
 export type StoryCatalog = { episodes: readonly StoryEpisode[] };
 export const STORY_CATALOG: StoryCatalog = { episodes: STORY_EPISODES };
+// Episode 0 is always replayable; daily unlocks and saved rights use STORY_CATALOG.
+export const STORY_ARCHIVE_CATALOG: StoryCatalog = {
+  episodes: [episode00, ...STORY_EPISODES],
+};
 
 export function getStoryEpisode(id: number, catalog: StoryCatalog = STORY_CATALOG): StoryEpisode | undefined {
   return catalog.episodes.find((episode) => episode.id === id);

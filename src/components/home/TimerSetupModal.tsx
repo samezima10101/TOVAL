@@ -13,6 +13,13 @@ import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { Fonts } from "@/src/constants/theme";
 import { DEFAULT_TIMER_MINUTES } from "@/src/domain/timer";
 import useTimerSetup from "@/src/hooks/useTimerSetup";
+import {
+  useTutorial,
+  useTutorialModal,
+  useTutorialTarget,
+} from "@/src/tutorial/TutorialContext";
+import TutorialOverlay from "@/src/tutorial/TutorialOverlay";
+import { TUTORIAL_STEPS } from "@/src/tutorial/steps";
 
 type Props = {
   visible: boolean;
@@ -37,12 +44,33 @@ export default function TimerSetupModal({
   const fontMultiplier = compact ? 1 : 1.2;
   const { isStarting, error, displayHours, displayMins, adjust, handleStart } =
     useTimerSetup(initialMinutes, visible, onStart);
+  const tutorial = useTutorial();
+  const picker = useTutorialTarget("adjust");
+  const modal = useTutorialModal("setup");
+  const controlsDisabled =
+    isStarting ||
+    (tutorial.practicing &&
+      TUTORIAL_STEPS[tutorial.index].action !== "set-five");
+  const handleAdjust = (amount: number) => {
+    if (controlsDisabled) return;
+    const next = Math.max(
+      0,
+      Math.min(1435, displayHours * 60 + displayMins + amount),
+    );
+    adjust(amount);
+    if (tutorial.practicing && next === 5) tutorial.advance("set-five");
+  };
   const handleClose = () => {
+    if (tutorial.active) {
+      tutorial.close("skipped");
+      return;
+    }
     if (!isStarting) onClose();
   };
 
   return (
     <Modal
+      {...modal}
       visible={visible}
       transparent
       animationType="fade"
@@ -98,6 +126,7 @@ export default function TimerSetupModal({
                   ) : null}
 
                   <View
+                    {...picker.anchor}
                     style={[
                       styles.pickerContainer,
                       compact && styles.pickerCompact,
@@ -106,15 +135,15 @@ export default function TimerSetupModal({
                     {/* 時間の設定カラム */}
                     <View style={styles.pickerColumn}>
                       <TouchableOpacity
-                        onPress={() => adjust(60)}
+                        onPress={() => handleAdjust(60)}
                         style={[
                           styles.arrowButton,
                           isStarting && styles.disabledAction,
                         ]}
                         accessibilityRole="button"
                         accessibilityLabel="1時間増やす"
-                        disabled={isStarting}
-                        accessibilityState={{ disabled: isStarting }}
+                        disabled={controlsDisabled}
+                        accessibilityState={{ disabled: controlsDisabled }}
                       >
                         <Text
                           style={styles.arrowText}
@@ -137,15 +166,15 @@ export default function TimerSetupModal({
                         {displayHours}
                       </Text>
                       <TouchableOpacity
-                        onPress={() => adjust(-60)}
+                        onPress={() => handleAdjust(-60)}
                         style={[
                           styles.arrowButton,
                           isStarting && styles.disabledAction,
                         ]}
                         accessibilityRole="button"
                         accessibilityLabel="1時間減らす"
-                        disabled={isStarting}
-                        accessibilityState={{ disabled: isStarting }}
+                        disabled={controlsDisabled}
+                        accessibilityState={{ disabled: controlsDisabled }}
                       >
                         <Text
                           style={styles.arrowText}
@@ -173,15 +202,15 @@ export default function TimerSetupModal({
                     {/* 分の設定カラム */}
                     <View style={styles.pickerColumn}>
                       <TouchableOpacity
-                        onPress={() => adjust(5)}
+                        onPress={() => handleAdjust(5)}
                         style={[
                           styles.arrowButton,
                           isStarting && styles.disabledAction,
                         ]}
                         accessibilityRole="button"
                         accessibilityLabel="5分増やす"
-                        disabled={isStarting}
-                        accessibilityState={{ disabled: isStarting }}
+                        disabled={controlsDisabled}
+                        accessibilityState={{ disabled: controlsDisabled }}
                       >
                         <Text
                           style={styles.arrowText}
@@ -204,15 +233,15 @@ export default function TimerSetupModal({
                         {String(displayMins).padStart(2, "0")}
                       </Text>
                       <TouchableOpacity
-                        onPress={() => adjust(-5)}
+                        onPress={() => handleAdjust(-5)}
                         style={[
                           styles.arrowButton,
                           isStarting && styles.disabledAction,
                         ]}
                         accessibilityRole="button"
                         accessibilityLabel="5分減らす"
-                        disabled={isStarting}
-                        accessibilityState={{ disabled: isStarting }}
+                        disabled={controlsDisabled}
+                        accessibilityState={{ disabled: controlsDisabled }}
                       >
                         <Text
                           style={styles.arrowText}
@@ -242,6 +271,7 @@ export default function TimerSetupModal({
 
                   <PrimaryButton
                     title="タイマーを開始"
+                    tutorialTarget="begin"
                     style={
                       compact
                         ? styles.primaryActionCompact
@@ -274,6 +304,7 @@ export default function TimerSetupModal({
           </TouchableOpacity>
         </View>
       </View>
+      {visible ? <TutorialOverlay surface="setup" /> : null}
     </Modal>
   );
 }

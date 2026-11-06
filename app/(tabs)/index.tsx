@@ -1,6 +1,7 @@
 import useGuardedPush from "@/src/hooks/useGuardedPush";
 import { Image } from "expo-image";
 import { useBottomTabBarHeight } from "expo-router/js-tabs";
+import { useIsFocused } from "expo-router/react-navigation";
 import React from "react";
 import {
   StyleSheet,
@@ -19,6 +20,8 @@ import { Fonts } from "@/src/constants/theme";
 import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
+import { useTutorial } from "@/src/tutorial/TutorialContext";
+import { TUTORIAL_STEPS } from "@/src/tutorial/steps";
 
 // Match monitor_frame.svg's 360 × 270 viewBox; resize both axes together.
 const MONITOR_ASPECT_RATIO = 4 / 3;
@@ -29,6 +32,8 @@ export default function HomeScreen() {
   const tabBarHeight = useBottomTabBarHeight();
   const push = useGuardedPush();
   const { state, setTaskName, startTimer } = useAppState();
+  const tutorial = useTutorial();
+  const isFocused = useIsFocused();
   const [isTimerSetupOpen, setIsTimerSetupOpen] = React.useState(false);
   const [monitorSpace, setMonitorSpace] = React.useState({
     width: width - 48,
@@ -72,7 +77,7 @@ export default function HomeScreen() {
   const handleStartTimer = async (plannedSeconds: number) => {
     await startTimer(plannedSeconds);
     setIsTimerSetupOpen(false);
-    push("/timer");
+    if (!tutorial.practicing) push("/timer");
   };
 
   const handleResumeTimer = () => {
@@ -244,7 +249,12 @@ export default function HomeScreen() {
 
         <PrimaryButton
           title="はじめる"
-          onPress={() => setIsTimerSetupOpen(true)}
+          tutorialTarget="start"
+          onPress={() =>
+            tutorial.practicing
+              ? tutorial.advance("open-setup")
+              : setIsTimerSetupOpen(true)
+          }
           disabled={needsTask}
           style={shortScreen ? styles.startButtonCompact : styles.startButton}
           accessibilityLabel="集中モードの時間を設定"
@@ -254,6 +264,7 @@ export default function HomeScreen() {
           <TouchableOpacity
             style={[styles.shopButton, shortScreen && styles.shopButtonCompact]}
             onPress={() => push("/shop")}
+            disabled={tutorial.active}
             accessibilityRole="button"
             accessibilityLabel="ショップを開く"
           >
@@ -268,15 +279,24 @@ export default function HomeScreen() {
       </View>
 
       <TaskNameModal
-        visible={needsTask}
+        visible={needsTask && !tutorial.active}
         required
         initialValue={state.taskName}
         onClose={() => undefined}
         onSave={setTaskName}
       />
       <TimerSetupModal
-        visible={isTimerSetupOpen}
-        initialMinutes={state.defaultTimerMinutes}
+        visible={
+          isFocused && !tutorial.closing && !tutorial.transitioning &&
+          (tutorial.practicing
+            ? TUTORIAL_STEPS[tutorial.index].scene === "setup"
+            : isTimerSetupOpen)
+        }
+        initialMinutes={
+          tutorial.practicing && TUTORIAL_STEPS[tutorial.index].id === "begin"
+            ? 5
+            : state.defaultTimerMinutes
+        }
         hasActiveTimer={Boolean(state.activeTimer)}
         onClose={() => setIsTimerSetupOpen(false)}
         onStart={handleStartTimer}
