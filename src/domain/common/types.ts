@@ -13,11 +13,14 @@ export type GemExpression =
   | LegacyExpression
   | NormalExpression
   | `surprised${1 | 2 | 3 | 4}`
-  | `doubt${3 | 4}`
+  | `doubt${1 | 2 | 3 | 4 | 5 | 6}`
   | `beam${1 | 2}`
   | `nervous${1 | 2 | 3 | 4}`
   | `annoyed${1}`
-  | "smile3";
+  | "smile3"
+  | `shocked${1 | 2 | 3 | 4}`
+  | `glare${1 | 2}`
+  | `cutesy${1 | 2}`;
 export type AltaExpression =
   | LegacyExpression
   | NormalExpression
@@ -26,7 +29,8 @@ export type AltaExpression =
   | `sparkle${1 | 2}`
   | `smirk${3 | 4}`
   | `shocked${3 | 4}`
-  | "angry2";
+  | "angry2"
+  | `nervous${1 | 2 | 3 | 4}`;
 export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {

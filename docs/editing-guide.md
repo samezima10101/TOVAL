@@ -23,6 +23,8 @@
 
 第4話は同じ原稿のタブ`04`を反映し、共通前25行・分岐A5行／B6行・共通後15行。行種別が空でも本文と話者がある5行を含め、本文・選択肢・左右表情・名前差込を保持する。シートにタイトル指定はないため、既存タイトル・話ID・分岐IDを維持する。
 
+第5話は同じ原稿のタブ`05`を反映し、共通前37行・分岐A「かわいい！」6行／B「かっこいい！」7行・共通後4行。行種別が空の台詞も含め、本文・左右表情・名前差込・both話者を保持する。28行目の話者空欄（「え、我々は『かっこいい』枠でしょ？」の台詞）は前後の文脈からジェムへ補完する。シートにタイトル指定はないため、既存タイトル・話ID・分岐IDを維持する。
+
 表情は`left`にジェム、`right`にアルタの名前を指定する。`none`は指定側の画像を描画せず、もう一方の位置を維持する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
 
 演出は台詞の`effect`で指定する。`effect: { type: "shout", target: "alta" }`はアルタのみ、target: "gem"はジェムのみを、台詞へ切り替わったとき上下3ポイント・25ms刻み8区間（計200ms）震わせて元の位置へ戻す。背景・もう一人・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は停止し位置を戻す。第2話の最後（episode-02-after-6）はアルタを指定。調整箇所はStoryCharactersのshake。
@@ -31,8 +33,8 @@
 
 | キャラクター | 表情名と画像（各範囲は番号順） |
 | --- | --- |
-| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt3〜4` → `G03-3〜4.png`、`beam1〜2` → `G04-1〜2.png`、`nervous1〜4` → `G05-1〜4.png` |
-| アルタ | `normal1〜4` → `alta/A01-1〜4.png`、`grumpy1〜4` → `A02-1〜4.png`、`grin1〜4` → `A03-1〜4.png`、`sparkle1〜2` → `A04-1〜2.png`、`smirk3〜4` → `A05-3〜4.png` |
+| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt1〜6` → `G03-1〜6.png`、`beam1〜2` → `G04-1〜2.png`、`nervous1〜4` → `G05-1〜4.png`、`shocked1〜4` → `G08-1〜4.png`、`glare2` → `G09-2.png` |
+| アルタ | `normal1〜4` → `alta/A01-1〜4.png`、`grumpy1〜4` → `A02-1〜4.png`、`grin1〜4` → `A03-1〜4.png`、`sparkle1〜2` → `A04-1〜2.png`、`smirk3〜4` → `A05-3〜4.png`、`nervous1〜4` → `A08-1〜4.png` |
 
 画像は`assets/faces/`以下。既存の`normal`・`talk`・`doubt`は互換用に従来の画像を維持する。例: `left: "surprised1", right: "sparkle1"`。
 

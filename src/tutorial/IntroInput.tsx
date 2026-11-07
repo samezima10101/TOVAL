@@ -16,10 +16,7 @@ import { Fonts } from "@/src/constants/theme";
 import { MAX_TASK_NAME_LENGTH } from "@/src/domain/common/types";
 import { MAX_USER_NAME_LENGTH } from "@/src/domain/reminder";
 import { useAppState } from "@/src/state/AppStateProvider";
-import {
-  useTutorial,
-  useTutorialModal,
-} from "./TutorialContext";
+import { useTutorial, useTutorialModal } from "./TutorialContext";
 
 export default function IntroInput({
   field,
