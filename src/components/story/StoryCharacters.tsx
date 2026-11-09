@@ -83,6 +83,7 @@ const faceAssets: {
     nervous2: require("@/assets/faces/alta/A08-2.png"),
     nervous3: require("@/assets/faces/alta/A08-3.png"),
     nervous4: require("@/assets/faces/alta/A08-4.png"),
+    gemized2: require("@/assets/faces/alta/A09-2.png"),
   },
 };
 

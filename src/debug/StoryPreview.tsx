@@ -37,7 +37,7 @@ export default function StoryPreview() {
     <SettingsCard>
       <SettingsTitle>デバッグ：ストーリー確認</SettingsTitle>
       <Text style={styles.description}>
-        未解放の話や両分岐を確認できます。NT・解放・購入状態は変わりません。
+        未解放の話や全分岐を確認できます。NT・解放・購入状態は変わりません。
       </Text>
       <PrimaryButton title="ストーリーを選ぶ" onPress={() => setIsOpen(true)} />
       <Modal
@@ -122,7 +122,7 @@ function PreviewPlayback({
     onClose,
     // selectInitialRoute / onFinishを渡さないため、分岐選択・読了で保存しない。
   });
-  const characterLine = reader.line ?? episode.commonBefore[episode.commonBefore.length - 1];
+  const characterLine = reader.line ?? reader.choiceAnchor;
 
   return (
     <View style={styles.playback}>
@@ -130,6 +130,7 @@ function PreviewPlayback({
         {kind === "main" ? `第${episode.id}話` : `サイド ${episode.id}`}　プレビュー
       </Text>
       <StoryScene
+        speaker={reader.line?.speaker}
         title={episode.title}
         episodeNumber={kind === "main" ? episode.id : undefined}
         slide={characterLine?.slide}
@@ -137,16 +138,16 @@ function PreviewPlayback({
         onClose={reader.handleClose}
         disabled={reader.isProcessing}
         error={reader.error}
-        contentKey={reader.isWaitingForChoice ? "choices" : reader.line?.id}
+        contentKey={reader.isWaitingForChoice ? reader.choiceKey : reader.line?.id}
         characters={kind === "main" ? (
           <StoryCharacters effect={reader.line?.effect} contentKey={reader.line?.id} leftExpression={characterLine?.left} rightExpression={characterLine?.right} />
         ) : undefined}
       >
         <StoryMessage {...reader} />
-        {reader.isWaitingForChoice && episode.routes ? (
+        {reader.isWaitingForChoice ? (
           <StoryChoices
             priceNt={0}
-            routes={episode.routes}
+            routes={reader.choiceRoutes}
             onSelect={(routeId) => void reader.handleSelectRoute(routeId)}
             disabled={reader.isProcessing}
           />

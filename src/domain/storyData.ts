@@ -15,8 +15,10 @@ import { episode13 } from '@/src/content/stories/episode13';
 import { episode14 } from '@/src/content/stories/episode14';
 import {
   EpisodeId,
+  AppState,
   Speaker,
   StoryCharacter,
+  StoryChoice,
   StoryEpisode,
   StoryLine,
   StoryRoute,
@@ -59,17 +61,21 @@ export function getStoryRoute(
     : undefined;
 }
 
-/** Returns the complete playable sequence after a route has been selected. */
-export function getPlayableStoryLines(
+/** Build the selected path, stopping at the next question until it is answered. */
+export function getStoryPlayback(
   episode: StoryEpisode,
-  routeId?: string,
-): readonly StoryLine[] {
-  const route = getStoryRoute(episode, routeId);
-  return [
-    ...episode.commonBefore,
-    ...(route?.lines ?? []),
-    ...episode.commonAfter,
-  ];
+  selectedIds: readonly string[],
+): { lines: readonly StoryLine[]; choices: readonly StoryChoice[] } {
+  const lines = [...episode.commonBefore];
+  let choices: readonly StoryChoice[] = episode.routes ?? [];
+  for (const id of selectedIds) {
+    const choice = choices.find((item) => item.id === id);
+    if (!choice) break;
+    lines.push(...choice.lines);
+    choices = choice.choices ?? [];
+  }
+  if (!choices.length) lines.push(...episode.commonAfter);
+  return { lines, choices };
 }
 
 export function isStoryRouteUnlocked(
@@ -80,6 +86,31 @@ export function isStoryRouteUnlocked(
     progress?.firstSelectedRouteId === routeId ||
     progress?.extraUnlockedRouteIds.includes(routeId) === true
   );
+}
+
+/** Acquired rights remain usable even if an editorial requirement changes. */
+export function isStoryRouteAvailable(
+  state: Pick<AppState, "storyRouteProgress">,
+  episodeId: EpisodeId,
+  route: StoryRoute,
+  catalog: StoryCatalog = STORY_CATALOG,
+): boolean {
+  if (isStoryRouteUnlocked(state.storyRouteProgress[episodeId], route.id)) return true;
+  const requirement = route.requirement;
+  if (!requirement) return true;
+  const episodes = requirement.episodeIds.map((id) => getStoryEpisode(id, catalog));
+  if (requirement.type === "anyEpisodeRouteCount") {
+    return episodes.some((episode) => episode &&
+      (episode.routes ?? []).filter((item) =>
+        isStoryRouteUnlocked(state.storyRouteProgress[episode.id], item.id),
+      ).length >= requirement.count);
+  }
+  return episodes.length > 0 && episodes.every((episode) => {
+    if (!episode?.routes?.length) return false;
+    return episode.routes.every((item) =>
+      isStoryRouteUnlocked(state.storyRouteProgress[episode.id], item.id),
+    );
+  });
 }
 
 /** Keep today's unlocked episode visible; otherwise show the next daily unlock. */

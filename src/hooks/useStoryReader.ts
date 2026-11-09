@@ -2,7 +2,7 @@ import { router } from "expo-router";
 import React from "react";
 
 import { StoryEpisode } from "@/src/domain/common/types";
-import { getPlayableStoryLines, getStoryRoute } from "@/src/domain/storyData";
+import { getStoryPlayback } from "@/src/domain/storyData";
 
 type SelectRoute = (routeId: string) => Promise<void>;
 type ReaderOptions = {
@@ -25,8 +25,8 @@ export default function useStoryReader(
     processingRef, exitRequestedRef }: ReaderOptions,
 ) {
   const [lineIndex, setLineIndex] = React.useState(0);
-  const [selectedRouteId, setSelectedRouteId] =
-    React.useState(initialRouteId);
+  const [selectedIds, setSelectedIds] =
+    React.useState<string[]>(initialRouteId ? [initialRouteId] : []);
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [visibleCharacterCount, setVisibleCharacterCount] = React.useState(0);
@@ -60,17 +60,13 @@ export default function useStoryReader(
     if (!isProcessingRef.current && !exitRequestedRef?.current) closeReader();
   };
 
-  const hasChoice = Boolean(episode?.routes?.length);
+  const playback = episode ? getStoryPlayback(episode, selectedIds) : { lines: [], choices: [] };
+  const { lines, choices: choiceRoutes } = playback;
+  const hasChoice = choiceRoutes.length > 0;
+  const isChoosingInitialRoute = selectedIds.length === 0;
   const isWaitingForChoice = Boolean(
-    episode && hasChoice && !selectedRouteId && lineIndex >= episode.commonBefore.length,
+    episode && hasChoice && lineIndex >= lines.length,
   );
-  const lines = episode
-    ? selectedRouteId
-      ? getPlayableStoryLines(episode, selectedRouteId)
-      : episode.routes?.length
-        ? episode.commonBefore
-        : getPlayableStoryLines(episode)
-    : [];
   const sourceLine = lines[lineIndex];
   const line = sourceLine
     ? {
@@ -81,7 +77,7 @@ export default function useStoryReader(
   const isLastLine =
     Boolean(line) &&
     lineIndex === lines.length - 1 &&
-    !(hasChoice && !selectedRouteId);
+    !hasChoice;
 
   const lineId = line?.id;
   const lineText = line?.text ?? "";
@@ -145,8 +141,8 @@ export default function useStoryReader(
     if (
       !episode ||
       !hasChoice ||
-      selectedRouteId ||
-      !getStoryRoute(episode, routeId) ||
+      !isWaitingForChoice ||
+      !choiceRoutes.some((choice) => choice.id === routeId) ||
       isProcessingRef.current || closedRef.current || exitRequestedRef?.current
     ) {
       return;
@@ -156,11 +152,11 @@ export default function useStoryReader(
     isProcessingRef.current = true;
     setIsProcessing(true);
     try {
-      if (selectInitialRoute) {
+      if (isChoosingInitialRoute && selectInitialRoute) {
         await selectInitialRoute(routeId);
       }
-      setSelectedRouteId(routeId);
-      setLineIndex(episode.commonBefore.length);
+      setSelectedIds([...selectedIds, routeId]);
+      setLineIndex(lines.length);
     } catch (cause) {
       setError(
         cause instanceof Error
@@ -219,6 +215,10 @@ export default function useStoryReader(
     isTyping,
     isLastLine,
     isWaitingForChoice,
+    isChoosingInitialRoute,
+    choiceRoutes,
+    choiceAnchor: lines[lines.length - 1],
+    choiceKey: `choices:${selectedIds.join(":")}`,
     isProcessing,
     isProcessingRef,
     error,

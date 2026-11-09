@@ -1,13 +1,14 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import { Colors, Fonts } from "@/src/constants/theme";
-import { StoryRoute } from "@/src/domain/common/types";
+import { StoryChoice } from "@/src/domain/common/types";
 
 type StoryChoicesProps = {
   priceNt: number;
-  routes: readonly StoryRoute[];
+  routes: readonly StoryChoice[];
   onSelect: (routeId: string) => void;
   lockedRouteIds?: readonly string[];
+  unmetRequirements?: Readonly<Record<string, string>>;
   disabled?: boolean;
 };
 
@@ -16,34 +17,42 @@ export default function StoryChoices({
   routes,
   onSelect,
   lockedRouteIds = [],
+  unmetRequirements = {},
   disabled = false,
 }: StoryChoicesProps) {
   return (
     <View style={styles.messageBox} accessibilityRole="radiogroup">
       {routes.map((route) => {
         const isLocked = lockedRouteIds.includes(route.id);
+        const requirement = unmetRequirements[route.id];
+        const isDisabled = disabled || Boolean(requirement);
         return (
           <TouchableOpacity
             key={route.id}
             style={[
               styles.choice,
-              isLocked && styles.lockedChoice,
-              disabled && styles.choiceDisabled,
+              (isLocked || requirement) && styles.lockedChoice,
+              isDisabled && styles.choiceDisabled,
             ]}
             onPress={() => onSelect(route.id)}
-            disabled={disabled}
+            disabled={isDisabled}
             accessibilityRole="button"
             accessibilityLabel={
-              isLocked
+              requirement
+                ? `${route.label}、解放条件: ${requirement}`
+                : isLocked
                 ? `${route.label}、鍵付き、${priceNt} NTで解放`
                 : route.label
             }
-            accessibilityState={{ disabled }}
+            accessibilityState={{ disabled: isDisabled }}
           >
-            <Text style={[styles.choiceText, isLocked && styles.lockedText]}>
-              {route.label}
-            </Text>
-            {isLocked ? <Text style={styles.cost}>🔒 {priceNt} NT</Text> : null}
+            <View style={styles.label}>
+              <Text style={[styles.choiceText, (isLocked || requirement) && styles.lockedText]}>
+                {route.label}
+              </Text>
+              {requirement ? <Text style={styles.requirement}>解放条件: {requirement}</Text> : null}
+            </View>
+            {!requirement && isLocked ? <Text style={styles.cost}>🔒 {priceNt} NT</Text> : null}
           </TouchableOpacity>
         );
       })}
@@ -52,6 +61,8 @@ export default function StoryChoices({
 }
 
 const styles = StyleSheet.create({
+  label: { flex: 1 },
+  requirement: { color: Colors.textSub, fontFamily: Fonts.regular, fontSize: 12, lineHeight: 18, marginTop: 4 },
   messageBox: { flexGrow: 1 },
   prompt: {
     color: Colors.text,
@@ -80,7 +91,6 @@ const styles = StyleSheet.create({
   },
   choiceText: {
     color: Colors.surface,
-    flex: 1,
     fontSize: 15,
     fontFamily: Fonts.bold,
   },

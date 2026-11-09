@@ -19,6 +19,7 @@ import {
   getStoryEpisode,
   getStoryRoute,
   isEpisodeId,
+  isStoryRouteAvailable,
   isStoryRouteUnlocked,
 } from "@/src/domain/storyData";
 import useConversationExit from "@/src/hooks/useConversationExit";
@@ -171,15 +172,21 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
 
   if (!line && !isWaitingForChoice) return null;
 
-  const lockedRouteIds = progress?.firstSelectedRouteId
+  const lockedRouteIds = reader.isChoosingInitialRoute && progress?.firstSelectedRouteId
     ? (episode.routes ?? [])
         .filter((item) => !isStoryRouteUnlocked(progress, item.id))
         .map((item) => item.id)
     : [];
-  const choiceAnchor = episode.commonBefore[episode.commonBefore.length - 1];
+  const unmetRequirements = Object.fromEntries(
+    reader.isChoosingInitialRoute && state
+      ? (episode.routes ?? [])
+          .filter((item) => !isStoryRouteAvailable(state, episode.id, item, catalog))
+          .map((item) => [item.id, item.requirement?.description ?? "解放条件を満たしていません。"])
+      : [],
+  );
 
   const requestRoute = (selectedRouteId: string) => {
-    if (exit.leavingRef.current || unlockingRef.current) return;
+    if (exit.leavingRef.current || unlockingRef.current || unmetRequirements[selectedRouteId]) return;
     if (!lockedRouteIds.includes(selectedRouteId)) {
       void handleSelectRoute(selectedRouteId);
       return;
@@ -228,10 +235,11 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
     setPendingUnlockRouteId(null);
   };
 
-  const characterLine = line ?? choiceAnchor;
+  const characterLine = line ?? reader.choiceAnchor;
 
   return (
     <StoryScene
+      speaker={line?.speaker}
       title={`Episode ${String(episode.id).padStart(2, "0")} ${episode.title}`}
       episodeNumber={episode.id}
       slide={characterLine?.slide}
@@ -251,7 +259,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
         isWaitingForChoice
           ? pendingUnlockRoute
             ? `unlock:${pendingUnlockRoute.id}`
-            : "choices"
+            : reader.choiceKey
           : line?.id
       }
       characters={
@@ -281,12 +289,13 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
           onBack={closeUnlockConfirmation}
           onConfirm={() => void confirmUnlock()}
         />
-      ) : isWaitingForChoice && episode.routes ? (
+      ) : isWaitingForChoice ? (
         <StoryChoices
           priceNt={getAdditionalRoutePriceNt(episode.id)}
-          routes={episode.routes}
+          routes={reader.choiceRoutes}
           onSelect={requestRoute}
           lockedRouteIds={lockedRouteIds}
+          unmetRequirements={unmetRequirements}
           disabled={isProcessing}
         />
       ) : null}

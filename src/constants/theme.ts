@@ -11,6 +11,11 @@ export const Colors = {
   warning: "#cc4e65",
 };
 
+export const SoloStoryColors = {
+  titleBand: "#397F88",
+  detailPanel: "rgba(185,230,230,0.86)",
+};
+
 // UI-v3. Each weight has its own registered font; do not add fontWeight to it.
 export const Fonts = {
   regular: "ZenKakuGothicNew-Regular",

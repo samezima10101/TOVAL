@@ -1,14 +1,18 @@
 import { getAdditionalRoutePriceNt, getSideStorySetting } from "@/src/config/conversationSettings";
 import { AppState } from "./common/types";
 import { listAvailableConversations } from "./sideStory";
-import { getStoryEpisode, getStoryRoute, isStoryRouteUnlocked, STORY_CATALOG, StoryCatalog } from "./storyData";
+import { getStoryEpisode, getStoryRoute, isStoryRouteAvailable, isStoryRouteUnlocked, STORY_CATALOG, StoryCatalog } from "./storyData";
 
 function requireRoute(state: AppState, episodeId: number, routeId: string, catalog: StoryCatalog) {
   if (!state.unlockedStories.some((story) => story.episodeId === episodeId)) {
     throw new Error("このストーリーはまだ解放されていません。");
   }
   const episode = getStoryEpisode(episodeId, catalog);
-  if (!episode || !getStoryRoute(episode, routeId)) throw new Error("選択肢が見つかりません。");
+  const route = episode && getStoryRoute(episode, routeId);
+  if (!route) throw new Error("選択肢が見つかりません。");
+  if (!isStoryRouteAvailable(state, episodeId, route, catalog)) {
+    throw new Error(`解放条件: ${route.requirement?.description}`);
+  }
 }
 
 // Replay and duplicate operations return the same state without another write/charge.

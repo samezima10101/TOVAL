@@ -56,6 +56,7 @@ function SideStoryPlayback() {
 
   return (
     <StoryScene
+      speaker={line.speaker}
       title={episode.title}
       onClose={handleClose}
       disabled={isProcessing}

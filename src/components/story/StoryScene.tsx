@@ -15,15 +15,17 @@ const slideAssets = {
 };
 
 const BROADCAST_HORIZONTAL_MARGIN = 16;
-const BROADCAST_BORDER_WIDTH = 4;
 const storyBackground = require("@/assets/bg/story-bg.png");
-// Match story-bg.png and the corner decoration's viewBox.
-const BACKGROUND_ASPECT_RATIO = 1400 / 950;
 const CHARACTER_HEIGHT = 1000;
 const BACKGROUND_WIDTH = 1400;
+const BACKGROUND_HEIGHT = 950;
+// Preserve the original image scale and top edge; crop only the bottom.
+const VISIBLE_BACKGROUND_HEIGHT = 850;
+const BACKGROUND_ASPECT_RATIO = BACKGROUND_WIDTH / BACKGROUND_HEIGHT;
 
 export default function StoryScene({
   title,
+  speaker,
   onClose,
   disabled = false,
   error,
@@ -36,6 +38,7 @@ export default function StoryScene({
   slideBackground = false,
 }: {
   title: string;
+  speaker?: StoryLine["speaker"];
   onClose: () => void;
   disabled?: boolean;
   error: string | null;
@@ -56,11 +59,11 @@ export default function StoryScene({
     0,
     Math.min(
       availableWidth / BACKGROUND_ASPECT_RATIO,
-      size.height * 0.52 - BROADCAST_BORDER_WIDTH * 2,
+      size.height * 0.52,
     ),
   );
   const broadcastWidth = backgroundHeight * BACKGROUND_ASPECT_RATIO;
-  const broadcastHeight = backgroundHeight + BROADCAST_BORDER_WIDTH * 2;
+  const visibleHeight = backgroundHeight * VISIBLE_BACKGROUND_HEIGHT / BACKGROUND_HEIGHT;
   const closeButton = (
     <TouchableOpacity
       onPress={onClose}
@@ -88,7 +91,7 @@ export default function StoryScene({
             {error}
           </Text>
         ) : null}
-        <StoryMessageBox contentKey={contentKey}>{children}</StoryMessageBox>
+        <StoryMessageBox contentKey={contentKey} speaker={speaker}>{children}</StoryMessageBox>
       </View>
     );
   }
@@ -107,7 +110,7 @@ export default function StoryScene({
       <View
         style={[
           styles.broadcast,
-          { width: broadcastWidth, height: broadcastHeight },
+          { width: broadcastWidth, height: visibleHeight },
         ]}
         accessibilityLabel={title}
       >
@@ -138,8 +141,8 @@ export default function StoryScene({
         {slideBackground ? (
           <Image
             source={require("@/assets/slides/slide_background.png")}
-            style={[styles.characters, { height: backgroundHeight }]}
-            contentFit="contain"
+            style={[styles.characters, { height: visibleHeight }]}
+            contentFit="cover"
             contentPosition="center"
             accessible={false}
           />
@@ -148,7 +151,7 @@ export default function StoryScene({
           <Image
             key={slide}
             source={slideAssets[slide]}
-            style={[styles.characters, { height: backgroundHeight }]}
+            style={[styles.characters, { height: visibleHeight }]}
             contentFit="contain"
             contentPosition="center"
             accessible={false}
@@ -163,14 +166,14 @@ export default function StoryScene({
         <Svg
           style={styles.corners}
           width="100%"
-          height={backgroundHeight}
-          viewBox="0 0 1400 950"
+          height={visibleHeight}
+          viewBox={`0 0 ${BACKGROUND_WIDTH} ${VISIBLE_BACKGROUND_HEIGHT}`}
           preserveAspectRatio="xMidYMid meet"
           pointerEvents="none"
           accessible={false}
         >
           <Path
-            d="M42 168 V70 L77 35 H245 M1155 35 H1323 L1358 70 V168 M42 782 V880 L77 915 H245 M1155 915 H1323 L1358 880 V782"
+            d={`M42 168 V70 L77 35 H245 M1155 35 H1323 L1358 70 V168 M42 ${VISIBLE_BACKGROUND_HEIGHT - 168} V${VISIBLE_BACKGROUND_HEIGHT - 70} L77 ${VISIBLE_BACKGROUND_HEIGHT - 35} H245 M1155 ${VISIBLE_BACKGROUND_HEIGHT - 35} H1323 L1358 ${VISIBLE_BACKGROUND_HEIGHT - 70} V${VISIBLE_BACKGROUND_HEIGHT - 168}`}
             fill="none"
             stroke="#FFFFFF"
             strokeWidth={10.5}
@@ -189,7 +192,7 @@ export default function StoryScene({
             {error}
           </Text>
         ) : null}
-        <StoryMessageBox contentKey={contentKey} inFlow>
+        <StoryMessageBox contentKey={contentKey} speaker={speaker} inFlow>
           {children}
         </StoryMessageBox>
       </View>
@@ -236,9 +239,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     overflow: "hidden",
     backgroundColor: "#103C54",
-    borderTopWidth: BROADCAST_BORDER_WIDTH,
-    borderBottomWidth: BROADCAST_BORDER_WIDTH,
-    borderColor: "#FFFFFF",
   },
   characters: { position: "absolute", top: 0, right: 0, left: 0 },
   broadcastHeader: {

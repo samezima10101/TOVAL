@@ -30,7 +30,8 @@ export type AltaExpression =
   | `smirk${3 | 4}`
   | `shocked${3 | 4}`
   | "angry2"
-  | `nervous${1 | 2 | 3 | 4}`;
+  | `nervous${1 | 2 | 3 | 4}`
+  | `gemized${2}`;
 export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {
@@ -44,15 +45,29 @@ export type StoryLine = {
   right: AltaExpression;
 };
 
-export type StoryRoute = {
+export type StoryChoice = {
   id: string;
   label: string;
   lines: readonly StoryLine[];
+  choices?: readonly StoryChoice[];
+};
+
+export type StoryRouteRequirement = {
+  description: string;
+  episodeIds: readonly EpisodeId[];
+} & (
+  | { type: "anyEpisodeRouteCount"; count: number }
+  | { type: "allEpisodeRoutes" }
+);
+
+export type StoryRoute = StoryChoice & {
+  requirement?: StoryRouteRequirement;
 };
 
 export type StoryEpisode = {
   id: EpisodeId;
   title: string;
+  soloCharacter?: StoryCharacter;
   commonBefore: readonly StoryLine[];
   routes?: readonly StoryRoute[];
   commonAfter: readonly StoryLine[];
