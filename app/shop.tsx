@@ -254,8 +254,8 @@ function ShopGreeting({
     <View style={styles.container}>
       {reader.error ? <Text style={styles.error}>{reader.error}</Text> : null}
       {reader.line ? (
-        <StoryMessageBox contentKey={reader.line.id}>
-          <StoryMessage {...reader} speakerName={SHOP_KEEPER_NAME} />
+        <StoryMessageBox contentKey={reader.line.id} speakerName={SHOP_KEEPER_NAME}>
+          <StoryMessage {...reader} />
         </StoryMessageBox>
       ) : null}
     </View>

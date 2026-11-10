@@ -6,7 +6,7 @@
 
 | 編集対象 | ファイル |
 | --- | --- |
-| メイン14話のタイトル・本文・2分岐 | [src/content/stories/](../src/content/stories/)の`episode01.ts`〜`episode14.ts` |
+| メイン14話のタイトル・本文・分岐・単独回の解放条件 | [src/content/stories/](../src/content/stories/)の`episode01.ts`〜`episode14.ts` |
 | 各話の取りまとめ・本文と分岐の参照 | [storyData.ts](../src/domain/storyData.ts) |
 | サイド101〜103と店員の挨拶・入荷告知・退店本文 | [shop.ts](../src/content/shop.ts) |
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
@@ -23,16 +23,24 @@
 
 第4話は同じ原稿のタブ`04`を反映し、共通前25行・分岐A5行／B6行・共通後15行。行種別が空でも本文と話者がある5行を含め、本文・選択肢・左右表情・名前差込を保持する。シートにタイトル指定はないため、既存タイトル・話ID・分岐IDを維持する。
 
+第5話は同じ原稿のタブ`05`を反映し、共通前37行・分岐A「かわいい！」6行／B「かっこいい！」7行・共通後4行。行種別が空の台詞も含め、本文・左右表情・名前差込・both話者を保持する。28行目の話者空欄（「え、我々は『かっこいい』枠でしょ？」の台詞）は前後の文脈からジェムへ補完する。シートにタイトル指定はないため、既存タイトル・話ID・分岐IDを維持する。
+
+第6話は同じ原稿のタブ`06`を反映したアルタ単独回。共通前16行、質問1「どうして答えられないの？」13行、質問2「エトって誰？」26行、質問3「ジェムの外見について知りたい」25行→「謝った？」4行→「何もしない」7行で、共通後はない。行種別が空の3台詞も含め、全91台詞の左表情は`none`、右表情は原稿どおり。タイトル指定がないため既存タイトルと話ID・分岐A/Bの権利IDを維持し、3問目は`episode-06-route-c`を追加する。
+
+単独回は`soloCharacter: "alta"`または`"gem"`を指定し、登場しない側の表情は本文で`none`にする。メモリーのタイトル選択帯と詳細説明パネルの背景色は[theme.ts](../src/constants/theme.ts)の`SoloStoryColors`を参照する。現在は淡い青緑。再生中の会話枠は通常色を使い、その上に単独回のタイトルは追加しない。質問数は`routes`の配列長で変えられる。ルート内の追加選択は`choices`へ再帰的に指定し、選択後はその`lines`へ進む。追加選択は同じルート権利に含み、別課金・進行位置保存はしない。
+
+質問の`requirement`は原稿と同じファイルで編集する。`anyEpisodeRouteCount`は指定した`episodeIds`のどれか1話で`count`以上のルート権利を持つ条件、`allEpisodeRoutes`は指定話すべてのルート権利を持つ条件。`description`は未達時に表示する説明。第6話の質問2は第1〜6話のどれかで2ルート以上、質問3は第1〜5話の全ルートを要求する。条件を満たしても追加分岐の購入は必要。初回は条件達成済みの質問から1つ無料で選べる。取得済み権利は条件変更後も利用でき、質問の表示と保存APIが同じ判定を使う。デバッグプレビューは条件を適用せず全質問・追加選択を確認できる。
+
 表情は`left`にジェム、`right`にアルタの名前を指定する。`none`は指定側の画像を描画せず、もう一方の位置を維持する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
 
 演出は台詞の`effect`で指定する。`effect: { type: "shout", target: "alta" }`はアルタのみ、target: "gem"はジェムのみを、台詞へ切り替わったとき上下3ポイント・25ms刻み8区間（計200ms）震わせて元の位置へ戻す。背景・もう一人・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は停止し位置を戻す。第2話の最後（episode-02-after-6）はアルタを指定。調整箇所はStoryCharactersのshake。
 
-行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。背景と同じ1400×950の素材を、背景と同じ領域へ比率維持のcontainで立ち絵の手前に表示する。`slideBackground: true`の行は、`assets/slides/slide_background.png`を背景と同じ領域でキャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常再生と開発プレビューで共用する。
+行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。1400×950の素材を、下端クロップ後の映像枠全体へ比率維持のcontain・中央配置で表示する。スライドはクロップせず、上下端を含む全体を枠内に収める。`slideBackground: true`の行は、`assets/slides/slide_background.png`を表示枠全体へcoverで描き、キャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常再生と開発プレビューで共用する。
 
 | キャラクター | 表情名と画像（各範囲は番号順） |
 | --- | --- |
-| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt3〜4` → `G03-3〜4.png`、`beam1〜2` → `G04-1〜2.png`、`nervous1〜4` → `G05-1〜4.png` |
-| アルタ | `normal1〜4` → `alta/A01-1〜4.png`、`grumpy1〜4` → `A02-1〜4.png`、`grin1〜4` → `A03-1〜4.png`、`sparkle1〜2` → `A04-1〜2.png`、`smirk3〜4` → `A05-3〜4.png` |
+| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt1〜6` → `G03-1〜6.png`、`beam1〜2` → `G04-1〜2.png`、`nervous1〜4` → `G05-1〜4.png`、`shocked1〜4` → `G08-1〜4.png`、`glare2` → `G09-2.png` |
+| アルタ | `normal1〜4` → `alta/A01-1〜4.png`、`grumpy1〜4` → `A02-1〜4.png`、`grin1〜4` → `A03-1〜4.png`、`sparkle1〜2` → `A04-1〜2.png`、`smirk3〜4` → `A05-3〜4.png`、`nervous1〜4` → `A08-1〜4.png` |
 
 画像は`assets/faces/`以下。既存の`normal`・`talk`・`doubt`は互換用に従来の画像を維持する。例: `left: "surprised1", right: "sparkle1"`。
 
@@ -85,14 +93,14 @@
 | 会話UI | 責務 |
 | --- | --- |
 | [StoryScene](../src/components/story/StoryScene.tsx) | ヘッダー・閉じる・エラー・任意のキャラクター領域と固定会話枠を1回だけ配置 |
-| [StoryMessageBox](../src/components/story/StoryMessageBox.tsx) | 枠の位置・寸法・背景・余白・枠内スクロール。`children`と`contentKey`を受け取る |
-| 同ファイルの`StoryMessage` | 話者・本文・文字送り・タップ操作。枠は作らない |
+| [StoryMessageBox](../src/components/story/StoryMessageBox.tsx) | 枠の位置・寸法・背景・余白・固定話者タグ・枠内スクロール。`children`・`contentKey`・`speaker`／任意の`speakerName`を受け取る |
+| 同ファイルの`StoryMessage` | 本文・文字送り・タップ操作。枠・話者タグは作らない |
 | [StoryCharacters](../src/components/story/StoryCharacters.tsx) | 画像・表情（話者による透明化なし） |
 | [StoryChoices](../src/components/story/StoryChoices.tsx)／[StoryUnlockConfirmation](../src/components/story/StoryUnlockConfirmation.tsx) | メイン固有の選択肢・解放確認の中身 |
 
 権利判定・購入・保存・退出ガード・再生フック・戻り先・背景は[story.tsx](../app/story.tsx)／[side-story.tsx](../app/side-story.tsx)が持つ。共通UIへ移さない。ショップ挨拶・退店は共通ヘッダーを使わず、同じ枠と本文表示を組み合わせる。`StoryDialogue`や引数の形を判別する別APIは作らない。
 
-メイン会話はStorySceneの上部にstory-bg.pngの全体を縦横比を保ったcontainで表示する立ち絵映像、下部に会話枠を配置する。LIVE・白いコーナー・DAY番号・解放日を重ね、none以外の立ち絵は不透明。映像枠は左右16以上の余白を取り、背景素材の1400×950の比率に合わせる。上下各4の白線を含む高さを表示領域高の52%以内に収め、高さが制限されるときは幅も同率で縮めて中央に配置する。背景・スライド・コーナー装飾は白線の内側の同じ領域に揃える。立ち絵は700×1000、背景は1400×950を基準に同率で拡縮する。立ち絵と背景の上端を揃え、高さの差により素材座標で50pxはみ出す立ち絵の下部はクリップする。画面上の立ち絵は幅が映像幅の50%、高さが映像幅×1000/1400となる。片側がnoneでも位置を保つ。下部を覆う机の色面は置かない。下部は左右22・上12・下28の余白内でStoryMessageBoxのinFlowを使い、高さ190（狭い画面では縮小可）で上端を固定し、白い話者名・本文・右下の▼を表示する。長文・選択肢は枠内スクロール。通常のサイド／ショップ枠はstyles.frameの左右18・下60・高さ210。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
+メイン会話はStorySceneの上部にstory-bg.pngと立ち絵の拡大率を保ち、下端を切り取った映像、下部に会話枠を配置する。LIVE・白いコーナー・DAY番号・解放日を重ね、none以外の立ち絵は不透明。映像枠は左右16以上の余白を取り、背景素材1400×950の拡大率で描き、表示枠は素材座標の高さ850まで（下端100を約10.5%切り取る）とする。上下の直線状の白い枠線は付けない。切り取り前の描画高を表示領域高の52%以内に収め、高さが制限されるときは幅も同率で縮めて中央に配置する。背景は元の1400×950の描画寸法を保ち、表示枠の下端でクリップする。スライドは短縮後の枠へ中央配置・containで全体を表示し、スライド用の背景は枠全体をcoverで覆う。コーナー装飾の下側とDAY・日付は短くした枠の下端へ合わせる。立ち絵は700×1000、背景は1400×950を基準に同率で拡縮する。立ち絵と背景の上端を揃え、立ち絵の下部は素材座標で150pxクリップする。画面上の立ち絵は幅が映像幅の50%、高さが映像幅×1000/1400となる。片側がnoneでも位置を保つ。下部を覆う机の色面は置かない。下部は左右22・上12・下28の余白内でStoryMessageBoxのinFlowを使い、高さ240（狭い画面では縮小可）で上端を固定し、話者名は左上のファイルタグ内に固定し、本文と右下の▼は本文領域へ表示する。枠内は上28・下18の余白を取り、フォルダのインデックスより下に本文・選択肢を置く。話者タグはScrollViewの外で左6・上0・幅68・高さ19に配置し、白文字14・1行・必要時縮小でタグの輪郭内に収める。`speaker`から通常話者・２人・システムを表示し、ショップだけ`speakerName`で店員名を渡す。選択肢・購入確認では話者なし。スクロール表示領域を余白の内側に制限し、バウンスを無効にして長文・選択肢を枠内でスクロールする。通常のサイド／ショップ枠はstyles.frameの左右18・下60・高さ240。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
 
 ## BGM・タブ効果音
 

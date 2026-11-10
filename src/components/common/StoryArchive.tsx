@@ -3,7 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance 
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import StoryNumber from "@/src/components/common/StoryNumber";
-import { Fonts } from "@/src/constants/theme";
+import { Fonts, SoloStoryColors } from "@/src/constants/theme";
 
 export type StoryArchiveItem = {
   id: number;
@@ -13,6 +13,7 @@ export type StoryArchiveItem = {
   status: string;
   metadata: readonly string[];
   isUnlocked: boolean;
+  solo?: boolean;
   action: string;
   actionLabel: string;
   disabled: boolean;
@@ -159,7 +160,7 @@ export default function StoryArchive({
                   );
                 })}
               </ScrollView>
-              <View style={[styles.selectedTitle, { backgroundColor: palette.accent }]} pointerEvents="none">
+              <View style={[styles.selectedTitle, { backgroundColor: item?.solo ? SoloStoryColors.titleBand : palette.accent }]} pointerEvents="none">
                 <Text style={styles.chapterTitle}>
                   {chapter?.title}{item ? `　第${item.number}話` : ""}
                 </Text>
@@ -211,7 +212,7 @@ export default function StoryArchive({
 
           <View style={styles.detailColumn} pointerEvents="box-none">
             <View style={styles.titleSpace} pointerEvents="none" />
-            <View style={[styles.detail, { backgroundColor: palette.panel }]}>
+            <View style={[styles.detail, { backgroundColor: item?.solo ? SoloStoryColors.detailPanel : palette.panel }]}>
               {item ? (
                 <>
                   <ScrollView style={styles.container} contentContainerStyle={styles.detailContent} contentInsetAdjustmentBehavior="never">

@@ -67,6 +67,7 @@ export default function MemoryScreen() {
                   `OPEN: ${unlockedDate?.replaceAll("-", ".") ?? "--"}`,
                 ],
           isUnlocked,
+          solo: isUnlocked && Boolean(episode.soloCharacter),
           action: isUnlocked ? "再生する" : "未解放",
           actionLabel: isUnlocked
             ? `${episode.title}を再生`

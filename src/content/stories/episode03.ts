@@ -58,7 +58,7 @@ export const episode03: StoryEpisode = {
       id: "episode-03-before-8",
       speaker: "sub",
       text: "あ、そうそう！忘れてました",
-      left: "smile3",
+      left: "beam1",
       right: "normal4",
     },
     {
