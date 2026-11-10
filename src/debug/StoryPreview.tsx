@@ -1,4 +1,4 @@
-// 削除時: このファイルと、menu.tsxのDEBUG_STORY_PREVIEWの2ブロックを削除する。
+// DEBUG_CENTER: 保存しない会話プレビュー。
 // 保存API・通常の閲覧条件には接続せず、プレビューの状態だけを保持する。
 import { useState } from "react";
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
@@ -12,20 +12,21 @@ import StoryChoices from "@/src/components/story/StoryChoices";
 import { StoryMessage } from "@/src/components/story/StoryMessageBox";
 import StoryScene from "@/src/components/story/StoryScene";
 import { Fonts } from "@/src/constants/theme";
+import { DEBUG_ENABLED } from "@/src/config/environment";
 import type { StoryEpisode } from "@/src/domain/common/types";
 import { SHOP_CONVERSATIONS } from "@/src/domain/sideStory";
 import { STORY_ARCHIVE_CATALOG } from "@/src/domain/storyData";
 import useStoryReader from "@/src/hooks/useStoryReader";
 import { useAppState } from "@/src/state/AppStateProvider";
 
-type Preview = { kind: "main" | "side"; episode: StoryEpisode };
+type Preview = { kind: "main" | "side"; episode: StoryEpisode; routeId?: string };
 
 export default function StoryPreview() {
   const [isOpen, setIsOpen] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const { state } = useAppState();
 
-  if (!__DEV__) return null;
+  if (!DEBUG_ENABLED) return null;
 
   const close = () => {
     setIsOpen(false);
@@ -73,14 +74,19 @@ export default function StoryPreview() {
                 </TouchableOpacity>
               </View>
               <ScrollView contentContainerStyle={styles.list}>
-                <Text style={styles.description}>話を選ぶと冒頭から再生します。分岐は会話中に選べます。</Text>
+                <Text style={styles.description}>冒頭から再生するか、最初の分岐を指定できます。追加選択は会話中に選べます。</Text>
                 <SettingsTitle>メインストーリー</SettingsTitle>
                 {STORY_ARCHIVE_CATALOG.episodes.map((episode) => (
-                  <StoryOption
-                    key={episode.id}
-                    title={`第${episode.id}話　${episode.title}`}
-                    onPress={() => setPreview({ kind: "main", episode })}
-                  />
+                  <SettingsCard key={episode.id}>
+                    <StoryOption
+                      title={`第${episode.id}話　${episode.title}（冒頭・分岐未指定）`}
+                      onPress={() => setPreview({ kind: "main", episode })}
+                    />
+                    {episode.routes?.map((route) => (
+                      <StoryOption key={route.id} title={`分岐指定：${route.label}`}
+                        onPress={() => setPreview({ kind: "main", episode, routeId: route.id })} />
+                    ))}
+                  </SettingsCard>
                 ))}
                 <SettingsTitle>サイドストーリー</SettingsTitle>
                 {SHOP_CONVERSATIONS.map((episode) => (
@@ -108,7 +114,7 @@ function StoryOption({ title, onPress }: { title: string; onPress: () => void })
 }
 
 function PreviewPlayback({
-  preview: { kind, episode },
+  preview: { kind, episode, routeId },
   userName,
   onClose,
 }: {
@@ -118,6 +124,7 @@ function PreviewPlayback({
 }) {
   const reader = useStoryReader(episode, {
     source: "memory",
+    initialRouteId: routeId,
     userName,
     onClose,
     // selectInitialRoute / onFinishを渡さないため、分岐選択・読了で保存しない。

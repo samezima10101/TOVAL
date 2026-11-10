@@ -1,0 +1,19 @@
+{
+  "build": {
+    "internal": {
+      "distribution": "internal",
+      "environment": "preview",
+      "env": { "EXPO_PUBLIC_APP_ENV": "internal" }
+    },
+    "internal-testflight": {
+      "extends": "internal",
+      "distribution": "store"
+    },
+    "external": {
+      "distribution": "store",
+      "environment": "production",
+      "env": { "EXPO_PUBLIC_APP_ENV": "production" }
+    },
+    "production": { "extends": "external" }
+  }
+}

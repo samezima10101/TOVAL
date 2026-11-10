@@ -22,18 +22,13 @@ import UserSettings, {
 } from "@/src/components/menu/UserSettings";
 import { Fonts } from "@/src/constants/theme";
 import useInputReveal from "@/src/hooks/useInputReveal";
+import useGuardedPush from "@/src/hooks/useGuardedPush";
 import { useTutorial } from "@/src/tutorial/TutorialContext";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import { SettingsCard, SettingsTitle } from "@/src/components/menu/SettingsLayout";
 
-// DEBUG_STORY_PREVIEW: 削除時はこのブロックと下の表示行、専用ファイルを削除する。
-const DebugStoryPreview: import("react").ComponentType | null = __DEV__
-  ? // 開発時だけ読み込み、本番バンドルから依存ごと除外する。
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("@/src/debug/StoryPreview").default
-  : null;
-
 export default function MenuScreen() {
+  const push = useGuardedPush();
   const { top } = useSafeAreaInsets();
   const { replay } = useTutorial();
   const { height: windowHeight } = useWindowDimensions();
@@ -103,8 +98,14 @@ export default function MenuScreen() {
         <UserSettings editor={userSettings} onRevealInput={revealInput} />
         <DefaultTimerSettings />
         <NotificationSettings />
-        {/* DEBUG_STORY_PREVIEW */}
-        {DebugStoryPreview ? <DebugStoryPreview /> : null}
+        {/* DEBUG_CENTER: only development and explicitly internal builds. */}
+        {(__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === "internal") ? (
+          <SettingsCard>
+            <SettingsTitle>デバッグ</SettingsTitle>
+            <Text style={styles.tutorialDescription}>会話の確認・短縮タイマー・テストデータの操作をまとめて行えます。</Text>
+            <PrimaryButton title="デバッグ画面" onPress={() => push("/debug")} />
+          </SettingsCard>
+        ) : null}
       </ScrollView>
       <UserSettingsToolbar editor={userSettings} bottom={toolbarBottom} />
     </View>

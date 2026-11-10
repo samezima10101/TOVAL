@@ -13,16 +13,27 @@ import TutorialProvider from "@/src/tutorial/TutorialProvider";
 
 export const unstable_settings = { initialRouteName: "(tabs)" };
 
+// DEBUG_CENTER: release bundles use the ordinary provider directly.
+const RootStateProvider: typeof AppStateProvider = (__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === "internal")
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? require("@/src/debug/DebugAppProvider").default
+  : AppStateProvider;
+
+const RootNotificationProvider: typeof ReminderNotificationProvider = (__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === "internal")
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  ? require("@/src/debug/DebugReminderProvider").default
+  : ReminderNotificationProvider;
+
 export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <StatusBar hidden />
       <AppFontLoader>
-        <AppStateProvider>
-          <ReminderNotificationProvider>
+        <RootStateProvider>
+          <RootNotificationProvider>
             <AppShell />
-          </ReminderNotificationProvider>
-        </AppStateProvider>
+          </RootNotificationProvider>
+        </RootStateProvider>
       </AppFontLoader>
     </SafeAreaProvider>
   );

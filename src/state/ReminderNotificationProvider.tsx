@@ -24,7 +24,7 @@ type ReminderNotificationContextValue = {
 
 const ReminderNotificationContext = createContext<ReminderNotificationContextValue | null>(null);
 
-export function ReminderNotificationProvider({ children }: { children: ReactNode }) {
+export function ReminderNotificationProvider({ children, suspended = false }: { children: ReactNode; suspended?: boolean }) {
   const { state, status: hydrationStatus } = useAppState();
   const userName = state?.userName;
   const notificationHour = state?.notificationHour;
@@ -40,7 +40,7 @@ export function ReminderNotificationProvider({ children }: { children: ReactNode
   const reconcile = useCallback((requestPermission: boolean): Promise<void> => {
     const requestedRevision = ++revision.current;
     const apply = async () => {
-      if (requestedRevision !== revision.current || hydrationStatus !== "ready" ||
+      if (suspended || requestedRevision !== revision.current || hydrationStatus !== "ready" ||
           userName === undefined || notificationHour === undefined || notificationMinute === undefined) return;
       setResult({ status: "loading", error: null });
       try {
@@ -68,7 +68,7 @@ export function ReminderNotificationProvider({ children }: { children: ReactNode
     // Serialize native writes; the last saved settings always run last.
     queue.current = queue.current.then(apply, apply);
     return queue.current;
-  }, [hydrationStatus, notificationHour, notificationMinute, userName]);
+  }, [hydrationStatus, notificationHour, notificationMinute, suspended, userName]);
 
   useEffect(() => {
     void reconcile(false);
@@ -82,7 +82,9 @@ export function ReminderNotificationProvider({ children }: { children: ReactNode
   }, [reconcile]);
 
   const retry = useCallback(() => reconcile(true), [reconcile]);
-  const value = useMemo(() => ({ ...result, retry }), [result, retry]);
+  const value = useMemo(() => suspended
+    ? { status: "paused" as const, error: null, retry }
+    : { ...result, retry }, [result, retry, suspended]);
 
   return (
     <ReminderNotificationContext.Provider value={value}>

@@ -11,7 +11,8 @@
     "typecheck": "tsc --noEmit",
     "doctor": "expo-doctor",
     "deps:check": "expo install --check",
-    "bundle:ios": "expo export --platform ios --output-dir dist/ios"
+    "bundle:ios": "node scripts/export-ios.mjs external",
+    "bundle:ios:internal": "node scripts/export-ios.mjs internal"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
