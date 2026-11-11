@@ -14,7 +14,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useKeyboardEditor } from "@/src/components/common/KeyboardEditor";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import AudioSettings from "@/src/components/menu/AudioSettings";
 import DefaultTimerSettings from "@/src/components/menu/DefaultTimerSettings";
 import NotificationSettings from "@/src/components/menu/NotificationSettings";
 import {
@@ -100,7 +99,6 @@ export default function MenuScreen() {
           </SettingsCard>
         ) : null}
 
-        <AudioSettings />
         <UserSettings editor={userSettings} onRevealInput={revealInput} />
         <DefaultTimerSettings />
         <NotificationSettings />

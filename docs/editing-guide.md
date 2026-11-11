@@ -119,7 +119,9 @@
 
 [AppShell](../app/_layout.tsx)の[useScreenBgm](../src/hooks/useScreenBgm.ts)だけで共通BGMプレイヤーを持つ。同じ曲はreplace/seekせず継続し、別曲へ切り替える。`non`や音量0は一時停止し、曲のある画面・0より大きい音量へ戻れば続きから再開する。非同期の古い再生要求は画面変更・背景移動時に破棄する。
 
-[AudioSettings](../src/components/menu/AudioSettings.tsx)内の`VolumeSetting`を両音量で共有する。標準スライダーは0〜100%・1%刻み。操作中は即時プレビュー、指を離すと保存し、VoiceOverなど非ドラッグ操作は変更時に保存する。保存中の追加操作を抑止し、失敗時は対象だけを保存済み値へ戻して同じ希望値で再試行する。プレビューは永続化せず、音量の変更だけでBGMをreplace/seek・音声モード再初期化しない。
+[HeaderAudioMenu](../src/components/common/HeaderAudioMenu.tsx)がヘッダー右上の三本線と直下の開閉パネルを持つ。パネルは右寄せ・最大幅288で画面幅に追従し、高さを超える内容だけスクロールする。幅・余白・配色は同ファイルのstyles、各行・スライダー幅・消音ボタンは[AudioSettings](../src/components/menu/AudioSettings.tsx)で調整する。メニューからは音声設定を外している。
+
+[AudioSettings](../src/components/menu/AudioSettings.tsx)内の`VolumeSetting`を両音量で共有する。標準スライダーは0〜100%・1%刻み。操作中は即時プレビュー、指を離すと保存し、VoiceOverなど非ドラッグ操作は変更時に保存する。横の消音／解除ボタンも即時反映・保存する。消音前の正の音量は画面内のrefへ記憶し、パネルの開閉で保持する。画面移動・再起動で記憶はリセットし、保存値が0%なら解除先は対象の初期音量とする。保存形式へ項目は追加しない。閉じると未保存プレビューを解除し、保存中・失敗時の状態は同じ画面での再展開時にも保持する。保存中の追加操作を抑止し、失敗時は対象だけを保存済み値へ戻して同じ希望値で再試行する。プレビューは永続化せず、音量の変更だけでBGMをreplace/seek・音声モード再初期化しない。
 
 `bgmVolume`・`seVolume`は独立した0〜1の有限数で、共通の`isValidAudioVolume`で検証する。初期値の変更は保存済み音量の上書きには使わない。保存API・プレビューは[AppStateProvider](../src/state/AppStateProvider.tsx)、保存形式は[データ仕様](data-integrations.md)を参照する。
 
@@ -145,11 +147,11 @@
 
 差し替え時はファイル・登録名・利用箇所を揃え、[Zen Kaku Gothic NewのOFL](../assets/fonts/zenkakugothicnew-OFL.txt)・[Bebas NeueのOFL](../assets/fonts/bebasneue-OFL.txt)・[DotGothic16のOFL](../assets/fonts/dotgothic16-OFL.txt)を維持する。配布元は各Google Fonts公式リポジトリ（[Zen](https://github.com/google/fonts/tree/main/ofl/zenkakugothicnew)／[Bebas](https://github.com/google/fonts/tree/main/ofl/bebasneue)／[Dot](https://github.com/google/fonts/tree/main/ofl/dotgothic16)）。
 
-[menu.tsx](<../app/(tabs)/menu.tsx>)は画面配置・キーボード余白・入力表示スクロールを担当し、設定本体を以下へ分ける。
+[menu.tsx](<../app/(tabs)/menu.tsx>)は画面配置・キーボード余白・入力表示スクロールを担当し、設定本体を以下へ分ける。音声設定だけは共通ヘッダーから表示する。
 
 | ファイル | 担当 |
 | --- | --- |
-| [AudioSettings](../src/components/menu/AudioSettings.tsx) | BGM・効果音 |
+| [AudioSettings](../src/components/menu/AudioSettings.tsx) | 共通ヘッダーで使うBGM・効果音・消音／解除 |
 | [UserSettings](../src/components/menu/UserSettings.tsx) | タスク名・ユーザー名、下書き・検証・保存・入力参照 |
 | [DefaultTimerSettings](../src/components/menu/DefaultTimerSettings.tsx) | デフォルト集中時間 |
 | [NotificationSettings](../src/components/menu/NotificationSettings.tsx) | 通知時刻・許可状態・再試行 |

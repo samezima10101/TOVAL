@@ -1,7 +1,6 @@
 import { Fonts } from "@/src/constants/theme";
 import { todayKey } from "@/src/domain/common/date";
 import { Image } from "expo-image";
-import React from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { Calendar, type CalendarProps, type DateData } from "react-native-calendars";
 import Svg, { Polyline } from "react-native-svg";
