@@ -37,7 +37,7 @@ npm.cmd run start
 
 ## iPhone向けビルド
 
-`expo-keep-awake`、`expo-notifications`、`@react-native-community/datetimepicker`、`@react-native-community/slider`を追加する前の開発ビルドは、ネイティブを再ビルドして端末へ入れ直す。Metro再起動・JS Reload・`bundle:ios`だけでは追加ネイティブモジュールは組み込まれない。
+`expo-keep-awake`、`expo-notifications`、`@react-native-community/datetimepicker`、`@react-native-community/slider`、`@react-native-picker/picker`を追加する前の開発ビルドは、ネイティブを再ビルドして端末へ入れ直す。Metro再起動・JS Reload・`bundle:ios`だけでは追加ネイティブモジュールは組み込まれない。デバッグの話数・個数は[SDK 58のPicker](https://docs.expo.dev/versions/v58.0.0/sdk/picker/)を使い、Expo Goでは標準同梱のものを利用できる。
 
 `dist/ios`はgitignore対象。バンドル生成はネイティブコンパイル・署名・IPA生成・実機検証を含まない。WindowsではXcodeによるiOS製品ビルド・シミュレーター検証は行えない。現在はApple Developerの配布アカウントがなく、ユーザーはExpo Goで確認している。Expo Goでの確認は補助とし、受け入れはiPhone用ビルドで行う。[expo-keep-awake](https://docs.expo.dev/versions/v58.0.0/sdk/keep-awake/)で計測中だけ自動ロックを防ぐ。自動ロック防止は開発時にもExpo側で有効になり得るため、計測中の防止・停止時の解除を配布ビルドでも必ず確認する。
 

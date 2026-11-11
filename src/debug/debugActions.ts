@@ -21,22 +21,68 @@ export function resetProgress(state: AppState): AppState {
   };
 }
 
-// Standalone fixtures replace progress instead of pretending to be real history.
-export function storyFixture(state: AppState, allRoutes: boolean): AppState {
-  const next = resetProgress(state);
-  const today = localDateKey(Date.now());
+export function setEpisodeProgress(state: AppState, through: number): AppState {
+  requireIdle(state);
+  const episodes = STORY_CATALOG.episodes;
+  if (through !== 0 && !episodes.some(({ id }) => id === through)) {
+    throw new Error("解放する話数が正しくありません。");
+  }
+  const unlockedEpisodes = episodes.filter(({ id }) => id <= through);
+  const unlockedIds = new Set(unlockedEpisodes.map(({ id }) => id));
+  const now = new Date();
   return {
-    ...next,
-    taskName: next.taskName || "デバッグ用タスク",
-    totalNt: 3000,
-    totalCompletions: STORY_CATALOG.episodes.length,
-    lastCompletionDate: today,
-    unlockedStories: STORY_CATALOG.episodes.map(({ id }) => ({ episodeId: id, unlockedDate: today })),
-    storyRouteProgress: allRoutes ? Object.fromEntries(STORY_CATALOG.episodes.flatMap((episode) => {
-      const routes = episode.routes ?? [];
-      return routes.length ? [[episode.id, { firstSelectedRouteId: routes[0].id, extraUnlockedRouteIds: routes.slice(1).map(({ id }) => id) }]] : [];
-    })) : {},
+    ...state,
+    unlockedStories: unlockedEpisodes.map(({ id }, index) => {
+      const saved = state.unlockedStories.find((story) => story.episodeId === id);
+      // New debug rights belong to past days, so the home screen does not
+      // mistake several newly granted episodes for today's daily episode.
+      return saved ?? {
+        episodeId: id,
+        unlockedDate: localDateKey(new Date(now.getFullYear(), now.getMonth(), now.getDate() - unlockedEpisodes.length + index).getTime()),
+      };
+    }),
+    storyRouteProgress: Object.fromEntries(Object.entries(state.storyRouteProgress)
+      .filter(([id]) => unlockedIds.has(Number(id)))),
   };
+}
+
+export function setChoiceProgress(state: AppState, from: number, through: number, count: number): AppState {
+  requireIdle(state);
+  const episodes = STORY_CATALOG.episodes;
+  if (!episodes.some(({ id }) => id === from) || !episodes.some(({ id }) => id === through) || from > through) {
+    throw new Error("開始話と終了話を正しく選択してください。");
+  }
+  const selected = episodes.filter(({ id }) => id >= from && id <= through);
+  if (selected.some(({ id }) => !state.unlockedStories.some((story) => story.episodeId === id))) {
+    throw new Error("先に対象のエピソードを解放してください。");
+  }
+  if (!Number.isInteger(count) || count < 0 || selected.some((episode) => count > (episode.routes?.length ?? 0))) {
+    throw new Error("解放する選択肢の個数が正しくありません。");
+  }
+  const storyRouteProgress = { ...state.storyRouteProgress };
+  for (const episode of selected) {
+    // Debug grants deliberately bypass purchase conditions and do not spend NT.
+    // A count always means the first N top-level choices in content order.
+    const routes = (episode.routes ?? []).slice(0, count);
+    if (!routes.length) delete storyRouteProgress[episode.id];
+    else storyRouteProgress[episode.id] = {
+      firstSelectedRouteId: routes[0].id,
+      extraUnlockedRouteIds: routes.slice(1).map(({ id }) => id),
+    };
+  }
+  return { ...state, storyRouteProgress };
+}
+
+export function adjustNt(state: AppState, amount: string, direction: 1 | -1): AppState {
+  const value = amount.trim();
+  const quantity = Number(value);
+  if (!/^\d+$/.test(value) || !Number.isSafeInteger(quantity) || quantity <= 0) {
+    throw new Error("NTは1以上の安全な整数で入力してください。");
+  }
+  const totalNt = state.totalNt + direction * quantity;
+  if (totalNt < 0) throw new Error("残高を超えるNTは減算できません。");
+  if (!Number.isSafeInteger(totalNt)) throw new Error("NTの保存上限を超えています。");
+  return { ...state, totalNt };
 }
 
 export function diaryFixture(state: AppState): AppState {

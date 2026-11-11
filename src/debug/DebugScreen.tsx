@@ -1,23 +1,21 @@
 import { router } from "expo-router";
 import { useRef, useState } from "react";
-import { Keyboard, Modal, Platform, ScrollView, Share, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Keyboard, Modal, Platform, ScrollView, Share, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import { SettingsCard, SettingsTitle } from "@/src/components/menu/SettingsLayout";
 import { BUILD_ENVIRONMENT, DEBUG_ENABLED } from "@/src/config/environment";
 import { Fonts } from "@/src/constants/theme";
-import type { AppState } from "@/src/domain/common/types";
 import { useAppState } from "@/src/state/AppStateProvider";
 import { APP_STATE_STORAGE_KEY } from "@/src/storage/appStateRepository";
 import { getStorageDebug } from "@/src/storage/developmentStorage";
-import { diaryFixture, requireIdle, resetProgress, storyFixture } from "./debugActions";
+import { diaryFixture, requireIdle, resetProgress } from "./debugActions";
+import { DebugAction as Action, type DebugChange } from "./DebugControls";
 import { DEBUG_STORAGE_KEY, useDebugSession } from "./DebugSession";
 import { useDebugStateUpdate } from "./StateAccess";
-import StateControls from "./StateControls";
-import StoryPreview from "./StoryPreview";
-
-type PendingAction = { description: string; transform: (state: AppState) => AppState };
+import NtControls from "./NtControls";
+import StoryProgressControls from "./StoryProgressControls";
 
 export default function DebugScreen() {
   const { top, bottom } = useSafeAreaInsets();
@@ -27,7 +25,7 @@ export default function DebugScreen() {
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const [feedback, setFeedback] = useState<{ text: string; error: boolean } | null>(null);
-  const [pending, setPending] = useState<PendingAction | null>(null);
+  const [pending, setPending] = useState<DebugChange | null>(null);
   const storage = getStorageDebug(sandbox ? DEBUG_STORAGE_KEY : APP_STATE_STORAGE_KEY);
 
   if (!DEBUG_ENABLED || !state || !updateState) return null;
@@ -103,14 +101,15 @@ export default function DebugScreen() {
           <Text style={styles.text}>
             {sandbox
               ? "専用の保存領域で通常の画面を検証できます。通常データのNT・日記・購入状態には影響しません。"
-              : "会話プレビューはこのまま使えます。NTや進行を操作するときはテストデータに切り替えてください。"}
+              : "NTやストーリーの進捗を操作するときはテストデータに切り替えてください。会話はメモリー画面で確認できます。"}
           </Text>
           <Text style={styles.text}>切り替え後は画面を開き直します。再起動すると通常データに戻り、テストデータは次回も残ります。</Text>
           <Action title={sandbox ? "通常データに戻る" : "テストデータに切り替える"} onPress={changeSession} disabled={busy || state.activeTimer !== null} />
           {state.activeTimer ? <Text style={styles.text}>切り替え・データ作成はタイマー終了／キャンセル後に行えます。</Text> : null}
         </SettingsCard>
-        <StoryPreview />
         {sandbox ? <>
+          <StoryProgressControls state={state} disabled={busy} onChange={(transform, message) => void run(() => updateState(transform), message)} />
+          <NtControls state={state} disabled={busy} onChange={(transform, message) => void run(() => updateState(transform), message)} />
           <SettingsCard>
             <SettingsTitle>タイマー・日次解放</SettingsTitle>
             <Text style={styles.text}>5秒後に通常の終了・日記保存を確認できます。画面を離れた時間は加算せず、獲得NTは実集中秒数です。</Text>
@@ -122,12 +121,9 @@ export default function DebugScreen() {
               transform: (current) => { requireIdle(current); return { ...current, lastCompletionDate: null }; },
             })} disabled={busy || state.activeTimer !== null} />
           </SettingsCard>
-          <StateControls />
           <SettingsCard>
             <SettingsTitle>テストデータの作成・リセット</SettingsTitle>
             <Text style={styles.text}>テスト領域の進行・NT・購入・日記を置き換えます。名前・タスク・音量・通知時刻・デフォルト時間は保持します。チュートリアルの初回判定は共通で、リセットしません。</Text>
-            <Action title="全話解放・分岐未取得・3000 NT" disabled={busy || state.activeTimer !== null} onPress={() => setPending({ description: "全14話を解放し、分岐・サイド購入・日記を空にして3000 NTにします。", transform: (current) => storyFixture(current, false) })} />
-            <Action title="全話・全分岐解放・3000 NT" disabled={busy || state.activeTimer !== null} onPress={() => setPending({ description: "全14話と全分岐を取得済みにし、サイド購入・日記を空にして3000 NTにします。", transform: (current) => storyFixture(current, true) })} />
             <Action title="3日分の日記を作成" disabled={busy || state.activeTimer !== null} onPress={() => setPending({ description: "進行をリセットし、今日・昨日・一昨日の空／改行／長文日記3件を作成します。", transform: diaryFixture })} />
             <Action title="進行を最初に戻す" disabled={busy || state.activeTimer !== null} onPress={() => setPending({ description: "テストデータのNT・完了回数・日次判定・全会話権利・購入・日記をリセットします。", transform: resetProgress })} />
           </SettingsCard>
@@ -173,12 +169,6 @@ export default function DebugScreen() {
   );
 }
 
-function Action({ title, onPress, disabled }: { title: string; onPress: () => void; disabled: boolean }) {
-  return <TouchableOpacity style={[styles.action, disabled && styles.disabled]} onPress={onPress} disabled={disabled} accessibilityRole="button" accessibilityState={{ disabled }}>
-    <Text style={styles.actionText}>{title}</Text>
-  </TouchableOpacity>;
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   header: { paddingHorizontal: 20, paddingBottom: 8, flexDirection: "row", gap: 8, alignItems: "center" },
@@ -189,7 +179,4 @@ const styles = StyleSheet.create({
   feedback: { color: "#E0E3EE", fontFamily: Fonts.regular, fontSize: 14, lineHeight: 22, paddingHorizontal: 20, paddingBottom: 8 },
   text: { color: "#E0E3EE", fontFamily: Fonts.regular, fontSize: 14, lineHeight: 22 },
   error: { color: "#FFD0C8" },
-  action: { minHeight: 48, justifyContent: "center", padding: 12, borderWidth: 1, borderColor: "#FFFFFF66", backgroundColor: "#FFFFFF22" },
-  actionText: { color: "#FFFFFF", fontFamily: Fonts.medium, fontSize: 14, lineHeight: 22 },
-  disabled: { opacity: 0.4 },
 });
