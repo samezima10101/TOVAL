@@ -12,28 +12,25 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { useKeyboardEditor } from "@/src/components/common/KeyboardEditor";
+import PrimaryButton from "@/src/components/common/PrimaryButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import AudioSettings from "@/src/components/menu/AudioSettings";
 import DefaultTimerSettings from "@/src/components/menu/DefaultTimerSettings";
 import NotificationSettings from "@/src/components/menu/NotificationSettings";
+import {
+  SettingsCard,
+  SettingsTitle,
+} from "@/src/components/menu/SettingsLayout";
 import UserSettings, {
   UserSettingsToolbar,
   useUserSettings,
 } from "@/src/components/menu/UserSettings";
 import { Fonts } from "@/src/constants/theme";
+import useGuardedPush from "@/src/hooks/useGuardedPush";
 import useInputReveal from "@/src/hooks/useInputReveal";
 import { useTutorial } from "@/src/tutorial/TutorialContext";
-import PrimaryButton from "@/src/components/common/PrimaryButton";
-import { SettingsCard, SettingsTitle } from "@/src/components/menu/SettingsLayout";
-
-// DEBUG_STORY_PREVIEW: 削除時はこのブロックと下の表示行、専用ファイルを削除する。
-const DebugStoryPreview: import("react").ComponentType | null = __DEV__
-  ? // 開発時だけ読み込み、本番バンドルから依存ごと除外する。
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    require("@/src/debug/StoryPreview").default
-  : null;
 
 export default function MenuScreen() {
+  const push = useGuardedPush();
   const { top } = useSafeAreaInsets();
   const { replay } = useTutorial();
   const { height: windowHeight } = useWindowDimensions();
@@ -88,23 +85,34 @@ export default function MenuScreen() {
         <Text style={styles.title} accessibilityRole="header">
           メニュー
         </Text>
+        {/* DEBUG_CENTER: only development and explicitly internal builds. */}
+        {__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === "internal" ? (
+          <SettingsCard>
+            <SettingsTitle>デバッグ</SettingsTitle>
+            <Text style={styles.tutorialDescription}>
+              会話の確認・短縮タイマー・テストデータの操作をまとめて行えます。
+            </Text>
+            <PrimaryButton
+              title="デバッグ画面"
+              onPress={() => push("/debug")}
+            />
+          </SettingsCard>
+        ) : null}
+
+        <UserSettings editor={userSettings} onRevealInput={revealInput} />
+        <DefaultTimerSettings />
+        <NotificationSettings />
         <SettingsCard>
           <SettingsTitle>チュートリアル</SettingsTitle>
           <Text style={styles.tutorialDescription}>
             タイマーの使い方をもう一度練習できます。練習ではNT・記録は増えません。
           </Text>
           <PrimaryButton
-            title="もう一度練習する"
+            title="はじめる"
             accessibilityLabel="チュートリアルをもう一度行う"
             onPress={replay}
           />
         </SettingsCard>
-        <AudioSettings />
-        <UserSettings editor={userSettings} onRevealInput={revealInput} />
-        <DefaultTimerSettings />
-        <NotificationSettings />
-        {/* DEBUG_STORY_PREVIEW */}
-        {DebugStoryPreview ? <DebugStoryPreview /> : null}
       </ScrollView>
       <UserSettingsToolbar editor={userSettings} bottom={toolbarBottom} />
     </View>
@@ -113,6 +121,10 @@ export default function MenuScreen() {
 
 const styles = StyleSheet.create({
   content: { padding: 20, gap: 24 },
-  tutorialDescription: { color: "#FFFFFF", fontFamily: Fonts.regular, lineHeight: 22 },
+  tutorialDescription: {
+    color: "#FFFFFF",
+    fontFamily: Fonts.regular,
+    lineHeight: 22,
+  },
   title: { color: "#FFFFFF", fontFamily: Fonts.bold, fontSize: 24 },
 });

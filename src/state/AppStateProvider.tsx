@@ -9,6 +9,7 @@ import {
   useState,
 } from "react";
 import { AppState as NativeAppState } from "react-native";
+import { DEBUG_ENABLED } from "@/src/config/environment";
 
 import {
   DEFAULT_BGM_VOLUME,
@@ -53,6 +54,14 @@ import {
 } from "@/src/storage/appStateRepository";
 
 export type HydrationStatus = "loading" | "ready" | "error";
+
+// DEBUG_CENTER: 開発専用の保存キュー接続。
+const DebugStateProvider: import("react").ComponentType<
+  import("@/src/debug/StateAccess").DebugStateProviderProps
+> | null = (__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === "internal")
+  ? // eslint-disable-next-line @typescript-eslint/no-require-imports
+    require("@/src/debug/StateAccess").DebugStateProvider
+  : null;
 
 export class TimerNotReadyError extends Error {
   constructor() {
@@ -635,7 +644,19 @@ export function AppStateProvider({
 
   return (
     <AppStateContext.Provider value={value}>
-      {children}
+      {/* DEBUG_CENTER: 撤去時はこの条件分岐をchildrenだけに戻す。 */}
+      {DebugStateProvider ? (
+        <DebugStateProvider
+          updateState={(transform) => enqueue(async () => {
+            if (!DEBUG_ENABLED) throw new Error("このビルドではデバッグ操作を利用できません。");
+            const current = requireState();
+            const next = transform(current);
+            if (next !== current) await saveAndCommit(next);
+          })}
+        >
+          {children}
+        </DebugStateProvider>
+      ) : children}
     </AppStateContext.Provider>
   );
 }

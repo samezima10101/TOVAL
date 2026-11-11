@@ -19,7 +19,6 @@ import {
   isValidNotificationTime,
 } from "@/src/domain/reminder";
 import { DEFAULT_TIMER_MINUTES, isValidDefaultTimerMinutes } from "@/src/domain/timer";
-import { developmentStorage } from "./developmentStorage";
 
 export const APP_STATE_STORAGE_KEY = "@my-june/app-state-v1";
 export const RECOVERY_STORAGE_PREFIX = "@my-june/recovery/";
@@ -310,13 +309,14 @@ export type AppStateRepository = {
 export function createAppStateRepository(
   storage: StorageLike = AsyncStorage,
   catalog: StoryCatalog = STORY_CATALOG,
+  storageKey = APP_STATE_STORAGE_KEY,
 ): AppStateRepository {
   let writable = false;
   let preservedRaw: string | null = null;
 
   const readRaw = async () => {
     try {
-      return await storage.getItem(APP_STATE_STORAGE_KEY);
+      return await storage.getItem(storageKey);
     } catch (error) {
       throw new AppStateStorageError("read", "アプリ状態を読み込めませんでした。", error);
     }
@@ -361,7 +361,7 @@ export function createAppStateRepository(
 
       const raw = await readRaw();
       if (raw !== null && !parsePersistedState(raw, catalog)) throw preserve(raw);
-      await writeRaw(APP_STATE_STORAGE_KEY, JSON.stringify(state));
+      await writeRaw(storageKey, JSON.stringify(state));
     },
 
     async initializePreservedData() {
@@ -369,12 +369,13 @@ export function createAppStateRepository(
       const raw = await readRaw();
       if (raw !== preservedRaw) throw new Error("保存データが変わりました。再読込して確認してください。");
       // Keep the exact bytes under a new key, even after successful initialization.
-      const backupKey = `${RECOVERY_STORAGE_PREFIX}${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const recoveryPrefix = storageKey === APP_STATE_STORAGE_KEY ? RECOVERY_STORAGE_PREFIX : `${storageKey}/recovery/`;
+      const backupKey = `${recoveryPrefix}${Date.now()}-${Math.random().toString(36).slice(2)}`;
       if (await storage.getItem(backupKey) !== null) throw new Error("退避先が使用中のため初期化を中止しました。もう一度お試しください。");
       await writeRaw(backupKey, raw);
       if (await storage.getItem(backupKey) !== raw) throw new Error("退避データを確認できないため初期化を中止しました。");
       if (await readRaw() !== raw) throw new Error("保存データが変わったため初期化を中止しました。");
-      await writeRaw(APP_STATE_STORAGE_KEY, JSON.stringify(createInitialAppState()));
+      await writeRaw(storageKey, JSON.stringify(createInitialAppState()));
       preservedRaw = null;
       writable = true;
     },
@@ -383,5 +384,8 @@ export function createAppStateRepository(
 }
 
 export const appStateRepository = createAppStateRepository(
-  __DEV__ ? developmentStorage(AsyncStorage, APP_STATE_STORAGE_KEY) : AsyncStorage,
+  (__DEV__ || process.env.EXPO_PUBLIC_APP_ENV === "internal")
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    ? require("./developmentStorage").developmentStorage(AsyncStorage, APP_STATE_STORAGE_KEY)
+    : AsyncStorage,
 );

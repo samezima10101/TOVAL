@@ -3,9 +3,6 @@ import type { AudioSource } from "expo-audio";
 export const DEFAULT_BGM_VOLUME = 0.3;
 export const DEFAULT_SE_VOLUME = 1;
 
-// BGM and sound effects have independent persisted runtime volumes.
-export const AUDIO_VOLUMES = { bgm: DEFAULT_BGM_VOLUME, se: DEFAULT_SE_VOLUME } as const;
-
 export function isValidAudioVolume(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
@@ -28,6 +25,7 @@ export type AppRoute =
   | "/log"
   | "/shop"
   | "/menu"
+  | "/debug"
   | "/side-story";
 
 /** Each screen can select a different registered track without its own player. */
@@ -39,6 +37,7 @@ export const SCREEN_BGM: Record<AppRoute, BgmTrackId> = {
   "/log": "default",
   "/shop": "non",
   "/menu": "default",
+  "/debug": "default",
   "/side-story": "non",
 };
 

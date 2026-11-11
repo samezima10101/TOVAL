@@ -29,13 +29,13 @@
 
 単独回は`soloCharacter: "alta"`または`"gem"`を指定し、登場しない側の表情は本文で`none`にする。メモリーのタイトル選択帯と詳細説明パネルの背景色は[theme.ts](../src/constants/theme.ts)の`SoloStoryColors`を参照する。現在は淡い青緑。再生中の会話枠は通常色を使い、その上に単独回のタイトルは追加しない。質問数は`routes`の配列長で変えられる。ルート内の追加選択は`choices`へ再帰的に指定し、選択後はその`lines`へ進む。追加選択は同じルート権利に含み、別課金・進行位置保存はしない。
 
-質問の`requirement`は原稿と同じファイルで編集する。`anyEpisodeRouteCount`は指定した`episodeIds`のどれか1話で`count`以上のルート権利を持つ条件、`allEpisodeRoutes`は指定話すべてのルート権利を持つ条件。`description`は未達時に表示する説明。第6話の質問2は第1〜6話のどれかで2ルート以上、質問3は第1〜5話の全ルートを要求する。条件を満たしても追加分岐の購入は必要。初回は条件達成済みの質問から1つ無料で選べる。取得済み権利は条件変更後も利用でき、質問の表示と保存APIが同じ判定を使う。デバッグプレビューは条件を適用せず全質問・追加選択を確認できる。
+質問の`requirement`は原稿と同じファイルで編集する。`anyEpisodeRouteCount`は指定した`episodeIds`のどれか1話で`count`以上のルート権利を持つ条件、`allEpisodeRoutes`は指定話すべてのルート権利を持つ条件。`description`は未達時に表示する説明。第6話の質問2は第1〜6話のどれかで2ルート以上、質問3は第1〜5話の全ルートを要求する。条件を満たしても追加分岐の購入は必要。初回は条件達成済みの質問から1つ無料で選べる。取得済み権利は条件変更後も利用でき、質問の表示と保存APIが同じ判定を使う。全質問・追加選択の本文確認は、テスト領域の第6話を選択肢3個へ設定してメモリーから行う。
 
 表情は`left`にジェム、`right`にアルタの名前を指定する。`none`は指定側の画像を描画せず、もう一方の位置を維持する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
 
 演出は台詞の`effect`で指定する。`effect: { type: "shout", target: "alta" }`はアルタのみ、target: "gem"はジェムのみを、台詞へ切り替わったとき上下3ポイント・25ms刻み8区間（計200ms）震わせて元の位置へ戻す。背景・もう一人・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は停止し位置を戻す。第2話の最後（episode-02-after-6）はアルタを指定。調整箇所はStoryCharactersのshake。
 
-行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。1400×950の素材を、下端クロップ後の映像枠全体へ比率維持のcontain・中央配置で表示する。スライドはクロップせず、上下端を含む全体を枠内に収める。`slideBackground: true`の行は、`assets/slides/slide_background.png`を表示枠全体へcoverで描き、キャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常再生と開発プレビューで共用する。
+行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。1400×950の素材を、下端クロップ後の映像枠全体へ比率維持のcontain・中央配置で表示する。スライドはクロップせず、上下端を含む全体を枠内に収める。`slideBackground: true`の行は、`assets/slides/slide_background.png`を表示枠全体へcoverで描き、キャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常のストーリー再生で使用する。
 
 | キャラクター | 表情名と画像（各範囲は番号順） |
 | --- | --- |
@@ -66,7 +66,7 @@
 
 原稿タブ`00`の16台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。`INTRO_LINES`の`input`行を`episode00.ts`の`getIntroSegment`で区切り、初回は既存の`app/story.tsx`へ`source=tutorial`で渡す。その位置で`IntroInput.tsx`の入力ダイアログを重ね、終了後はタブ`tutorial`を基にした30段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
 
-同じファイルの`episode00`は入力行を除いた見返し用の16台詞。メモリーのChapter 1・第0話と、開発用ストーリープレビューから既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
+同じファイルの`episode00`は入力行を除いた見返し用の16台詞。メモリーのChapter 1・第0話から既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
 
 `steps.ts`の`scene`は案内中の既存画面／ダイアログ、`target`はコーチマークの対象、`action`は実操作を待つ条件。`action`がない段階はボックス内外のタップまたは「次へ」で進み、実操作の段階は強調対象だけで進む。「戻る」は前の段階へ移り、先頭では進行を変えない。`fullScreen: true`では画面を暗くせず全体を見せ、ボックスは画面下部へ置く。本文の高さ上限や内部スクロールを設けず、実測したボックスを対象の上か下へ配置し、フッターへの重なりを許す。
 
@@ -119,7 +119,9 @@
 
 [AppShell](../app/_layout.tsx)の[useScreenBgm](../src/hooks/useScreenBgm.ts)だけで共通BGMプレイヤーを持つ。同じ曲はreplace/seekせず継続し、別曲へ切り替える。`non`や音量0は一時停止し、曲のある画面・0より大きい音量へ戻れば続きから再開する。非同期の古い再生要求は画面変更・背景移動時に破棄する。
 
-[AudioSettings](../src/components/menu/AudioSettings.tsx)内の`VolumeSetting`を両音量で共有する。標準スライダーは0〜100%・1%刻み。操作中は即時プレビュー、指を離すと保存し、VoiceOverなど非ドラッグ操作は変更時に保存する。保存中の追加操作を抑止し、失敗時は対象だけを保存済み値へ戻して同じ希望値で再試行する。プレビューは永続化せず、音量の変更だけでBGMをreplace/seek・音声モード再初期化しない。
+[HeaderAudioMenu](../src/components/common/HeaderAudioMenu.tsx)がヘッダー右上の三本線と直下の開閉パネルを持つ。パネルは右寄せ・最大幅288で画面幅に追従し、高さを超える内容だけスクロールする。幅・余白・配色は同ファイルのstyles、各行・スライダー幅・消音ボタンは[AudioSettings](../src/components/menu/AudioSettings.tsx)で調整する。メニューからは音声設定を外している。
+
+[AudioSettings](../src/components/menu/AudioSettings.tsx)内の`VolumeSetting`を両音量で共有する。標準スライダーは0〜100%・1%刻み。操作中は即時プレビュー、指を離すと保存し、VoiceOverなど非ドラッグ操作は変更時に保存する。横の消音／解除ボタンも即時反映・保存する。消音前の正の音量は画面内のrefへ記憶し、パネルの開閉で保持する。画面移動・再起動で記憶はリセットし、保存値が0%なら解除先は対象の初期音量とする。保存形式へ項目は追加しない。閉じると未保存プレビューを解除し、保存中・失敗時の状態は同じ画面での再展開時にも保持する。保存中の追加操作を抑止し、失敗時は対象だけを保存済み値へ戻して同じ希望値で再試行する。プレビューは永続化せず、音量の変更だけでBGMをreplace/seek・音声モード再初期化しない。
 
 `bgmVolume`・`seVolume`は独立した0〜1の有限数で、共通の`isValidAudioVolume`で検証する。初期値の変更は保存済み音量の上書きには使わない。保存API・プレビューは[AppStateProvider](../src/state/AppStateProvider.tsx)、保存形式は[データ仕様](data-integrations.md)を参照する。
 
@@ -145,11 +147,11 @@
 
 差し替え時はファイル・登録名・利用箇所を揃え、[Zen Kaku Gothic NewのOFL](../assets/fonts/zenkakugothicnew-OFL.txt)・[Bebas NeueのOFL](../assets/fonts/bebasneue-OFL.txt)・[DotGothic16のOFL](../assets/fonts/dotgothic16-OFL.txt)を維持する。配布元は各Google Fonts公式リポジトリ（[Zen](https://github.com/google/fonts/tree/main/ofl/zenkakugothicnew)／[Bebas](https://github.com/google/fonts/tree/main/ofl/bebasneue)／[Dot](https://github.com/google/fonts/tree/main/ofl/dotgothic16)）。
 
-[menu.tsx](<../app/(tabs)/menu.tsx>)は画面配置・キーボード余白・入力表示スクロールを担当し、設定本体を以下へ分ける。
+[menu.tsx](<../app/(tabs)/menu.tsx>)は画面配置・キーボード余白・入力表示スクロールを担当し、設定本体を以下へ分ける。音声設定だけは共通ヘッダーから表示する。
 
 | ファイル | 担当 |
 | --- | --- |
-| [AudioSettings](../src/components/menu/AudioSettings.tsx) | BGM・効果音 |
+| [AudioSettings](../src/components/menu/AudioSettings.tsx) | 共通ヘッダーで使うBGM・効果音・消音／解除 |
 | [UserSettings](../src/components/menu/UserSettings.tsx) | タスク名・ユーザー名、下書き・検証・保存・入力参照 |
 | [DefaultTimerSettings](../src/components/menu/DefaultTimerSettings.tsx) | デフォルト集中時間 |
 | [NotificationSettings](../src/components/menu/NotificationSettings.tsx) | 通知時刻・許可状態・再試行 |
@@ -204,13 +206,29 @@
 
 ユーザー情報は項目ごとに下書きを保持し、非編集中の未保存項目に「未保存」を表示する。親が同じ編集状態を`UserSettings`とScrollView外の`UserSettingsToolbar`へ渡し、✕／OKは選択中項目だけへ作用する。ログは選んだ日記本文だけを編集し、他のメモや開始時刻・集中時間を保持する。保存失敗では下書きを保持して再フォーカスし、成功・キャンセルでキーボードを閉じる。
 
-## 開発用ストーリープレビュー
+## デバッグセンター
 
-Expo Goなどの開発モードでは、メニュー末尾の「デバッグ：ストーリー確認」→「ストーリーを選ぶ」から、第0話・未解放のメイン全話・未購入のサイド会話を閲覧できる。メインの分岐は会話中に自由に選択し、閉じる／読了で選択一覧へ戻る。再選択すると冒頭から再生する。名前差込は現在の保存名を使う。第0話では入力ダイアログや操作練習を開始しない。
+Expo Goなどの開発起動と内部用ビルドでは、メニュー末尾の「デバッグ画面」から開く。外部用では入口を表示せず、`/debug`直接指定もメニューへ戻す。ビルド区分の設定は[開発運用手順](development-operations.md#内部用と外部用の切り替え)。画面は[src/debug/DebugScreen.tsx](../src/debug/DebugScreen.tsx)、検証データは[debugActions.ts](../src/debug/debugActions.ts)にまとめる。
 
-専用実装は[src/debug/StoryPreview.tsx](../src/debug/StoryPreview.tsx)の1ファイルに集約し、通常の表示部品・文字送りを再利用する。保存API・解放・購入処理は呼ばず、閲覧・分岐選択でNT・進捗・権利を変更しない。通常画面の閲覧条件は維持する。メニュー上のModalなのでBGMはメニューの設定のままで、ストーリー画面への遷移や曲の切替の検証には使わない。
+### 会話の確認
 
-本番では`__DEV__`による条件付き読み込みで入口と専用モジュールを除外する。完全に撤去するときは、専用ファイルを削除し、[app/(tabs)/menu.tsx](../app/(tabs)/menu.tsx)の`DEBUG_STORY_PREVIEW`コメントが付いた読み込みブロックと表示行を削除する。新規ルート・保存項目・Provider変更はない。ファイルだけ削除して呼び出しを残すと開発起動で参照エラーになるため、この2箇所も同時に外す。
+ストーリー確認専用画面は使わず、テストデータのエピソード・選択肢進捗を設定してメモリーから再生する。第0話は常時再生可能で、入力やチュートリアルを開始しない。サイド会話はテスト領域で必要なメイン話を解放し、NTを追加して通常のショップから購入・再生する。
+
+### テストデータの操作
+
+「テストデータに切り替える」で独立した保存領域へ切り替える。初回は空の状態で、通常データはコピーしない。切り替えると画面が作り直されるため、必要に応じてメニューから再度開く。テスト領域は画面下にTEST DATAを表示する。テストデータは次回も保持し、再起動では通常データから始まる。進行中タイマーがある間は切り替えできない。破損などでデバッグ画面を開けない場合もReloadすれば通常データへ戻る。
+
+操作は次の通り。通常画面での完了・購入・保存処理は同じ実装を通り、テスト領域へ保存する。
+
+- 5秒タイマーは通常のタイマー画面を開く。タスク未設定時は「デバッグ用タスク」を作成する。計測条件・秒単位NT・終了・日記保存の規則は通常どおり。
+- 「日次解放をもう一度試す」は確認後に最終完了日だけをnullにする。恒常的な解除・端末時刻の変更ではなく、次回完了1回に対してもう1話を解放できる状態を作る。
+- 「解放する話」「選択肢の進捗」は[StoryProgressControls.tsx](../src/debug/StoryProgressControls.tsx)。数字の標準ホイールを画面内で直接回し、「話」「話から」「話まで」は固定表示する。解放範囲・権利の削除／置換・NT・第6話についての説明を欄内に表示する。[NumberSetting.tsx](../src/debug/NumberSetting.tsx)はiOS標準部品の左右各20ポイントの内部余白を考慮し、幅112・表示高56で選択中の1行だけを表示する。内部のiOSホイールは高さ216のまま中央配置し、上下の候補・余白をクリップする。開始／終了は2列に分け、単位を各ホイールの下へ置く。両方とも第1話〜解放済みの最終話を候補にし、もう片方の選択によって候補の配列を変更しない。終了話を開始話より前へ動かしたら開始話も下げ、開始話を終了話より後へ動かしたら終了話も上げる。範囲は1つの状態として同時更新する。個数ボタンは最小幅64・高さ56と内側余白を持ち、狭幅では折り返す。選択肢の個数は横並びの0・1・2・3個から選ぶ。3個は第6話だけの指定時に有効。「決定」1回で直接保存し、別画面のピッカーや追加確認は出さない。ホイール／個数の操作だけでは保存せず、決定後の保存成功でだけ進捗を反映する。エピソードは0〜14話まで連続解放し、指定より後の話・選択肢権利を削除する。残る話の選択肢は保持、新しい話は0個。選択肢は解放済みの開始話〜終了話へ各話0・1・2個を設定し、第6話だけの指定では3個も選べる。本文の上から順に権利を置き換え、条件付き質問も直接解放する。NT・サイド・ログ・日次判定を変更せず、NT消費／返還なし。第0話は対象外。進捗操作だけでは同日の再解放はできない。
+- 「NT操作」は[NtControls.tsx](../src/debug/NtControls.tsx)。進捗と別の欄で、1〜`Number.MAX_SAFE_INTEGER`を16桁以内で入力して追加／減算する。負残高・加算後の安全範囲超過は拒否し、成功・失敗後も入力を保持する。ストーリー進捗を変えない。
+- 一括データは3日分の日記（0秒・45分15秒・1時間、空・改行・長文）と進行リセット。全話／全分岐の一括プリセットは使わず、上の進捗欄とNT欄で作成する。変更内容を確認してから保存する。名前・タスク・音量・通知時刻・デフォルト時間は保持し、チュートリアル初回判定は消さない。最初の会話からの新規起動検証は専用端末の新規データを使う。
+- 「次の保存1回を失敗させる」はテスト領域だけに作用する。次の自動保存でも消費される。未消費予約は閉じても残り、解除・通常データへ戻る・Reloadで消える。失敗後は同じ操作で再試行する。
+- 状態の表示・共有は環境・OS・残高・件数・話ID・タイマー情報などに限定し、名前・タスク名・日記本文を含めない。テスト中は通知予約の同期を止め、通常領域の通知を維持する。通知の即時発火・任意日時への時計変更は実装していない。
+
+[StateAccess.tsx](../src/debug/StateAccess.tsx)とProviderの保存キューで、ビルド区分・テスト領域・保存結果を確認する。外部用では`src/debug/`と保存故障注入モジュールを条件付きrequireごと除外する。デバッグ機能は残し、ビルドで切り替えて運用する。完全撤去が必要な場合は、`app/debug.tsx`、メニューとルートレイアウトの`DEBUG_CENTER`接続、Providerの専用Context接続（末尾をchildrenだけへ戻す）、`src/debug/`、音源設定の`/debug`をまとめて外し、静的診断・両バンドルを確認する。
 
 ## 編集後の確認
 

@@ -1,6 +1,6 @@
 # 開発運用手順
 
-更新日: 2026-11-01（日本時間）。対象環境はWindows、完成判定対象はiPhone。
+更新日: 2026-11-10（日本時間）。対象環境はWindows、完成判定対象はiPhone。
 
 ## 環境の再現
 
@@ -28,6 +28,7 @@ npm.cmd run start
 | `npm.cmd run deps:check` | SDK推奨依存との照合 |
 | `npm.cmd run doctor` | Expo環境診断 |
 | `npm.cmd run bundle:ios` | iOS用JS・アセット・Hermesバンドルを`dist/ios`へ生成 |
+| `npm.cmd run bundle:ios:internal` | デバッグ付き内部用の同バンドルを`dist/ios-internal`へ生成 |
 | `npm.cmd run android` / `ios` / `web` | 各プラットフォーム向けの開発サーバー起動 |
 
 コード変更時はlint・型チェックを行い、依存・設定・アセット・import構成への影響に応じて依存診断・バンドル生成も行う。文書だけの変更では参照先と内容の整合性を確認する。自動テストは追加・復元しない。
@@ -36,11 +37,30 @@ npm.cmd run start
 
 ## iPhone向けビルド
 
-`expo-keep-awake`、`expo-notifications`、`@react-native-community/datetimepicker`、`@react-native-community/slider`を追加する前の開発ビルドは、ネイティブを再ビルドして端末へ入れ直す。Metro再起動・JS Reload・`bundle:ios`だけでは追加ネイティブモジュールは組み込まれない。
+`expo-keep-awake`、`expo-notifications`、`@react-native-community/datetimepicker`、`@react-native-community/slider`、`@react-native-picker/picker`を追加する前の開発ビルドは、ネイティブを再ビルドして端末へ入れ直す。Metro再起動・JS Reload・`bundle:ios`だけでは追加ネイティブモジュールは組み込まれない。デバッグの話数・個数は[SDK 58のPicker](https://docs.expo.dev/versions/v58.0.0/sdk/picker/)を使い、Expo Goでは標準同梱のものを利用できる。
 
 `dist/ios`はgitignore対象。バンドル生成はネイティブコンパイル・署名・IPA生成・実機検証を含まない。WindowsではXcodeによるiOS製品ビルド・シミュレーター検証は行えない。現在はApple Developerの配布アカウントがなく、ユーザーはExpo Goで確認している。Expo Goでの確認は補助とし、受け入れはiPhone用ビルドで行う。[expo-keep-awake](https://docs.expo.dev/versions/v58.0.0/sdk/keep-awake/)で計測中だけ自動ロックを防ぐ。自動ロック防止は開発時にもExpo側で有効になり得るため、計測中の防止・停止時の解除を配布ビルドでも必ず確認する。
 
 通知は端末内の毎日予約で、リモートプッシュサーバー・プッシュトークン・APNs配信認証は不要。通知許可・時刻変更・重複予約の確認は[通知手順](manual-acceptance-checklist.md#daily-notifications)、BGM・効果音は[音量手順](manual-acceptance-checklist.md#bgm-volume)を使う。
+
+## 内部用と外部用の切り替え
+
+[環境判定](../src/config/environment.ts)は開発起動、または`EXPO_PUBLIC_APP_ENV=internal`でのみデバッグを許可する。未指定・未知値・`production`のリリースビルドでは無効。外部用の条件付きrequireはMetroが専用依存を除外できるようリテラル条件を維持する。[Expoの環境変数](https://docs.expo.dev/guides/environment-variables/)は公開のビルド時定数であり、秘密情報・認証には使わない。アプリ内に配布区分を変更するスイッチは置かない。
+
+[eas.json](../eas.json)のプロファイルは次の通り。[EAS設定](https://docs.expo.dev/build/eas-json/)の`distribution`と、アプリ内のデバッグ許可は別の設定として扱う。
+
+| プロファイル | 用途 | デバッグ |
+| --- | --- | --- |
+| `internal` | EAS内部配布。iPhoneは登録端末向けのAd Hoc配布 | 有効 |
+| `internal-testflight` | TestFlight内部テスター向けのストア署名ビルド | 有効 |
+| `external` | TestFlight外部テスター向け | 無効 |
+| `production` | 外部用を継承する既定プロファイル | 無効 |
+
+Appleアカウント・bundleIdentifier・EAS projectId・署名の設定完了後に`eas build --platform ios --profile internal`等で生成する。この設定追加だけで配布準備完了とはしない。ネイティブ生成・署名・アップロードは未実施。
+
+**TestFlightの内部／外部グループだけでは、同じバイナリの機能を切り替えられない。** 内部用と外部用を別ビルド番号で作り、`internal-testflight`のビルドを外部グループへ追加しない。外部テスターには`external`または`production`から作ったビルドだけを配布する。TestFlightのビルド選択・配布先は実配布時に確認する。
+
+ローカルの`bundle:ios`は[scripts/export-ios.mjs](../scripts/export-ios.mjs)で外部用環境を明示し、`.env`や親プロセスの内部用値を引き継がない。内部用は`bundle:ios:internal`を使用する。`-- --source-maps`で生成したmapの`sources`から、外部用は`src/debug/`と`src/storage/developmentStorage.ts`がなく、内部用は両方が存在することを確認する。これらは実機動作・外部配布の完了を意味しない。
 
 ## 変更時と配布前の確認
 

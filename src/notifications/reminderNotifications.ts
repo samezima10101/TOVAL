@@ -6,6 +6,7 @@ import {
 } from "@/src/domain/reminder";
 
 export type ReminderNotificationStatus =
+  | "paused"
   | "loading"
   | "scheduled"
   | "permission-required"
@@ -15,7 +16,7 @@ export type ReminderNotificationStatus =
 
 export type ReminderSyncStatus = Exclude<
   ReminderNotificationStatus,
-  "loading" | "error"
+  "loading" | "error" | "paused"
 >;
 
 // Reusing the identifier replaces the pending iOS request, including after a

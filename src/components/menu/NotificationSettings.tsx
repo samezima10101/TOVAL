@@ -59,7 +59,9 @@ export default function NotificationSettings() {
         />
       </SettingsRow>
       <Text style={styles.description} accessibilityLiveRegion="polite">
-        {status === "loading"
+        {status === "paused"
+          ? "テストデータ使用中は通知予約を変更しません。通常データへ戻ると同期します。"
+          : status === "loading"
           ? "通知を設定しています…"
           : status === "scheduled"
             ? "お知らせを設定しました。"
