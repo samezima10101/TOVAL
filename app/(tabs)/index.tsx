@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
+import HomeShopEntrance from "@/src/components/home/HomeShopEntrance";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Fonts } from "@/src/constants/theme";
@@ -61,6 +62,7 @@ export default function HomeScreen() {
   }
 
   const completedToday = state.lastCompletionDate === today;
+  const shopAvailable = state.unlockedStories.some((story) => story.episodeId === 14);
   const todaysEpisode = getTodaysStoryEpisode(state.unlockedStories, today);
   const episodeUnlocked = state.unlockedStories.some(
     (story) => story.episodeId === todaysEpisode?.id,
@@ -93,7 +95,8 @@ export default function HomeScreen() {
           styles.content,
           {
             paddingTop: top + 76 + (shortScreen ? 8 : 12),
-            paddingBottom: tabBarHeight + 12,
+            // Keep the start button above the cockpit's lower controls.
+            paddingBottom: tabBarHeight + 12 + (shortScreen ? 56 : 76),
             paddingHorizontal: shortScreen ? 20 : 24,
           },
         ]}
@@ -260,23 +263,11 @@ export default function HomeScreen() {
           accessibilityLabel="集中モードの時間を設定"
           maxFontSizeMultiplier={1}
         />
-        <View style={[styles.shopDock, shortScreen && styles.shopDockCompact]}>
-          <TouchableOpacity
-            style={[styles.shopButton, shortScreen && styles.shopButtonCompact]}
-            onPress={() => push("/shop")}
-            disabled={tutorial.active}
-            accessibilityRole="button"
-            accessibilityLabel="ショップを開く"
-          >
-            <Image
-              source={require("@/assets/images/footer_unknown.svg")}
-              style={[styles.shopIcon, shortScreen && styles.shopIconCompact]}
-              contentFit="contain"
-              accessible={false}
-            />
-          </TouchableOpacity>
-        </View>
       </View>
+
+      {shopAvailable ? (
+        <HomeShopEntrance onPress={() => push("/shop")} disabled={tutorial.active} />
+      ) : null}
 
       <TaskNameModal
         visible={needsTask && !tutorial.active}
@@ -315,40 +306,6 @@ const monitorText = {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  shopButton: {
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: 64,
-    minHeight: 64,
-    borderRadius: 16,
-    backgroundColor: "rgba(12, 36, 58, 0.82)",
-    borderColor: "rgba(179, 235, 229, 0.65)",
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-  },
-  shopIcon: {
-    width: 32,
-    height: 32,
-  },
-  shopButtonCompact: {
-    minWidth: 56,
-    minHeight: 48,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-  },
-  shopIconCompact: { width: 24, height: 24 },
-  shopLabel: {
-    color: "#D5FAF1",
-    fontFamily: Fonts.medium,
-    fontSize: 11,
-    marginTop: 2,
-  },
-  shopDock: {
-    alignItems: "flex-end",
-    marginTop: 12,
-  },
-  shopDockCompact: { marginTop: 8 },
   content: {
     flex: 1,
     paddingHorizontal: 24,
