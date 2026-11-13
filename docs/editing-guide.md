@@ -56,6 +56,8 @@
 
 第3話は同じ原稿のタブ`03`を反映し、共通前29行・分岐A5行／B4行・共通後10行。行種別が空でも本文と話者がある行を含め、本文・選択肢・左右表情・`[userName]`を保持する。既存タイトル・話ID・分岐IDを維持する。追加表情はジェム`smile3` → `gem/G07-3.png`、アルタ`angry2` → `alta/A07-2.png`。
 
+ショップ初回挨拶は`src/content/shop.ts`の`SIDE_STORY_OPENING`に原稿タブ`side_story_opening`の8行を定義する。`[userName]`は保存済みの名前へ差し込み、`left`・`right`がともに`none`なら店員の立ち絵を非表示、それ以外は表示する。第14話解放後の初回入店で通常挨拶に代えて表示し、読了後は通常挨拶／入荷告知に戻る。再確認はテスト領域の進行リセット後に第14話を解放して入店する。
+
 ## 初回チュートリアル
 
 専用ファイルは6件。`TutorialContext.ts`に画面接続の型・フック、`TutorialProvider.tsx`に進行・初回保存、`TutorialOverlay.tsx`に配置・操作、`TutorialEffects.tsx`に強調枠・アニメーション、`IntroInput.tsx`に初回入力、`steps.ts`に操作練習の台詞をまとめる。第0話の本文と分割は`src/content/stories/episode00.ts`、再実行の入口はメニュー画面で管理し、同内容を専用ファイルへ重複させない。

@@ -263,6 +263,7 @@ export function validateAppState(
     parseStoryRouteProgress(value.storyRouteProgress, catalog) === undefined ||
     !isConversationIds(value.purchasedSideStoryIds) ||
     !isConversationIds(value.announcedSideStoryIds) ||
+    (value.sideStoryOpeningSeen !== undefined && value.sideStoryOpeningSeen !== true) ||
     parseDiaryLogs(value.diaryLogs, catalog) === undefined
   ) {
     return false;

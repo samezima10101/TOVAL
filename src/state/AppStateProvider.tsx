@@ -105,7 +105,7 @@ export type AppStateContextValue = {
     routeId: string,
   ) => Promise<void>;
   unlockSideStory: (conversationId: number) => Promise<void>;
-  announceSideStories: (conversationIds: readonly number[]) => Promise<void>;
+  completeShopGreeting: (conversationIds: readonly number[], sideStoryOpening: boolean) => Promise<void>;
   startTimer: (plannedSeconds: number) => Promise<ActiveTimer>;
   setTimerRouteFocused: (focused: boolean, changedAt?: number) => Promise<void>;
   cancelTimer: (cancelledAt?: number) => Promise<boolean>;
@@ -493,10 +493,13 @@ export function AppStateProvider({
     [enqueue, requireState, saveAndCommit],
   );
 
-  const announceSideStories = useCallback(
-    (conversationIds: readonly number[]) =>
+  const completeShopGreeting = useCallback(
+    (conversationIds: readonly number[], sideStoryOpening: boolean) =>
       enqueue(async () => {
         const current = requireState();
+        if (sideStoryOpening && !current.unlockedStories.some((story) => story.episodeId === 14)) {
+          throw new Error("第14話の解放後に表示できる会話です。");
+        }
         const newIds = listAvailableConversations(current)
           .filter(
             (item) =>
@@ -504,9 +507,10 @@ export function AppStateProvider({
               !current.announcedSideStoryIds.includes(item.id),
           )
           .map((item) => item.id);
-        if (!newIds.length) return;
+        if (!newIds.length && (!sideStoryOpening || current.sideStoryOpeningSeen)) return;
         const nextState = {
           ...current,
+          ...(sideStoryOpening ? { sideStoryOpeningSeen: true as const } : {}),
           announcedSideStoryIds: [...current.announcedSideStoryIds, ...newIds],
         };
         await saveAndCommit(nextState);
@@ -606,7 +610,7 @@ export function AppStateProvider({
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
       unlockSideStory,
-      announceSideStories,
+      completeShopGreeting,
       startTimer,
       setTimerRouteFocused,
       cancelTimer,
@@ -623,7 +627,7 @@ export function AppStateProvider({
       selectInitialStoryRoute,
       unlockAdditionalStoryRoute,
       unlockSideStory,
-      announceSideStories,
+      completeShopGreeting,
       setTaskName,
       bgmVolumePreview,
       previewBgmVolume,
