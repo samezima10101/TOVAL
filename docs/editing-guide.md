@@ -56,6 +56,8 @@
 
 第3話は同じ原稿のタブ`03`を反映し、共通前29行・分岐A5行／B4行・共通後10行。行種別が空でも本文と話者がある行を含め、本文・選択肢・左右表情・`[userName]`を保持する。既存タイトル・話ID・分岐IDを維持する。追加表情はジェム`smile3` → `gem/G07-3.png`、アルタ`angry2` → `alta/A07-2.png`。
 
+ショップ初回挨拶は`src/content/shop.ts`の`SIDE_STORY_OPENING`に原稿タブ`side_story_opening`の8行を定義する。`[userName]`は保存済みの名前へ差し込み、`left`・`right`がともに`none`なら店員の立ち絵を非表示、それ以外は表示する。第14話解放後の初回入店で通常挨拶に代えて表示し、読了後は通常挨拶／入荷告知に戻る。再確認はテスト領域の進行リセット後に第14話を解放して入店する。
+
 ## 初回チュートリアル
 
 専用ファイルは6件。`TutorialContext.ts`に画面接続の型・フック、`TutorialProvider.tsx`に進行・初回保存、`TutorialOverlay.tsx`に配置・操作、`TutorialEffects.tsx`に強調枠・アニメーション、`IntroInput.tsx`に初回入力、`steps.ts`に操作練習の台詞をまとめる。第0話の本文と分割は`src/content/stories/episode00.ts`、再実行の入口はメニュー画面で管理し、同内容を専用ファイルへ重複させない。
@@ -81,6 +83,8 @@
 ホームとメニューのタブ間移動は`router.navigate`を使う。`router.dismissTo`が送るPOP_TOはSDK 58のタブでは処理されないため、ストーリー・タイマーなどタブの外側のスタックから戻る場合だけに使う。タブ内かどうかは`useSegments()`の先頭が`(tabs)`かで判定する。`useRootNavigationState()`の最上位ルートはSDK内部の`__root`なので、直接`(tabs)`と比較しない。開始と終了の両方で同じ判定を使い、手動タブ押下を発生させない。
 
 ## 章一覧と会話画面
+
+ホームのショップ入口は[HomeShopEntrance](../src/components/home/HomeShopEntrance.tsx)を編集する。第14話の解放判定は[index.tsx](<../app/(tabs)/index.tsx>)の`shopAvailable`。タップで`/shop`へ進み、チュートリアル中は無効。`sample_monitor.png`の191×248全体を切り抜かず、背景`cockpit-bg.png`の941×1672を基準に背景と同じcover倍率・中央配置で拡縮する。位置は`SAMPLE_MONITOR`のx=0・y=1100で指定する。左端を背景画像と揃えるためx=0とし、上下位置はyで調整する。ホームの旧`footer_unknown.svg`入口は削除し、同素材を使うメニュータブは残す。
 
 `MEMORY_CHAPTERS`・`SHOP_CHAPTERS`の`title`・`storyIds`を変更する。既存IDをいずれか1章へ重複なく配置し、保存IDは変えない。現行は全会話を各Chapter 1へまとめ、空のChapter 2〜8は準備中。ショップで表示できる会話が0件の章は未入荷とする。
 
@@ -175,7 +179,7 @@
 
 共通ヘッダー・ロゴフッター・エラー表示は`AppFrame`が持ち、画像の選択やキャラクター分岐は持たない。ヘッダー76・タブバー60などの寸法は使用箇所に置き、`theme.ts`へ移さない。タブ画面の下余白は`useBottomTabBarHeight`を使い、スクロール内容内に上下余白を確保してバーの背後を通す。Safe Areaは維持し、OSステータスバーはルートとconfig pluginで非表示にする。
 
-ホームの[モニター配置](<../app/(tabs)/index.tsx>)と[monitor_frame.svg](../assets/images/monitor_frame.svg)は360×270（4:3）を維持し、contain・両軸同率で拡縮する。固定画面内で文字・再開操作を収め、集中開始はモニター外、ショップ入口はタブバーより上の右下へ置く。省略文字も読み上げでは全文を渡す。
+ホームの[モニター配置](<../app/(tabs)/index.tsx>)と[monitor_frame.svg](../assets/images/monitor_frame.svg)は360×270（4:3）を維持し、contain・両軸同率で拡縮する。固定画面内で文字・再開操作を収め、集中開始はモニター外、ショップ入口はメイン第14話解放後の背景左下へ置く。省略文字も読み上げでは全文を渡す。
 
 [PrimaryButton](../src/components/common/PrimaryButton.tsx)は[hex_button.svg](../assets/images/hex_button.svg)を共用し、標準幅222・最小高さ65。長いラベルは折り返し、無効・処理中の操作抑止と読み上げを維持する。ショップの`they.png`は[shop.tsx](../app/shop.tsx)で挨拶・退店時だけ画面全体へcover表示し、一覧・サイドには表示しない。
 

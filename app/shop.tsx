@@ -31,6 +31,7 @@ import {
   SHOP_GREETING,
   SHOP_GREETING_WITH_ARRIVALS,
   SHOP_KEEPER_NAME,
+  SIDE_STORY_OPENING,
 } from "@/src/content/shop";
 import { StoryEpisode } from "@/src/domain/common/types";
 import {
@@ -42,8 +43,7 @@ import { useAppState } from "@/src/state/AppStateProvider";
 
 export default function ShopScreen() {
   const { top } = useSafeAreaInsets();
-  const { height: screenHeight } = useWindowDimensions();
-  const { state, unlockSideStory, announceSideStories } = useAppState();
+  const { state, unlockSideStory, completeShopGreeting } = useAppState();
   const [phase, setPhase] = useState<
     "greeting" | "list" | "farewell" | "closed"
   >("greeting");
@@ -68,6 +68,12 @@ export default function ShopScreen() {
           .filter((item) => !state.announcedSideStoryIds.includes(item.id))
           .map((item) => item.id)
       : [],
+  );
+  const [showSideStoryOpening] = useState(() =>
+    Boolean(
+      state?.unlockedStories.some((story) => story.episodeId === 14) &&
+        !state.sideStoryOpeningSeen,
+    ),
   );
 
   useLayoutEffect(() => {
@@ -137,9 +143,11 @@ export default function ShopScreen() {
     });
   };
 
-  const opening = newConversationIds.length
-    ? SHOP_GREETING_WITH_ARRIVALS
-    : SHOP_GREETING;
+  const opening = showSideStoryOpening
+    ? SIDE_STORY_OPENING
+    : newConversationIds.length
+      ? SHOP_GREETING_WITH_ARRIVALS
+      : SHOP_GREETING;
   const availableConversations = listAvailableConversations(state);
   const chapters: StoryArchiveChapter[] = SHOP_CHAPTERS.map((chapter) => ({
     id: chapter.id,
@@ -185,25 +193,8 @@ export default function ShopScreen() {
   }));
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: phase === "list" ? 0 : top + 76 },
-      ]}
-    >
+    <View style={styles.container}>
       <ScreenBackground source={require("@/assets/bg/shop-bg.png")} />
-      {phase === "greeting" || phase === "farewell" ? (
-        <Image
-          source={require("@/assets/images/they.png")}
-          style={[styles.character, { top: 0, height: screenHeight }]}
-          contentFit="cover"
-          contentPosition="center"
-          pointerEvents="none"
-          accessible
-          accessibilityLabel={`${SHOP_KEEPER_NAME}の立ち絵`}
-        />
-      ) : null}
-      {phase !== "list" ? <BackButton onPress={handleBack} /> : null}
       {phase === "list" ? (
         <StoryArchive
           chapters={chapters}
@@ -221,11 +212,14 @@ export default function ShopScreen() {
         <ShopGreeting
           key={phase}
           episode={phase === "greeting" ? opening : SHOP_FAREWELL}
+          userName={state.userName}
+          onBack={handleBack}
           onFinish={async () => {
             setBusy(true);
             try {
-              if (phaseRef.current === "greeting")
-                await announceSideStories(newConversationIds);
+              if (phaseRef.current === "greeting") {
+                await completeShopGreeting(newConversationIds, showSideStoryOpening);
+              }
             } finally {
               setBusy(false);
             }
@@ -242,22 +236,46 @@ export default function ShopScreen() {
 
 function ShopGreeting({
   episode,
+  userName,
+  onBack,
   onFinish,
   onClose,
 }: {
   episode: StoryEpisode;
+  userName: string;
+  onBack: () => void;
   onFinish: () => Promise<void>;
   onClose: () => void;
 }) {
-  const reader = useStoryReader(episode, { source: "shop", onFinish, onClose });
+  const { top } = useSafeAreaInsets();
+  const { height: screenHeight } = useWindowDimensions();
+  const reader = useStoryReader(episode, {
+    source: "shop", userName, onFinish, onClose,
+  });
+  const showCharacter = reader.line &&
+    (reader.line.left !== "none" || reader.line.right !== "none");
   return (
-    <View style={styles.container}>
-      {reader.error ? <Text style={styles.error}>{reader.error}</Text> : null}
-      {reader.line ? (
-        <StoryMessageBox contentKey={reader.line.id} speakerName={SHOP_KEEPER_NAME}>
-          <StoryMessage {...reader} />
-        </StoryMessageBox>
+    <View style={[styles.container, { paddingTop: top + 76 }]}>
+      {showCharacter ? (
+        <Image
+          source={require("@/assets/images/they.png")}
+          style={[styles.character, { top: 0, height: screenHeight }]}
+          contentFit="cover"
+          contentPosition="center"
+          pointerEvents="none"
+          accessible
+          accessibilityLabel={`${SHOP_KEEPER_NAME}の立ち絵`}
+        />
       ) : null}
+      <BackButton onPress={onBack} />
+      <View style={styles.container}>
+        {reader.error ? <Text style={styles.error}>{reader.error}</Text> : null}
+        {reader.line ? (
+          <StoryMessageBox contentKey={reader.line.id} speakerName={SHOP_KEEPER_NAME}>
+            <StoryMessage {...reader} />
+          </StoryMessageBox>
+        ) : null}
+      </View>
     </View>
   );
 }

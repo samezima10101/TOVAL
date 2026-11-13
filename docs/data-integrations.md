@@ -1,6 +1,6 @@
 # データ・連携仕様
 
-更新日: 2026-11-10（日本時間）。体験版の初版保存形式は **v1**。合格条件は[完成基準](completion-criteria.md)、検証データ・結果は[手動チェックリスト](manual-acceptance-checklist.md)、本文・素材の変更は[編集ガイド](editing-guide.md)を参照する。
+更新日: 2026-11-13（日本時間）。体験版の初版保存形式は **v1**。合格条件は[完成基準](completion-criteria.md)、検証データ・結果は[手動チェックリスト](manual-acceptance-checklist.md)、本文・素材の変更は[編集ガイド](editing-guide.md)を参照する。
 
 ## 保存単位と更新順序
 
@@ -33,6 +33,7 @@
 | `unlockedStories` | `{ episodeId, unlockedDate }[]`、初期空。第1〜14話の実在する話ID・日付、話ID重複なし。常時再生可能な第0話は保存せず、日次解放にも含めない |
 | `storyRouteProgress` | 話ID→`{ firstSelectedRouteId?, extraUnlockedRouteIds }`、初期空。初回無料選択と追加購入を分離 |
 | `purchasedSideStoryIds` / `announcedSideStoryIds` | 購入済み／入荷告知済みの商品ID。重複なしの正の安全な整数配列、初期空 |
+| `sideStoryOpeningSeen` | 任意の完了印。初期状態では項目なし。第14話解放後の初回ショップ挨拶を読了したときだけ`true`を保存 |
 | `diaryLogs` | 完了ログ配列、初期空 |
 | `activeTimer` | 下記タイマーまたはnull。同時に最大1セッション |
 
@@ -65,6 +66,7 @@
 | 日記編集 | 対象ログの`diary`だけtrimして保存。空可・1000 UTF-16単位以下。時間・NT・回数・解放を変えない |
 | 初回分岐／追加分岐購入 | 無料初回IDの記録／設定価格のNT減算と追加分岐ID追加。未取得の分岐は本文の解放条件も再確認 |
 | サイド購入／入荷告知 | 設定価格のNT減算と購入ID追加／未告知ID追加 |
+| ショップ初回挨拶の読了 | 第14話解放を再確認し、`sideStoryOpeningSeen: true`とその入店時の未告知商品IDを一括保存。途中退出・保存失敗では確定しない |
 
 日記保存失敗では元の記録と下書きを保持し、取消は下書きだけを破棄する。通常データの全消去、タスク／日記削除、購入取消／返金、製品版エクスポート／インポートは実装していない。
 

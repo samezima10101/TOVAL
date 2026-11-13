@@ -128,6 +128,8 @@ export type AppState = {
   storyRouteProgress: Partial<Record<EpisodeId, StoryRouteProgress>>;
   purchasedSideStoryIds: number[];
   announcedSideStoryIds: number[];
+  // 初回ショップ挨拶を読了したときだけ付ける完了印。
+  sideStoryOpeningSeen?: true;
   diaryLogs: DiaryLog[];
   activeTimer: ActiveTimer | null;
 };

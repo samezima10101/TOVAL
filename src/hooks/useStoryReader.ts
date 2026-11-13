@@ -10,7 +10,7 @@ type ReaderOptions = {
   initialRouteId?: string;
   userName?: string;
   selectInitialRoute?: SelectRoute;
-  // Used by the shop to persist arrival announcements, not read/unread status.
+  // Used by the shop to persist greeting completion and arrival announcements.
   onFinish?: () => Promise<void>;
   onClose?: () => void;
   processingRef?: React.RefObject<boolean>;
