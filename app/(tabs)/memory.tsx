@@ -3,10 +3,9 @@ import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import MemoryArchive from "@/src/components/common/MemoryArchive";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import StoryArchive, {
-  type StoryArchiveChapter,
-} from "@/src/components/common/StoryArchive";
+import type { StoryArchiveChapter } from "@/src/components/common/storyArchiveTypes";
 import { MEMORY_CHAPTERS } from "@/src/config/storyArchive";
 import { formatLocalDate } from "@/src/domain/common/date";
 import {
@@ -55,17 +54,13 @@ export default function MemoryScreen() {
             : "その日の最初のタスクを完了すると、次のストーリーが解放されます。",
           status:
             id === 0
-              ? "初回起動時の会話"
+              ? "解放日：初回起動時"
               : unlockedDate
-                ? `解放日: ${formatLocalDate(unlockedDate)}`
-                : "タスク完了で解放",
-          metadata:
-            id === 0
-              ? []
-              : [
-                  `ROUTE UNLOCK: ${unlockedRoutes}/${episode.routes?.length ?? 0}`,
-                  `OPEN: ${unlockedDate?.replaceAll("-", ".") ?? "--"}`,
-                ],
+                ? `解放日：${formatLocalDate(unlockedDate)}`
+                : "解放日：未解放",
+          metadata: [
+            `解放選択肢：${unlockedRoutes} / ${episode.routes?.length ?? 0}`,
+          ],
           isUnlocked,
           solo: isUnlocked && Boolean(episode.soloCharacter),
           action: isUnlocked ? "再生する" : "未解放",
@@ -86,9 +81,8 @@ export default function MemoryScreen() {
   return (
     <View style={styles.container}>
       <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
-      <StoryArchive
+      <MemoryArchive
         chapters={chapters}
-        variant="memory"
         topInset={top + 76}
         bottomInset={tabBarHeight}
         completeLabel={allUnlocked ? "すべて解放済み" : undefined}

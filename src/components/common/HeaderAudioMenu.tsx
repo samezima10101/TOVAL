@@ -29,7 +29,7 @@ export default function HeaderAudioMenu({ expanded, onExpandedChange }: {
   return (
     <View style={styles.anchor} pointerEvents="box-none">
       <Pressable
-        style={({ pressed }) => [styles.button, (pressed || expanded) && styles.selected]}
+        style={({ pressed }) => [styles.button, pressed && styles.pressed]}
         onPress={async () => {
           const reduceMotion = await AccessibilityInfo.isReduceMotionEnabled().catch(() => true);
           if (!reduceMotion) {
@@ -83,10 +83,8 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 8,
-    backgroundColor: "rgba(10,20,42,0.45)",
   },
-  selected: { backgroundColor: "rgba(70,105,160,0.85)" },
+  pressed: { opacity: 0.6 },
   lines: { gap: 5 },
   line: { width: 24, height: 2, backgroundColor: "#FFFFFF", borderRadius: 1 },
   panel: {

@@ -62,7 +62,9 @@ export default function HomeScreen() {
   }
 
   const completedToday = state.lastCompletionDate === today;
-  const shopAvailable = state.unlockedStories.some((story) => story.episodeId === 14);
+  const shopAvailable = state.unlockedStories.some(
+    (story) => story.episodeId === 14,
+  );
   const todaysEpisode = getTodaysStoryEpisode(state.unlockedStories, today);
   const episodeUnlocked = state.unlockedStories.some(
     (story) => story.episodeId === todaysEpisode?.id,
@@ -266,7 +268,10 @@ export default function HomeScreen() {
       </View>
 
       {shopAvailable ? (
-        <HomeShopEntrance onPress={() => push("/shop")} disabled={tutorial.active} />
+        <HomeShopEntrance
+          onPress={() => push("/shop")}
+          disabled={tutorial.active}
+        />
       ) : null}
 
       <TaskNameModal
@@ -278,7 +283,9 @@ export default function HomeScreen() {
       />
       <TimerSetupModal
         visible={
-          isFocused && !tutorial.closing && !tutorial.transitioning &&
+          isFocused &&
+          !tutorial.closing &&
+          !tutorial.transitioning &&
           (tutorial.practicing
             ? TUTORIAL_STEPS[tutorial.index].scene === "setup"
             : isTimerSetupOpen)

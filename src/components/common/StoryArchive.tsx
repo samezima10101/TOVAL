@@ -1,46 +1,28 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
+import { LinearGradient } from "expo-linear-gradient";
 import { Pressable, ScrollView, StyleSheet, Text, View, type ScrollViewInstance } from "react-native";
 
+import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
 import PrimaryButton from "@/src/components/common/PrimaryButton";
 import StoryNumber from "@/src/components/common/StoryNumber";
 import { Fonts, SoloStoryColors } from "@/src/constants/theme";
 
-export type StoryArchiveItem = {
-  id: number;
-  number: number;
-  title: string;
-  description: string;
-  status: string;
-  metadata: readonly string[];
-  isUnlocked: boolean;
-  solo?: boolean;
-  action: string;
-  actionLabel: string;
-  disabled: boolean;
-  onPress: () => void;
-};
-
-export type StoryArchiveChapter = {
-  id: number;
-  title: string;
-  items: readonly StoryArchiveItem[];
-  emptyLabel: string;
-};
+import type { StoryArchiveChapter } from "./storyArchiveTypes";
+export type { StoryArchiveChapter, StoryArchiveItem } from "./storyArchiveTypes";
 
 const palettes = {
   shop: {
-    rail: "rgba(218,219,225,0.8)",
-    panel: "rgba(220,222,228,0.86)",
-    accent: "#4876C4",
-    text: "#494B51",
-    muted: "#81838B",
-  },
-  memory: {
-    rail: "rgba(207,200,228,0.8)",
-    panel: "rgba(217,210,233,0.86)",
-    accent: "#8E79B9",
-    text: "#464053",
-    muted: "#82798F",
+    rail: "rgba(232,233,238,0.9)",
+    panel: "rgba(207,209,221,0.78)",
+    accent: "rgba(240,241,245,0.65)",
+    text: "#393B43",
+    muted: "#626570",
+    number: "#626570",
+    selectedNumber: "#393B43",
+    titleText: "#393B43",
+    detailText: "#393B43",
+    detailMuted: "#626570",
+    detailFill: "rgba(214,216,227,0.66)",
   },
 };
 
@@ -67,6 +49,7 @@ export default function StoryArchive({
   bottomInset?: number;
 }) {
   const palette = palettes[variant];
+  const selectionTop = SELECTION_TOP;
   const [chapterId, setChapterId] = useState(
     () => chapters.find((entry) => entry.items.length)?.id,
   );
@@ -77,6 +60,9 @@ export default function StoryArchive({
     ?? chapters.find((entry) => entry.items.length);
   const item = chapter?.items.find((entry) => entry.id === itemId)
     ?? chapter?.items[0];
+  const soloText = palette.text;
+  const detailText = item?.solo ? soloText : palette.detailText;
+  const detailMuted = item?.solo ? soloText : palette.detailMuted;
   const selectedIndex = Math.max(0, chapter?.items.findIndex((entry) => entry.id === item?.id) ?? 0);
   const selectOffset = (offset: number) => {
     if (selectionDisabled) return;
@@ -92,9 +78,20 @@ export default function StoryArchive({
   return (
     <View style={[styles.container, { paddingTop: topInset, paddingBottom: bottomInset + 8 }]}>
       <View
-        style={[styles.railBackground, { backgroundColor: palette.rail }]}
+        style={[
+          styles.railBackground,
+          styles.archiveRail,
+          { backgroundColor: palette.rail },
+        ]}
         pointerEvents="none"
-      />
+      >
+        <LinearGradient
+          colors={["rgba(255,255,255,0.22)", "rgba(192,195,209,0.08)", "rgba(255,255,255,0.14)"]}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={StyleSheet.absoluteFill}
+        />
+      </View>
       <View style={styles.stage}>
           <View
             style={styles.wheel}
@@ -118,7 +115,7 @@ export default function StoryArchive({
               key={chapter?.id}
               ref={listRef}
               style={styles.container}
-              contentContainerStyle={{ paddingTop: SELECTION_TOP, paddingBottom: Math.max(0, wheelHeight - SELECTION_TOP - ITEM_HEIGHT) }}
+              contentContainerStyle={{ paddingTop: selectionTop, paddingBottom: Math.max(0, wheelHeight - selectionTop - ITEM_HEIGHT) }}
               contentInsetAdjustmentBehavior="never"
               showsVerticalScrollIndicator={false}
               scrollEnabled={!selectionDisabled}
@@ -143,11 +140,14 @@ export default function StoryArchive({
                     ]}
                     accessible={false}
                   >
+                      <View style={styles.timeline} pointerEvents="none" accessible={false}>
+                        <View style={[styles.timelineDot, { backgroundColor: entry.isUnlocked ? palette.text : palette.muted }]} />
+                      </View>
                       <Text
                         style={[
                           styles.storyTitle,
                           { color: entry.isUnlocked ? palette.text : palette.muted },
-                          styles.dimmed,
+                          !entry.isUnlocked && styles.dimmed,
                         ]}
                         numberOfLines={3}
                         adjustsFontSizeToFit
@@ -160,17 +160,23 @@ export default function StoryArchive({
                   );
                 })}
               </ScrollView>
-              <View style={[styles.selectedTitle, { backgroundColor: item?.solo ? SoloStoryColors.titleBand : palette.accent }]} pointerEvents="none">
-                <Text style={styles.chapterTitle}>
+              <View style={[styles.selectedTitle, styles.titleOutline, { top: selectionTop, backgroundColor: item?.solo ? SoloStoryColors.titleBand : palette.accent }]} pointerEvents="none">
+                <LinearGradient
+                  colors={["rgba(255,255,255,0.16)", "rgba(255,255,255,0.4)", "rgba(255,255,255,0.04)"]}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                  style={StyleSheet.absoluteFill}
+                />
+                <Text style={[styles.chapterTitle, { color: item?.solo ? "#FFFFFF" : palette.titleText }]}>
                   {chapter?.title}{item ? `　第${item.number}話` : ""}
                 </Text>
-                <Text style={styles.selectedStory} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.65} maxFontSizeMultiplier={1.2}>
+                <Text style={[styles.selectedStory, { color: item?.solo ? "#FFFFFF" : palette.titleText }]} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.65} maxFontSizeMultiplier={1.2}>
                   {item?.title ?? "ストーリーを選択"}
                 </Text>
               </View>
             </View>
       <View style={styles.topRow} pointerEvents="box-none">
-        <View style={[styles.chapters, { backgroundColor: palette.panel }]}>
+        <View style={[styles.chapters, styles.chapterPanel, { backgroundColor: palette.panel }]}>
           {chapters.map((entry) => {
             const selected = entry.id === chapter?.id;
             const disabled = !entry.items.length || selectionDisabled;
@@ -184,6 +190,7 @@ export default function StoryArchive({
                 }}
                 style={({ pressed }) => [
                   styles.chapter,
+                  styles.chapterCell,
                   selected && { backgroundColor: palette.accent },
                   (disabled || pressed) && styles.dimmed,
                 ]}
@@ -194,7 +201,7 @@ export default function StoryArchive({
                 <StoryNumber
                   number={entry.id}
                   height={32}
-                  color={selected ? "#FFFFFF" : palette.text}
+                  color={selected ? palette.selectedNumber : palette.number}
                 />
               </Pressable>
             );
@@ -212,18 +219,31 @@ export default function StoryArchive({
 
           <View style={styles.detailColumn} pointerEvents="box-none">
             <View style={styles.titleSpace} pointerEvents="none" />
-            <View style={[styles.detail, { backgroundColor: item?.solo ? SoloStoryColors.detailPanel : palette.panel }]}>
+            <View style={styles.detail}>
+              <FileTextboxBackground
+                style={styles.fileBackground}
+                fillColor={item?.solo ? SoloStoryColors.detailPanel : palette.detailFill}
+              />
+              {item ? (
+                <View style={styles.recordNumber} pointerEvents="none" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+                  {item.number > 0 ? (
+                    <StoryNumber number={item.number} height={76} color="#FFFFFF" />
+                  ) : (
+                    <Text style={styles.zeroNumber}>00</Text>
+                  )}
+                </View>
+              ) : null}
               {item ? (
                 <>
                   <ScrollView style={styles.container} contentContainerStyle={styles.detailContent} contentInsetAdjustmentBehavior="never">
                   <Text
-                    style={[styles.status, { color: palette.text }]}
+                    style={[styles.status, { color: detailText }]}
                     accessibilityLiveRegion="polite"
                   >
                     {item.status}
                   </Text>
-                  <Text style={[styles.note, { color: palette.muted }]}>{item.metadata.join("\n")}</Text>
-                  <Text style={[styles.description, { color: palette.text }]}>{item.description}</Text>
+                  <Text style={[styles.note, { color: detailMuted }]}>{item.metadata.join("\n")}</Text>
+                  <Text style={[styles.description, { color: detailText }]}>{item.description}</Text>
                 </ScrollView>
                 <PrimaryButton
                   title={item.action}
@@ -235,7 +255,7 @@ export default function StoryArchive({
                 />
               </>
             ) : (
-              <Text style={[styles.description, { color: palette.text }]}>
+              <Text style={[styles.description, { color: detailText }]}>
                 入荷している会話はありません。
               </Text>
             )}
@@ -250,6 +270,22 @@ export default function StoryArchive({
 const styles = StyleSheet.create({
   container: { flex: 1 },
   railBackground: { position: "absolute", top: 0, bottom: 0, left: 0, width: "42%" },
+  archiveRail: {
+    borderTopRightRadius: 24,
+    borderBottomRightRadius: 24,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: "rgba(255,255,255,0.75)",
+    overflow: "hidden",
+  },
+  timeline: { position: "absolute", top: 0, bottom: 0, left: 3, width: 1, backgroundColor: "rgba(75,78,88,0.4)", justifyContent: "center" },
+  timelineDot: { width: 5, height: 5, borderRadius: 3, marginLeft: -2 },
+  titleOutline: { borderTopWidth: StyleSheet.hairlineWidth, borderBottomWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.7)" },
+  chapterPanel: { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: "rgba(255,255,255,0.65)" },
+  chapterCell: { borderBottomWidth: StyleSheet.hairlineWidth, borderRightWidth: StyleSheet.hairlineWidth, borderColor: "rgba(255,255,255,0.45)" },
+  // Raise only the folder tab so the existing text/button coordinates stay fixed.
+  fileBackground: { top: -8 },
+  recordNumber: { position: "absolute", right: 8, bottom: 8, opacity: 0.18 },
+  zeroNumber: { color: "#FFFFFF", fontFamily: Fonts.timer, fontSize: 76, lineHeight: 76 },
   stage: { flex: 1 },
   topRow: { height: SELECTION_TOP, alignItems: "flex-end", paddingBottom: 8 },
   chapterTitle: { color: "#FFFFFF", fontFamily: Fonts.medium, fontSize: 12, lineHeight: 18 },

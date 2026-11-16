@@ -5,6 +5,10 @@ import Svg, { ClipPath, Defs, LinearGradient, Path, Stop } from "react-native-sv
 type FileTextboxBackgroundProps = {
   style?: StyleProp<ViewStyle>;
   shape?: "folder" | "rectangle";
+  fillColor?: string;
+  gradientOpacity?: number;
+  strokeOpacity?: number;
+  folderHeader?: { width: number; height: number; fillColor?: string };
 };
 
 // Geometry and colors from assets/images/file_textbox.svg (340 x 184).
@@ -17,7 +21,7 @@ const TOP_CUT_HEIGHT = 15.7969;
 const BOTTOM_CUT_WIDTH = 13.67;
 const BOTTOM_CUT_HEIGHT = 10.623;
 
-export default function FileTextboxBackground({ style, shape = "folder" }: FileTextboxBackgroundProps) {
+export default function FileTextboxBackground({ style, shape = "folder", fillColor, gradientOpacity = 0.38, strokeOpacity = 0.49, folderHeader }: FileTextboxBackgroundProps) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const id = useId().replace(/[^a-zA-Z0-9]/g, "");
   const clipId = `fileTextboxClip${id}`;
@@ -34,13 +38,16 @@ export default function FileTextboxBackground({ style, shape = "folder" }: FileT
   const scale = Math.min(1, size.width / 120, size.height / 56);
   const width = scale > 0 ? size.width / scale : 0;
   const height = scale > 0 ? size.height / scale : 0;
+  const tabWidth = folderHeader?.width ?? TAB_WIDTH;
+  const tabHeight = folderHeader?.height ?? TAB_HEIGHT;
+  const tabTopWidth = tabWidth - (TAB_WIDTH - TAB_TOP_WIDTH);
   const outline = shape === "rectangle" ? `M0 0 H${width} V${height} H0 Z` : [
-    `M${TAB_WIDTH} ${TAB_HEIGHT}`,
+    `M${tabWidth} ${tabHeight}`,
     `H${width - TOP_CUT_WIDTH}`,
-    `L${width} ${TAB_HEIGHT + TOP_CUT_HEIGHT}`,
+    `L${width} ${tabHeight + TOP_CUT_HEIGHT}`,
     `V${height - BOTTOM_CUT_HEIGHT}`,
     `L${width - BOTTOM_CUT_WIDTH} ${height}`,
-    `H0 V0 H${TAB_TOP_WIDTH} Z`,
+    `H0 V0 H${tabTopWidth} Z`,
   ].join(" ");
 
   return (
@@ -74,12 +81,20 @@ export default function FileTextboxBackground({ style, shape = "folder" }: FileT
               <Stop offset={0.649038} stopColor="#CFCFCF" />
             </LinearGradient>
           </Defs>
-          <Path d={outline} fill={`url(#${gradientId})`} fillOpacity={0.38} />
+          {fillColor ? <Path d={outline} fill={fillColor} /> : null}
+          <Path d={outline} fill={`url(#${gradientId})`} fillOpacity={gradientOpacity} />
+          {shape === "folder" && folderHeader?.fillColor ? (
+            <Path
+              d={`M0 0 H${tabTopWidth} L${tabWidth} ${tabHeight} H0 Z`}
+              fill={folderHeader.fillColor}
+              clipPath={`url(#${clipId})`}
+            />
+          ) : null}
           <Path
             d={outline}
             fill="none"
             stroke="#FFFFFF"
-            strokeOpacity={0.49}
+            strokeOpacity={strokeOpacity}
             strokeWidth={2}
             clipPath={`url(#${clipId})`}
           />
