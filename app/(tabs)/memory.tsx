@@ -3,7 +3,7 @@ import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import MemoryArchive from "@/src/components/common/MemoryArchive";
+import StoryArchive from "@/src/components/common/StoryArchive";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import type { StoryArchiveChapter } from "@/src/components/common/storyArchiveTypes";
 import { MEMORY_CHAPTERS } from "@/src/config/storyArchive";
@@ -81,8 +81,9 @@ export default function MemoryScreen() {
   return (
     <View style={styles.container}>
       <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
-      <MemoryArchive
+      <StoryArchive
         chapters={chapters}
+        variant="memory"
         topInset={top + 76}
         bottomInset={tabBarHeight}
         completeLabel={allUnlocked ? "すべて解放済み" : undefined}

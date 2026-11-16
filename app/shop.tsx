@@ -200,6 +200,7 @@ export default function ShopScreen() {
           chapters={chapters}
           variant="shop"
           topInset={top + 76}
+          bottomInset={60}
           selectionDisabled={isPurchasing}
           loading={isPurchasing}
           footer={
@@ -282,7 +283,7 @@ function ShopGreeting({
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  archiveBack: { alignSelf: "flex-start", marginLeft: 24, marginBottom: 24 },
+  archiveBack: { alignSelf: "flex-start", marginLeft: 24 },
   character: { position: "absolute", left: 0, right: 0 },
   error: {
     fontFamily: Fonts.regular,
