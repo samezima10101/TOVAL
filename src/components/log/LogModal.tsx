@@ -376,9 +376,9 @@ const styles = StyleSheet.create({
     flexShrink: 1,
     minHeight: 120,
     width: "100%",
-    paddingTop: 32,
+    paddingTop: 56,
     paddingHorizontal: 22,
-    paddingBottom: 20,
+    paddingBottom: 28,
   },
   frameImage: {
     shadowColor: "#FFFFFF",

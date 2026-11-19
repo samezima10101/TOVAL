@@ -15,7 +15,8 @@ type FileTextboxBackgroundProps = {
 // Keep the tab/chamfers in points; only the right and bottom edges move.
 const TAB_WIDTH = 93;
 const TAB_TOP_WIDTH = 80.6504;
-const TAB_HEIGHT = 19;
+export const FILE_TEXTBOX_HEADER_HEIGHT = 19;
+const TAB_HEIGHT = FILE_TEXTBOX_HEADER_HEIGHT;
 const TOP_CUT_WIDTH = 17.853;
 const TOP_CUT_HEIGHT = 15.7969;
 const BOTTOM_CUT_WIDTH = 13.67;

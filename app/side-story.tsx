@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
-import { StoryMessage } from "@/src/components/story/StoryMessageBox";
+import { StoryMessage, StoryNextButton } from "@/src/components/story/StoryMessageBox";
 import StoryScene from "@/src/components/story/StoryScene";
 import { Colors, Fonts } from "@/src/constants/theme";
 import { SHOP_CONVERSATIONS, SIDE_STORY } from "@/src/domain/sideStory";
@@ -18,7 +18,7 @@ export default function SideStoryScreen() {
   const { conversation } = useLocalSearchParams<{ conversation?: string }>();
   return (
     <View style={{ flex: 1, paddingTop: top + 76 }}>
-      <ScreenBackground source={require("@/assets/bg/shop-bg.png")} />
+      <ScreenBackground source={require("@/assets/bg/shop-bg.png")} overlayColor="rgba(12, 24, 45, 0.44)" />
       <SideStoryPlayback key={String(conversation)} />
     </View>
   );
@@ -56,6 +56,7 @@ function SideStoryPlayback() {
 
   return (
     <StoryScene
+      nextButton={<StoryNextButton {...reader} />}
       speaker={line.speaker}
       title={episode.title}
       onClose={handleClose}
@@ -63,7 +64,7 @@ function SideStoryPlayback() {
       error={error}
       contentKey={line.id}
     >
-      <StoryMessage {...reader} />
+      <StoryMessage {...reader} showPrompt={false} />
     </StoryScene>
   );
 }

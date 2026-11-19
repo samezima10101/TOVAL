@@ -310,8 +310,8 @@ export default function StoryArchive({
               gradientOpacity={item?.solo ? 0.38 : 0.16}
               strokeOpacity={0.7}
               folderHeader={{
-                width: 60,
-                height: 14,
+                width: variant === "memory" ? 72 : 60,
+                height: 24,
                 fillColor: item?.solo ? SoloStoryColors.titleBand : undefined,
               }}
             />
@@ -569,9 +569,9 @@ const styles = StyleSheet.create({
     minHeight: 160,
     marginLeft: 12,
     marginRight: 8,
-    paddingTop: 34,
+    paddingTop: 44,
     paddingHorizontal: 18,
-    paddingBottom: 16,
+    paddingBottom: 28,
     marginTop: 20,
   },
   detailContent: { flexGrow: 1, gap: 14, paddingBottom: 4 },

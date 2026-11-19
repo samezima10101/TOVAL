@@ -326,11 +326,11 @@ const styles = StyleSheet.create({
   },
   card: {
     width: "100%",
-    paddingTop: 32,
-    paddingBottom: 20,
+    paddingTop: 56,
+    paddingBottom: 28,
     paddingHorizontal: 24,
   },
-  cardCompact: { paddingTop: 28, paddingBottom: 12, paddingHorizontal: 20 },
+  cardCompact: { paddingTop: 48, paddingBottom: 20, paddingHorizontal: 20 },
   frameGlow: {
     shadowColor: "#FFFFFF",
     shadowOffset: { width: 0, height: 0 },
