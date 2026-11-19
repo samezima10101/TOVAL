@@ -10,8 +10,8 @@ import {
   type ReactNode,
 } from "react";
 import {
-  Platform,
   ActivityIndicator,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -28,7 +28,10 @@ import StoryNumber from "@/src/components/common/StoryNumber";
 import type { StoryArchiveChapter } from "@/src/components/common/storyArchiveTypes";
 import { Fonts, SoloStoryColors } from "@/src/constants/theme";
 
-export type { StoryArchiveChapter, StoryArchiveItem } from "./storyArchiveTypes";
+export type {
+  StoryArchiveChapter,
+  StoryArchiveItem
+} from "./storyArchiveTypes";
 
 const colors = {
   text: "#FAFBFF",
@@ -174,7 +177,7 @@ export default function StoryArchive({
                     const selected = entry.id === item?.id;
                     const textColor =
                       selected && entry.solo
-                        ? colors.text
+                        ? palette.soloText
                         : entry.isUnlocked
                           ? palette.railText
                           : palette.railMuted;
@@ -187,7 +190,7 @@ export default function StoryArchive({
                           styles.episode,
                           selected && {
                             backgroundColor: entry.solo
-                              ? SoloStoryColors.titleBand
+                              ? SoloStoryColors.detailPanel
                               : "rgba(255,255,255,0.48)",
                           },
                           pressed && styles.pressed,
@@ -216,7 +219,9 @@ export default function StoryArchive({
                           style={[styles.episodeNumber, { color: textColor }]}
                           maxFontSizeMultiplier={1.2}
                         >
-                          第{entry.number}話
+                          {variant === "memory"
+                            ? String(entry.number).padStart(2, "0")
+                            : `第${entry.number}話`}
                         </Text>
                         <Text
                           style={[styles.episodeTitle, { color: textColor }]}
@@ -235,7 +240,9 @@ export default function StoryArchive({
                     </Text>
                   ) : null}
                   {completeLabel && chapter?.items.length ? (
-                    <Text style={[styles.complete, { color: palette.railText }]}>
+                    <Text
+                      style={[styles.complete, { color: palette.railText }]}
+                    >
                       {completeLabel}
                     </Text>
                   ) : null}
@@ -312,7 +319,6 @@ export default function StoryArchive({
               folderHeader={{
                 width: variant === "memory" ? 72 : 60,
                 height: 24,
-                fillColor: item?.solo ? SoloStoryColors.titleBand : undefined,
               }}
             />
             {item ? (
@@ -335,7 +341,9 @@ export default function StoryArchive({
               style={styles.scroll}
               contentContainerStyle={styles.detailContent}
               contentInsetAdjustmentBehavior="never"
-              indicatorStyle={item?.solo || variant === "shop" ? "black" : "white"}
+              indicatorStyle={
+                item?.solo || variant === "shop" ? "black" : "white"
+              }
               bounces={false}
             >
               <Text
@@ -357,7 +365,10 @@ export default function StoryArchive({
                   ]}
                   accessibilityRole="button"
                   accessibilityLabel={item.actionLabel}
-                  accessibilityState={{ disabled: actionDisabled, busy: loading }}
+                  accessibilityState={{
+                    disabled: actionDisabled,
+                    busy: loading,
+                  }}
                 >
                   <Image
                     source={require("@/assets/images/hex_button.svg")}
@@ -575,7 +586,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   detailContent: { flexGrow: 1, gap: 14, paddingBottom: 4 },
-  title: { fontFamily: Fonts.bold, fontSize: 21, lineHeight: 29 },
+  title: { fontFamily: Fonts.bold, fontSize: 18, lineHeight: 29 },
   play: {
     width: "100%",
     minHeight: 44,

@@ -3,15 +3,15 @@ import { useBottomTabBarHeight } from "expo-router/js-tabs";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import StoryArchive from "@/src/components/common/StoryArchive";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
+import StoryArchive from "@/src/components/common/StoryArchive";
 import type { StoryArchiveChapter } from "@/src/components/common/storyArchiveTypes";
 import { MEMORY_CHAPTERS } from "@/src/config/storyArchive";
 import { formatLocalDate } from "@/src/domain/common/date";
 import {
-  isStoryRouteUnlocked,
-  STORY_ARCHIVE_CATALOG,
-  STORY_EPISODES,
+    isStoryRouteUnlocked,
+    STORY_ARCHIVE_CATALOG,
+    STORY_EPISODES,
 } from "@/src/domain/storyData";
 import { useAppState } from "@/src/state/AppStateProvider";
 
@@ -48,7 +48,7 @@ export default function MemoryScreen() {
         {
           id,
           number: id,
-          title: isUnlocked ? episode.title : "未解放のストーリー",
+          title: isUnlocked ? episode.title : "未開放",
           description: isUnlocked
             ? (episode.commonBefore[0]?.text ?? "")
             : "その日の最初のタスクを完了すると、次のストーリーが解放されます。",
@@ -64,9 +64,7 @@ export default function MemoryScreen() {
           isUnlocked,
           solo: isUnlocked && Boolean(episode.soloCharacter),
           action: isUnlocked ? "再生する" : "未解放",
-          actionLabel: isUnlocked
-            ? `${episode.title}を再生`
-            : "未解放のストーリー",
+          actionLabel: isUnlocked ? `${episode.title}を再生` : "未開放",
           disabled: !isUnlocked,
           onPress: () =>
             push({
