@@ -17,6 +17,10 @@
 
 メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。none以外の立ち絵は話者によらず不透明で表示する。
 
+メイン・サイドのタイトルは、改行候補の位置に半角`|`を入れられる。例: `title: "コンタクト|コンタクト"`。幅に余裕があれば「コンタクトコンタクト」の1行、狭ければ区切りの位置で2行になる。`|`自体は表示・読み上げせず、`\n`は幅によらず必ず改行する。複数の候補も指定できる。各区間が単独でも幅に収まらない場合は、その区間も自動折り返しされるため、意味のまとまりに合わせて候補を追加する。現在の対応箇所はメモリー／ショップの一覧・詳細タイトル、ホームの話タイトル、ログの解放話、サイド会話の見出し。購入確認や操作の読み上げでは区切り記号を除いたタイトルを使う。会話本文・選択肢ラベルは従来どおり`\n`を使い、`|`の候補処理はまだ適用しない。
+
+表示は[OptionalBreakText](../src/components/common/OptionalBreakText.tsx)と[optionalLineBreaks](../src/domain/common/optionalLineBreaks.ts)を共用する。候補の前後を不可視のWORD JOINERでまとめ、候補をZERO WIDTH SPACEへ変換する。画面幅・書体・文字倍率に応じた折り返しは標準のTextレイアウトに任せ、横幅を固定したり改行を保存データへ書き込んだりしない。`|`がない文字列は変更せず、タイトル原稿・保存済み権利IDも変更しない。
+
 第1話は[会話原稿](https://docs.google.com/spreadsheets/d/1-7rnog6vxtoi-MvNjKZ7Wyb1b6-GHhV-gZp8AWJgMWU/edit)のタブ`01`を反映している。共通前14行・分岐A4行／B5行・共通後12行。シートの`gem`／`alta`は`boss`／`sub`へ対応させ、行種別が空でも本文と話者がある行は取り込む。原稿の`[userName]`・`［userName］`は本文に保持し、`useStoryReader`の`userName`オプションで文字送り前に置換する。メイン画面は保存済みの名前を渡し、未指定時は「ゲスト」。シート側にタイトル指定はないため既存タイトルを維持している。
 
 第2話は同じ原稿のタブ`02`を反映し、共通前31行・分岐A6行／B5行・共通後7行。行種別が空でも本文と話者がある行を含め、表情の空欄は直前の値を引き継ぐ。既存タイトル・話ID・分岐IDを維持する。`system`話者は「システム」と表示する。
@@ -110,9 +114,23 @@
 
 app/story.tsxとapp/side-story.tsxのScreenBackgroundへoverlayColor=rgba(12,24,45,0.44)を渡し、画面全体の背景をヘッダー背後まで暗くする。StoryScene内では重ねず、明暗の境界や二重の暗転を防ぐ。面は背景とコンテンツの間へ置き、タップ・読み上げ対象外とする。人物・スライド・名前・本文にはopacityを掛けない。サイドも同じ暗い背景面を使う。解放日はapp/story.tsxで保存済みunlockedDateをYYYY/MM/DDへ整形し、dateLabelとして渡す。配信映像の右26・下20へFonts.pixel（DotGothic16）の白文字12・行高18・文字間隔1で表示し、背景・影・内側余白は付けず、会話枠との重なりを許容し、映像下端を基準に配置する。日付のない第0話・チュートリアルはメモリーと同じ「初回起動時」と表示する。サイドは配信枠と日付を表示しない。実際の日付を補完・保存しない。
 
-会話枠はStoryMessageBoxのinFlowを使い、高さ240（狭い画面は縮小可）で上端を固定する。下部領域の下余白は28。エラーは映像より上へ置く。StoryWindowBackgroundの配信枠の帯は#152B4F・区切り線はrgba(238,213,227,0.55)、上部の丸3つは#F0D8E3。配信枠はサイズ計測不要の標準ViewのborderWidth=1.5・#AFC4E5／不透明度1で長方形に描く。会話枠だけ実寸を測り、固定幅の斜角と1.2の青枠をSVGで描く。会話枠は左上12・右下14・#AFC4E5／不透明度0.85。会話の背景だけrgba(22,43,76,0.65)で塗り、外側の切り落とし部分は透明とする。名前・本文・操作へopacityは掛けない。本文余白はメインが左右22、サイドが左右24、長方形ウィンドウ共通で上18・下14。ショップのフォルダ枠は左右24・上56のまま。長方形の名前は通常フローでScrollViewの前へ置き、白#FFFFFF・18・行高26・名前と本文の間12。全角括弧と半角空白で［ ジェム ］のように表示し、アルタの名前だけ右寄せ。他の名前と全話者の本文は左寄せ。名前はスクロールせず、選択肢・購入確認では表示しない。話者IDはSTORY_CHARACTER_BY_SPEAKERから解決する。名前・本文余白はStoryMessageBox、本文の揃え方はStoryMessageのmessageTextで管理する。
+会話枠はStoryMessageBoxのinFlowを使い、高さ240（狭い画面は縮小可）で上端を固定する。下部領域の下余白は28。エラーは映像より上へ置く。StoryWindowBackgroundの配信枠の帯は#152B4F・区切り線はrgba(238,213,227,0.55)、上部の丸3つは#F0D8E3。配信枠はサイズ計測不要の標準ViewのborderWidth=1.5・#AFC4E5／不透明度1で長方形に描く。会話枠だけ実寸を測り、固定幅の斜角と1.2の青枠をSVGで描く。会話枠は左上12・右下14・#AFC4E5／不透明度0.85。会話の背景だけrgba(22,43,76,0.65)で塗り、外側の切り落とし部分は透明とする。名前・本文・操作へopacityは掛けない。枠内余白はメインが左右20、サイドが左右24、長方形ウィンドウ共通で上20・下14。ショップのフォルダ枠は左右24・上43（FILE_TEXTBOX_HEADER_HEIGHT=19＋24）。長方形の名前は通常フローでScrollViewの前へ置き、白#FFFFFF・18・行高26・名前と本文の間12。全角括弧と半角空白で［ ジェム ］のように表示し、アルタの名前だけ右寄せ。他の名前と全話者の本文は左寄せ。名前はスクロールせず、選択肢・購入確認では表示しない。話者IDはSTORY_CHARACTER_BY_SPEAKERから解決する。名前・本文余白はStoryMessageBox、本文の揃え方はStoryMessageのmessageTextで管理する。
 
-CLOSEと▼はStorySceneのactions行に左右配置し、StoryMessageBoxのfooterへ渡す。footerはScrollViewの外・上余白8。行のalignItemsをcenter、両操作の高さを44、文字の行高を24に揃える。CLOSEは左下、▼は右下へ固定し、長文スクロールでも同じ高さに留める。▼はStoryNextButtonで、文字送り中は全文表示、通常は次の台詞、最終行は読了処理を行う。本文タップも同じ動作。台詞がない選択肢／購入確認では▼を表示しない。メイン／サイドのStoryMessageはshowPrompt=falseとし、本文内の▼を二重表示しない。ショップ挨拶／退店は既定のshowPrompt=trueで本文内の従来表示を維持する。保存中・チュートリアル中のdisabledとonCloseは従来の条件を保持する。サイドも同じ位置へ置く。ショップ挨拶・退店はフォルダ型のまま、話者タグは左6・上0・幅68・高さ32の中央揃えとする。ショップだけspeakerNameで店員名を渡す。サイド／ショップの枠位置はstyles.frameの左右18・下60・高さ280。サイドは通信風の会話枠、ショップはフォルダ型を使う。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
+CLOSEと▼はStorySceneのactions行に左右配置し、StoryMessageBoxのfooterへ渡す。footerはScrollViewの外・上余白8。行のalignItemsをcenter、両操作の高さを44、文字の行高を24に揃える。CLOSEは左下、▼は右下へ固定し、長文スクロールでも同じ高さに留める。▼はStoryNextButtonで、文字送り中は全文表示、通常は次の台詞、最終行は読了処理を行う。本文タップも同じ動作。台詞がない選択肢／購入確認では▼を表示しない。メイン／サイドのStoryMessageはshowPrompt=falseとし、本文内の▼を二重表示しない。ショップ挨拶／退店は既定のshowPrompt=trueで本文内の従来表示を維持する。保存中・チュートリアル中のdisabledとonCloseは従来の条件を保持する。サイドも同じ位置へ置く。ショップ挨拶・退店はフォルダ型のまま、話者タグは左6・上0・幅68・高さFILE_TEXTBOX_HEADER_HEIGHT（現在19）の中央揃えとする。ショップだけspeakerNameで店員名を渡す。サイド／ショップの枠位置はstyles.frameの左右18・下60・高さ280。サイドは通信風の会話枠、ショップはフォルダ型を使う。contentKeyは台詞・選択肢・確認内容が変わった時だけ更新し、文字送り中には変えない。
+
+StoryMessageBox.tsxの編集箇所は以下。上下余白と名前の文字サイズは長方形／フォルダで片方だけ適用し、同じ項目を上書きしない。paddingは名前・本文・下部操作を含む枠全体の内側余白。
+
+| 調整するもの | styles内の指定 | 現在値 |
+| --- | --- | --- |
+| メインの左右余白 | flowFrame.paddingHorizontal | 20 |
+| サイド／ショップの左右余白 | frame.paddingHorizontal | 24 |
+| ストーリーの上下余白 | dialogueFrame.paddingTop／paddingBottom | 20／14 |
+| 名前と本文の間隔 | inlineSpeaker.marginBottom | 12 |
+| ストーリーの名前 | inlineSpeakerName.fontSize／lineHeight | 18／26 |
+| セリフ本文（ショップ共通） | messageText.fontSize／lineHeight | 16／23 |
+| ショップの名前 | folderSpeakerName.fontSize／lineHeight | 16／18 |
+
+文字を大きくするときはfontSizeとlineHeightの両方を調整する。StorySceneのtitleはサイドの画面見出しで、セリフ本文には適用されない。本文の描画はStoryMessageの1か所だけで行う。
 
 ## BGM・タブ効果音
 

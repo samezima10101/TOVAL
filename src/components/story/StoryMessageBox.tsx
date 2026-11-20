@@ -121,7 +121,7 @@ export default function StoryMessageBox({
     <View
       style={[
         inFlow ? styles.flowFrame : styles.frame,
-        rectangular && styles.dialogueFrame,
+        rectangular ? styles.dialogueFrame : styles.folderPadding,
       ]}
     >
       {rectangular ? (
@@ -136,8 +136,8 @@ export default function StoryMessageBox({
         >
           <Text
             style={[
-              styles.speakerName,
-              rectangular && styles.inlineSpeakerName,
+              styles.speakerText,
+              rectangular ? styles.inlineSpeakerName : styles.folderSpeakerName,
               rightAlignedName && styles.inlineSpeakerNameRight,
             ]}
             numberOfLines={1}
@@ -165,11 +165,12 @@ export default function StoryMessageBox({
 }
 
 const styles = StyleSheet.create({
+  // メインの位置・寸法と左右余白。上下余白は dialogueFrame だけで指定する。
   flowFrame: {
     height: 240,
     flexShrink: 1,
     minHeight: 0,
-    paddingHorizontal: 22,
+    paddingHorizontal: 20,
     marginTop: -0,
   },
   frame: {
@@ -179,12 +180,13 @@ const styles = StyleSheet.create({
     bottom: 60,
     height: 280,
     paddingHorizontal: 24,
-    paddingTop: FILE_TEXTBOX_HEADER_HEIGHT + 24,
   },
+  // メイン／サイド共通の上下余白。名前と本文の両方を囲む。
   dialogueFrame: {
-    paddingTop: 18,
+    paddingTop: 20,
     paddingBottom: 14,
   },
+  folderPadding: { paddingTop: FILE_TEXTBOX_HEADER_HEIGHT + 24 },
   scrollViewport: { flex: 1, minHeight: 0, overflow: "hidden" },
   content: { flexGrow: 1 },
   footer: { flexShrink: 0, marginTop: 8 },
@@ -205,20 +207,24 @@ const styles = StyleSheet.create({
     flexShrink: 0,
     marginBottom: 12,
   },
+  // ストーリーの名前の文字サイズ。ショップの名前とは別に指定する。
   inlineSpeakerName: {
     fontSize: 18,
     lineHeight: 26,
     textAlign: "left",
   },
   inlineSpeakerNameRight: { textAlign: "right" },
-  speakerName: {
+  speakerText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontFamily: Fonts.bold,
-    lineHeight: 18,
-    textAlign: "center",
+    fontFamily: Fonts.medium,
     includeFontPadding: false,
   },
+  folderSpeakerName: {
+    fontSize: 16,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  // セリフ本文の文字サイズ・行高（メイン／サイド／ショップ共通）。
   messageText: {
     fontFamily: Fonts.medium,
     color: "#FFFFFF",

@@ -15,6 +15,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Svg, { Path } from "react-native-svg";
 
 import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
+import OptionalBreakText from "@/src/components/common/OptionalBreakText";
 import {
   KeyboardEditorInput,
   KeyboardEditorToolbar,
@@ -178,9 +179,9 @@ export default function LogModal({
             >
               {currentLogs.length > 0 ? (
                 <>
-                  <Text style={styles.summary}>
+                  <OptionalBreakText style={styles.summary}>
                     {storyTitles.join("\n") || "解放なし"}
-                  </Text>
+                  </OptionalBreakText>
                   <Text
                     style={styles.summary}
                     accessibilityLabel={`集中時間の合計 ${formatFocusDuration(totalSeconds)}`}

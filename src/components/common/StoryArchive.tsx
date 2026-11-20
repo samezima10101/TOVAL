@@ -24,9 +24,11 @@ import {
 } from "react-native";
 
 import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
+import OptionalBreakText from "@/src/components/common/OptionalBreakText";
 import StoryNumber from "@/src/components/common/StoryNumber";
 import type { StoryArchiveChapter } from "@/src/components/common/storyArchiveTypes";
 import { Fonts, SoloStoryColors } from "@/src/constants/theme";
+import { plainText } from "@/src/domain/common/optionalLineBreaks";
 
 export type {
   StoryArchiveChapter,
@@ -196,7 +198,7 @@ export default function StoryArchive({
                           pressed && styles.pressed,
                         ]}
                         accessibilityRole="button"
-                        accessibilityLabel={`第${entry.number}話 ${entry.title}、${entry.status}、詳細を表示`}
+                        accessibilityLabel={`第${entry.number}話 ${plainText(entry.title)}、${entry.status}、詳細を表示`}
                         accessibilityState={{
                           selected,
                           disabled: selectionLocked,
@@ -223,12 +225,12 @@ export default function StoryArchive({
                             ? String(entry.number).padStart(2, "0")
                             : `第${entry.number}話`}
                         </Text>
-                        <Text
+                        <OptionalBreakText
                           style={[styles.episodeTitle, { color: textColor }]}
                           maxFontSizeMultiplier={1.2}
                         >
                           {entry.title}
-                        </Text>
+                        </OptionalBreakText>
                       </Pressable>
                     );
                   })}
@@ -346,14 +348,14 @@ export default function StoryArchive({
               }
               bounces={false}
             >
-              <Text
+              <OptionalBreakText
                 style={[styles.title, { color: detailText }]}
                 accessibilityRole="header"
                 accessibilityLiveRegion="polite"
                 maxFontSizeMultiplier={1.2}
               >
                 {item?.title ?? chapter?.emptyLabel ?? "準備中"}
-              </Text>
+              </OptionalBreakText>
               {item ? (
                 <Pressable
                   onPress={item.onPress}
@@ -364,7 +366,7 @@ export default function StoryArchive({
                     pressed && styles.pressed,
                   ]}
                   accessibilityRole="button"
-                  accessibilityLabel={item.actionLabel}
+                  accessibilityLabel={plainText(item.actionLabel)}
                   accessibilityState={{
                     disabled: actionDisabled,
                     busy: loading,

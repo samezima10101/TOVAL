@@ -26,6 +26,7 @@ import StoryMessageBox, { StoryMessage } from "@/src/components/story/StoryMessa
 import { getSideStorySetting } from "@/src/config/conversationSettings";
 import { SHOP_CHAPTERS } from "@/src/config/storyArchive";
 import { Colors, Fonts } from "@/src/constants/theme";
+import { plainText } from "@/src/domain/common/optionalLineBreaks";
 import {
   SHOP_FAREWELL,
   SHOP_GREETING,
@@ -111,7 +112,7 @@ export default function ShopScreen() {
     setBusy(true);
     Alert.alert(
       "会話を解放",
-      `「${conversation.title}」を${priceNt} NTで解放しますか？`,
+      `「${plainText(conversation.title)}」を${priceNt} NTで解放しますか？`,
       [
         { text: "キャンセル", style: "cancel", onPress: () => setBusy(false) },
         {

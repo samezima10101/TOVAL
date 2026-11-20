@@ -3,9 +3,11 @@ import { useState, type ReactNode } from "react";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 import StoryMessageBox from "@/src/components/story/StoryMessageBox";
+import OptionalBreakText from "@/src/components/common/OptionalBreakText";
 import StoryWindowBackground, { STORY_WINDOW_HEADER_HEIGHT } from "@/src/components/story/StoryWindowBackground";
 import { Colors, Fonts } from "@/src/constants/theme";
 import type { StoryLine } from "@/src/domain/common/types";
+import { plainText } from "@/src/domain/common/optionalLineBreaks";
 
 const slideAssets = {
   slide1: require("@/assets/slides/ep02-1.png"),
@@ -82,9 +84,9 @@ export default function StoryScene({
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.title} numberOfLines={2}>
+          <OptionalBreakText style={styles.title} numberOfLines={2}>
             {title}
-          </Text>
+          </OptionalBreakText>
         </View>
         {error ? (
           <Text style={styles.error} accessibilityRole="alert">
@@ -111,7 +113,7 @@ export default function StoryScene({
           styles.broadcast,
           { width: broadcastWidth, height: backgroundHeight + STORY_WINDOW_HEADER_HEIGHT },
         ]}
-        accessibilityLabel={title}
+        accessibilityLabel={plainText(title)}
       >
         <Image
           source={storyBackground}

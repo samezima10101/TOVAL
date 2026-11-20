@@ -3,7 +3,7 @@ import type { StoryEpisode } from "@/src/domain/common/types";
 
 export const episode01: StoryEpisode = {
   id: 1,
-  title: "コンタクトコンタクト",
+  title: "コンタクト|コンタクト",
   commonBefore: [
     {
       id: "episode-01-before-1",
