@@ -7,7 +7,7 @@ import BackButton from "@/src/components/common/BackButton";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import StoryCharacters from "@/src/components/story/StoryCharacters";
 import StoryChoices from "@/src/components/story/StoryChoices";
-import { StoryMessage } from "@/src/components/story/StoryMessageBox";
+import { StoryMessage, StoryNextButton } from "@/src/components/story/StoryMessageBox";
 import StoryScene from "@/src/components/story/StoryScene";
 import StoryUnlockConfirmation from "@/src/components/story/StoryUnlockConfirmation";
 import { getAdditionalRoutePriceNt } from "@/src/config/conversationSettings";
@@ -59,7 +59,7 @@ export default function StoryScreen({
   }>();
   return (
     <View style={{ flex: 1, paddingTop: top + 76 }}>
-      <ScreenBackground source={require("@/assets/bg/starry-bg.png")} />
+      <ScreenBackground source={require("@/assets/bg/starry-bg.png")} overlayColor="rgba(12, 24, 45, 0.44)" />
       <StoryPlayback
         key={JSON.stringify([
           params.episode,
@@ -239,12 +239,17 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
 
   return (
     <StoryScene
+      nextButton={
+        <StoryNextButton
+          {...reader}
+          isProcessing={isProcessing || (tutorialMode && (tutorial.busy || tutorial.closing))}
+        />
+      }
       speaker={line?.speaker}
+      dateLabel={unlockedStory?.unlockedDate.replaceAll("-", "/") ?? (episodeId === 0 || tutorialMode ? "初回起動時" : undefined)}
       title={`Episode ${String(episode.id).padStart(2, "0")} ${episode.title}`}
-      episodeNumber={episode.id}
       slide={characterLine?.slide}
       slideBackground={characterLine?.slideBackground}
-      dateLabel={unlockedStory?.unlockedDate.replaceAll("-", "/")}
       onClose={() => {
         if (tutorialMode) tutorial.close("skipped");
         else if (!unlockingRef.current) handleClose();
@@ -273,6 +278,7 @@ function StoryPlayback({ catalog }: { catalog: StoryCatalog }) {
     >
       <StoryMessage
         {...reader}
+        showPrompt={false}
         isProcessing={isProcessing || (tutorialMode && tutorial.busy)}
       />
       {tutorialMode && tutorial.introInput && intro?.field ? (

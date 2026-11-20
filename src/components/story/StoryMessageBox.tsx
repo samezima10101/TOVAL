@@ -7,7 +7,10 @@ import {
   View,
 } from "react-native";
 
-import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
+import FileTextboxBackground, {
+  FILE_TEXTBOX_HEADER_HEIGHT,
+} from "@/src/components/common/FileTextboxBackground";
+import StoryWindowBackground from "@/src/components/story/StoryWindowBackground";
 import { Fonts } from "@/src/constants/theme";
 import type { StoryLine } from "@/src/domain/common/types";
 import {
@@ -24,12 +27,44 @@ type StoryMessageProps = {
   handleNext: () => void;
 };
 
+function nextLabel(isTyping: boolean, isLastLine: boolean) {
+  return isTyping
+    ? "セリフを全文表示"
+    : isLastLine
+      ? "ストーリーを読み終える"
+      : "次のセリフへ進む";
+}
+
+export function StoryNextButton({
+  line,
+  isTyping,
+  isLastLine,
+  isProcessing,
+  handleNext,
+}: StoryMessageProps) {
+  if (!line) return null;
+  return (
+    <TouchableOpacity
+      style={[styles.nextButton, isProcessing && styles.messageBoxDisabled]}
+      onPress={handleNext}
+      disabled={isProcessing}
+      accessibilityRole="button"
+      accessibilityLabel={nextLabel(isTyping, isLastLine)}
+      accessibilityState={{ disabled: isProcessing }}
+    >
+      <Text style={styles.nextSymbol}>▼</Text>
+    </TouchableOpacity>
+  );
+}
+
 type StoryMessageBoxProps = {
   children: ReactNode;
   contentKey?: string;
   inFlow?: boolean;
+  shape?: "folder" | "rectangle";
   speaker?: StoryLine["speaker"];
   speakerName?: string;
+  footer?: ReactNode;
 };
 
 export function StoryMessage({
@@ -39,7 +74,8 @@ export function StoryMessage({
   isLastLine,
   isProcessing,
   handleNext,
-}: StoryMessageProps) {
+  showPrompt = true,
+}: StoryMessageProps & { showPrompt?: boolean }) {
   if (!line) return null;
   return (
     <TouchableOpacity
@@ -48,18 +84,12 @@ export function StoryMessage({
       disabled={isProcessing}
       activeOpacity={0.9}
       accessibilityRole="button"
-      accessibilityLabel={
-        isTyping
-          ? "セリフを全文表示"
-          : isLastLine
-            ? "ストーリーを読み終える"
-            : "次のセリフへ進む"
-      }
+      accessibilityLabel={nextLabel(isTyping, isLastLine)}
       accessibilityHint={`現在のセリフ: ${line.text}`}
       accessibilityState={{ disabled: isProcessing }}
     >
       <Text style={styles.messageText}>{visibleText}</Text>
-      <Text style={styles.tapPrompt}>▼</Text>
+      {showPrompt ? <Text style={styles.tapPrompt}>▼</Text> : null}
     </TouchableOpacity>
   );
 }
@@ -68,30 +98,55 @@ export default function StoryMessageBox({
   children,
   contentKey,
   inFlow = false,
+  shape = "folder",
   speaker,
   speakerName,
+  footer,
 }: StoryMessageBoxProps) {
-  const name = speakerName ?? (speaker === undefined
-    ? undefined
-    : speaker === "system"
-      ? "システム"
-      : speaker === "both"
-        ? "２人"
-        : STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[speaker]]);
+  const rectangular = shape === "rectangle";
+  const rightAlignedName =
+    rectangular &&
+    (speaker === "boss" || speaker === "sub") &&
+    STORY_CHARACTER_BY_SPEAKER[speaker] === "alta";
+  const name =
+    speakerName ??
+    (speaker === undefined
+      ? undefined
+      : speaker === "system"
+        ? "システム"
+        : speaker === "both"
+          ? "２人"
+          : STORY_CHARACTER_NAMES[STORY_CHARACTER_BY_SPEAKER[speaker]]);
   return (
-    <View style={inFlow ? styles.flowFrame : styles.frame}>
-      <FileTextboxBackground />
+    <View
+      style={[
+        inFlow ? styles.flowFrame : styles.frame,
+        rectangular ? styles.dialogueFrame : styles.folderPadding,
+      ]}
+    >
+      {rectangular ? (
+        <StoryWindowBackground variant="dialogue" />
+      ) : (
+        <FileTextboxBackground />
+      )}
       {name ? (
-        <View style={styles.speakerTag} pointerEvents="none">
+        <View
+          style={rectangular ? styles.inlineSpeaker : styles.speakerTag}
+          pointerEvents="none"
+        >
           <Text
-            style={styles.speakerName}
+            style={[
+              styles.speakerText,
+              rectangular ? styles.inlineSpeakerName : styles.folderSpeakerName,
+              rightAlignedName && styles.inlineSpeakerNameRight,
+            ]}
             numberOfLines={1}
             adjustsFontSizeToFit
             minimumFontScale={0.65}
             maxFontSizeMultiplier={1}
             accessibilityLabel={name}
           >
-            {name}
+            {rectangular ? `［ ${name} ］` : name}
           </Text>
         </View>
       ) : null}
@@ -104,57 +159,78 @@ export default function StoryMessageBox({
       >
         {children}
       </ScrollView>
+      {footer ? <View style={styles.footer}>{footer}</View> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // メインの位置・寸法と左右余白。上下余白は dialogueFrame だけで指定する。
   flowFrame: {
     height: 240,
     flexShrink: 1,
     minHeight: 0,
-    paddingHorizontal: 22,
-    paddingTop: 28,
-    paddingBottom: 18,
+    paddingHorizontal: 20,
+    marginTop: -0,
   },
   frame: {
     position: "absolute",
     left: 18,
     right: 18,
     bottom: 60,
-    height: 240,
+    height: 280,
     paddingHorizontal: 24,
-    paddingTop: 28,
-    paddingBottom: 18,
   },
+  // メイン／サイド共通の上下余白。名前と本文の両方を囲む。
+  dialogueFrame: {
+    paddingTop: 20,
+    paddingBottom: 14,
+  },
+  folderPadding: { paddingTop: FILE_TEXTBOX_HEADER_HEIGHT + 24 },
   scrollViewport: { flex: 1, minHeight: 0, overflow: "hidden" },
   content: { flexGrow: 1 },
+  footer: { flexShrink: 0, marginTop: 8 },
   messageBox: { flexGrow: 1 },
   messageBoxDisabled: {
     opacity: 0.7,
   },
-  // Keep the name inside the folder tab's 80.65-wide top and 19-high outline.
+  // Keep the speaker outside the scrolling body, with room above and below.
   speakerTag: {
     position: "absolute",
     left: 6,
     top: 0,
     width: 68,
-    height: 19,
+    height: FILE_TEXTBOX_HEADER_HEIGHT,
     justifyContent: "center",
   },
-  speakerName: {
+  inlineSpeaker: {
+    flexShrink: 0,
+    marginBottom: 12,
+  },
+  // ストーリーの名前の文字サイズ。ショップの名前とは別に指定する。
+  inlineSpeakerName: {
+    fontSize: 18,
+    lineHeight: 26,
+    textAlign: "left",
+  },
+  inlineSpeakerNameRight: { textAlign: "right" },
+  speakerText: {
     color: "#FFFFFF",
-    fontSize: 14,
-    fontFamily: Fonts.bold,
-    lineHeight: 18,
-    textAlign: "center",
+    fontFamily: Fonts.medium,
     includeFontPadding: false,
   },
+  folderSpeakerName: {
+    fontSize: 16,
+    lineHeight: 18,
+    textAlign: "center",
+  },
+  // セリフ本文の文字サイズ・行高（メイン／サイド／ショップ共通）。
   messageText: {
     fontFamily: Fonts.medium,
     color: "#FFFFFF",
     fontSize: 16,
     lineHeight: 23,
+    textAlign: "left",
     flexGrow: 1,
   },
   tapPrompt: {
@@ -163,5 +239,19 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
     fontSize: 24,
     fontFamily: Fonts.bold,
+  },
+  nextButton: {
+    width: 44,
+    height: 44,
+    marginRight: -12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  nextSymbol: {
+    color: "#FFFFFF",
+    fontSize: 18,
+    lineHeight: 24,
+    fontFamily: Fonts.bold,
+    includeFontPadding: false,
   },
 });

@@ -13,11 +13,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import PrimaryButton from "@/src/components/common/PrimaryButton";
+import OptionalBreakText from "@/src/components/common/OptionalBreakText";
 import ScreenBackground from "@/src/components/common/ScreenBackground";
 import HomeShopEntrance from "@/src/components/home/HomeShopEntrance";
 import TaskNameModal from "@/src/components/home/TaskNameModal";
 import TimerSetupModal from "@/src/components/home/TimerSetupModal";
 import { Fonts } from "@/src/constants/theme";
+import { plainText } from "@/src/domain/common/optionalLineBreaks";
 import { getTodaysStoryEpisode, STORY_CATALOG } from "@/src/domain/storyData";
 import useLocalToday from "@/src/hooks/useLocalToday";
 import { useAppState } from "@/src/state/AppStateProvider";
@@ -62,7 +64,9 @@ export default function HomeScreen() {
   }
 
   const completedToday = state.lastCompletionDate === today;
-  const shopAvailable = state.unlockedStories.some((story) => story.episodeId === 14);
+  const shopAvailable = state.unlockedStories.some(
+    (story) => story.episodeId === 14,
+  );
   const todaysEpisode = getTodaysStoryEpisode(state.unlockedStories, today);
   const episodeUnlocked = state.unlockedStories.some(
     (story) => story.episodeId === todaysEpisode?.id,
@@ -182,7 +186,7 @@ export default function HomeScreen() {
                   tight && styles.episodeTight,
                 ]}
                 accessible
-                accessibilityLabel={`${episodeLabel}、第${todaysEpisode.id}話、${todaysEpisode.title}`}
+                accessibilityLabel={`${episodeLabel}、第${todaysEpisode.id}話、${plainText(todaysEpisode.title)}`}
               >
                 <Text
                   style={styles.episodeLabel}
@@ -202,7 +206,7 @@ export default function HomeScreen() {
                   minimumFontScale={0.7}
                   maxFontSizeMultiplier={fontMultiplier}
                 >
-                  第{todaysEpisode.id}話　{todaysEpisode.title}
+                  第{todaysEpisode.id}話　<OptionalBreakText>{todaysEpisode.title}</OptionalBreakText>
                 </Text>
               </View>
             ) : null}
@@ -266,7 +270,10 @@ export default function HomeScreen() {
       </View>
 
       {shopAvailable ? (
-        <HomeShopEntrance onPress={() => push("/shop")} disabled={tutorial.active} />
+        <HomeShopEntrance
+          onPress={() => push("/shop")}
+          disabled={tutorial.active}
+        />
       ) : null}
 
       <TaskNameModal
@@ -278,7 +285,9 @@ export default function HomeScreen() {
       />
       <TimerSetupModal
         visible={
-          isFocused && !tutorial.closing && !tutorial.transitioning &&
+          isFocused &&
+          !tutorial.closing &&
+          !tutorial.transitioning &&
           (tutorial.practicing
             ? TUTORIAL_STEPS[tutorial.index].scene === "setup"
             : isTimerSetupOpen)

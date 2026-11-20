@@ -12,7 +12,6 @@ export const Colors = {
 };
 
 export const SoloStoryColors = {
-  titleBand: "#397F88",
   detailPanel: "rgba(185,230,230,0.86)",
 };
 

@@ -1,6 +1,7 @@
 import { Image, type ImageSource } from "expo-image";
 
 const numbers: Record<number, ImageSource> = {
+  0: require("@/assets/numbers/story_number_00.svg"),
   // Use the actual glyphs: some supplied filenames differ from their contents.
   1: require("@/assets/numbers/shop_chapter_07.svg"),
   2: require("@/assets/numbers/shop_chapter_02.svg"),
