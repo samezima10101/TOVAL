@@ -31,11 +31,11 @@ export type AltaExpression =
   | `shocked${3 | 4}`
   | "angry2"
   | `nervous${1 | 2 | 3 | 4}`
-  | `gemized${2}`;
+  | `smile${1 | 2 | 3 | 4}`;
 export type Expression = GemExpression | AltaExpression;
 
 export type StoryLine = {
-  effect?: { type: "shout"; target: StoryCharacter };
+  effect?: { type: "shout"; target: StoryCharacter } | { type: "interrupt" };
   slideBackground?: boolean;
   slide?: "slide1" | "slide2" | "slide3" | "slide4";
   id: string;

@@ -74,7 +74,7 @@ export const episode06: StoryEpisode = {
       speaker: "sub",
       text: "「そろそろやり方覚えてよね～」",
       left: "none",
-      right: "gemized2",
+      right: "smile2",
     },
     {
       id: "episode-06-sheet-13",

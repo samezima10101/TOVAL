@@ -21,9 +21,9 @@
 
 表示は[OptionalBreakText](../src/components/common/OptionalBreakText.tsx)と[optionalLineBreaks](../src/domain/common/optionalLineBreaks.ts)を共用する。候補の前後を不可視のWORD JOINERでまとめ、候補をZERO WIDTH SPACEへ変換する。画面幅・書体・文字倍率に応じた折り返しは標準のTextレイアウトに任せ、横幅を固定したり改行を保存データへ書き込んだりしない。`|`がない文字列は変更せず、タイトル原稿・保存済み権利IDも変更しない。
 
-第1話は[会話原稿](https://docs.google.com/spreadsheets/d/1-7rnog6vxtoi-MvNjKZ7Wyb1b6-GHhV-gZp8AWJgMWU/edit)のタブ`01`を反映している。共通前14行・分岐A4行／B5行・共通後12行。シートの`gem`／`alta`は`boss`／`sub`へ対応させ、行種別が空でも本文と話者がある行は取り込む。原稿の`[userName]`・`［userName］`は本文に保持し、`useStoryReader`の`userName`オプションで文字送り前に置換する。メイン画面は保存済みの名前を渡し、未指定時は「ゲスト」。シート側にタイトル指定はないため既存タイトルを維持している。
+第1話は[体験版原稿](https://docs.google.com/spreadsheets/d/138wHLq7cdnp77vWVXrO5G0nPDxp1VOE50gwBNTa9cro/edit)のタブ`01 (special)`を反映している。タイトルは`また会う日|まで`。共通前21行・分岐A「SNS」7行／B「知人・イベント」10行、共通後なし。シートの`gem`／`alta`は`boss`／`sub`へ対応させ、行種別が空でも本文と話者がある行は取り込む。`[userName]`は本文に保持し、`useStoryReader`の`userName`で文字送り前に保存済み名へ置換する（未指定時は「ゲスト」）。話ID1・分岐ID`episode-01-encourage`／`episode-01-bow`は維持する。原稿の`smirk1`／`smirk2`に対応する素材は未提供のため、`smirk3`／`smirk4`を代用する。17台詞目のジェムの発言には`effect: { type: "interrupt" }`を指定する。
 
-第2話は同じ原稿のタブ`02`を反映し、共通前31行・分岐A6行／B5行・共通後7行。行種別が空でも本文と話者がある行を含め、表情の空欄は直前の値を引き継ぐ。既存タイトル・話ID・分岐IDを維持する。`system`話者は「システム」と表示する。
+第2話は[従来の会話原稿](https://docs.google.com/spreadsheets/d/1-7rnog6vxtoi-MvNjKZ7Wyb1b6-GHhV-gZp8AWJgMWU/edit)のタブ`02`を反映し、共通前31行・分岐A6行／B5行・共通後7行。行種別が空でも本文と話者がある行を含め、表情の空欄は直前の値を引き継ぐ。既存タイトル・話ID・分岐IDを維持する。`system`話者は「システム」と表示する。
 
 第4話は同じ原稿のタブ`04`を反映し、共通前25行・分岐A5行／B6行・共通後15行。行種別が空でも本文と話者がある5行を含め、本文・選択肢・左右表情・名前差込を保持する。シートにタイトル指定はないため、既存タイトル・話ID・分岐IDを維持する。
 
@@ -37,7 +37,7 @@
 
 表情は`left`にジェム、`right`にアルタの名前を指定する。`none`は指定側の画像を描画せず、もう一方の位置を維持する。画像の対応は[StoryCharacters.tsx](../src/components/story/StoryCharacters.tsx)の`faceAssets`、利用可能な名前は[GemExpression／AltaExpression](../src/domain/common/types.ts)で管理する。
 
-演出は台詞の`effect`で指定する。`effect: { type: "shout", target: "alta" }`はアルタのみ、target: "gem"はジェムのみを、台詞へ切り替わったとき上下3ポイント・25ms刻み8区間（計200ms）震わせて元の位置へ戻す。背景・もう一人・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は停止し位置を戻す。第2話の最後（episode-02-after-6）はアルタを指定。調整箇所はStoryCharactersのshake。
+演出は台詞の`effect`で指定する。`effect: { type: "interrupt" }`は文字送りが完了した直後、タップを待たず次の台詞へ進む。タップで全文を表示した場合も同じ。自動送りと手動送りが重なっても次の台詞を飛ばさず、台詞変更・画面終了で予約を破棄する。末尾の台詞の終了・保存は自動化しない。`effect: { type: "shout", target: "alta" }`はアルタのみ、target: "gem"はジェムのみを、台詞へ切り替わったとき上下3ポイント・25ms刻み8区間（計200ms）震わせて元の位置へ戻す。背景・もう一人・スライド・モニター装飾・会話枠は固定。文字サイズとスクロールは通常どおり。台詞の切替・画面終了時は停止し位置を戻す。第2話の最後（episode-02-after-6）はアルタを指定。調整箇所はStoryCharactersのshake。
 
 行の`slide`は`slide1〜4`を指定でき、[StoryScene.tsx](../src/components/story/StoryScene.tsx)で`assets/slides/ep02-1〜4.png`へ静的に対応する。1400×950の素材を、1400×950の元の比率の映像枠全体へ比率維持のcontain・中央配置で表示する。スライドはクロップせず、上下端を含む全体を枠内に収める。`slideBackground: true`の行は、`assets/slides/slide_background.png`を表示枠全体へcoverで描き、キャラクターとスライドの間に表示する。第2話ではepisode-02-before-11〜17だけに指定し、10以前と18以降では表示しない。第2話のスライド表示中は、ジェムの台詞でleft: normal2／right: normal1、アルタの台詞でleft: normal1／right: normal2を指定する。指定のない行ではスライドを消して通常表示へ戻る。通常のストーリー再生で使用する。
 
@@ -70,13 +70,13 @@
 
 終了の確認は`TutorialProvider.tsx`の`close`に集約する。`skipped`は確認アラートを表示し、キャンセルでは保存・遷移せず、「スキップする」を選んだ後だけ終了処理へ進む。右端のボタン・入力ダイアログ・ストーリー／タイマーの戻る操作は同じ処理を使い、`completed`は確認なしで完了する。`TutorialOverlay`のスキップボタンは案内ボックスから分けて右上へ配置し、VoiceOverでも案内と一緒に操作できるようにする。
 
-原稿タブ`00`の16台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。`INTRO_LINES`の`input`行を`episode00.ts`の`getIntroSegment`で区切り、初回は既存の`app/story.tsx`へ`source=tutorial`で渡す。その位置で`IntroInput.tsx`の入力ダイアログを重ね、終了後はタブ`tutorial`を基にした30段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
+[体験版原稿](https://docs.google.com/spreadsheets/d/138wHLq7cdnp77vWVXrO5G0nPDxp1VOE50gwBNTa9cro/edit)のタブ`00(special)`の24台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。タイトルは`ファースト|コンタクト`。`INTRO_LINES`の`input`行を`getIntroSegment`で、名前入力前12台詞→タスク入力前10台詞→残り2台詞へ区切る。初回は既存の`app/story.tsx`へ`source=tutorial`で渡し、指定位置で`IntroInput.tsx`を重ねる。終了後は同じ原稿のタブ`tutorial`を基にした35段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
 
-同じファイルの`episode00`は入力行を除いた見返し用の16台詞。メモリーのChapter 1・第0話から既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
+同じファイルの`episode00`は入力行を除いた見返し用の24台詞。メモリーのChapter 1・第0話から既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
 
 `steps.ts`の`scene`は案内中の既存画面／ダイアログ、`target`はコーチマークの対象、`action`は実操作を待つ条件。`action`がない段階はボックス内外のタップまたは「次へ」で進み、実操作の段階は強調対象だけで進む。「戻る」は前の段階へ移り、先頭では進行を変えない。`fullScreen: true`では画面を暗くせず全体を見せ、ボックスは画面下部へ置く。本文の高さ上限や内部スクロールを設けず、実測したボックスを対象の上か下へ配置し、フッターへの重なりを許す。
 
-30段階のうち、新1はホームの紹介、新2は「はじめる」の操作。以降は旧番号+1となる。新7・8はタイマー全体、新18〜20は`nt`でヘッダーのNT枠、新24・25は振り返り画面全体、新27〜30はホーム全体を表示する。ホーム・タイマー・時間設定・省電力・日記を複製せず、それぞれに`TutorialOverlay`を重ねる。対象へ`useTutorialTarget`のrefを付け、PrimaryButtonでは`tutorialTarget`を指定する。
+35段階のうち、1はホーム紹介、2は「はじめる」の操作、3〜6は時間設定、7・8はタイマー全体、19〜21は`nt`でヘッダーのNT枠、26・27は振り返り全体、29〜35はホーム全体を表示する。原稿33台詞にホーム紹介と開始操作を補い、左右の説明・操作ボタン名・練習用の時間経過／保存なしの説明を現行UIへ合わせる。末尾はスクリーンショットとTestFlightのフィードバック案内を含む。ホーム・タイマー・時間設定・省電力・日記は既存画面へ`TutorialOverlay`を重ねる。対象へ`useTutorialTarget`のrefを付け、PrimaryButtonでは`tutorialTarget`を指定する。
 
 `TutorialProvider`は同じ`scene`内では段階だけを切り替え、時間設定・振り返りのModalを閉じ直さない。画面をまたぐ移動だけを`pendingIndex`へ保持し、現在のネイティブModalが閉じ終わってから画面を切り替える。強調対象も話番号でなく対象IDで保持し、同じ対象の説明中に強調枠やボックス位置を初期化しない。時間設定はホーム、タイマーと振り返りは`/timer`、終了説明はホームへ接続する。時間設定の開始段階へ戻った場合は5分で開き、それ以前の設定説明へ戻った場合は25分からやり直す。練習中の振り返り表示は段階から決め、前後の移動で本番の保存を呼ばない。残り時間・延長時間も一時状態の固定値を既存TimerDialへ渡す。
 

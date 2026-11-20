@@ -181,7 +181,7 @@ export default function useStoryReader(
       return;
     }
     if (!isLastLine) {
-      setLineIndex((index) => index + 1);
+      setLineIndex((index) => index === lineIndex ? index + 1 : index);
       return;
     }
     if (!onFinish) {
@@ -208,6 +208,21 @@ export default function useStoryReader(
       setIsProcessing(false);
     }
   };
+
+  const effectType = line?.effect?.type;
+  React.useEffect(() => {
+    if (
+      effectType !== "interrupt" || typedLineId !== lineId || isTyping ||
+      isLastLine || isWaitingForChoice
+    ) return;
+    // Also runs after a tap reveals the full line. The index guard prevents
+    // a simultaneous next tap from skipping the following line.
+    const timeout = setTimeout(() => {
+      if (closedRef.current || isProcessingRef.current || exitRequestedRef?.current) return;
+      setLineIndex((index) => index === lineIndex ? index + 1 : index);
+    }, 0);
+    return () => clearTimeout(timeout);
+  }, [effectType, typedLineId, lineId, isTyping, isLastLine, isWaitingForChoice, lineIndex, isProcessingRef, exitRequestedRef]);
 
   return {
     line,
