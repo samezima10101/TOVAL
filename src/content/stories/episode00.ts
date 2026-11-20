@@ -193,6 +193,7 @@ export const INTRO_LINES: readonly IntroLine[] = [
 export const episode00: StoryEpisode = {
   id: 0,
   title: "ファースト|コンタクト",
+  synopsis: "ついに地球人との交流が開始。TOVALの概要を説明。",
   commonBefore: INTRO_LINES.filter((line) => !line.input),
   commonAfter: [],
 };

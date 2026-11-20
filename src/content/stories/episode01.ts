@@ -5,7 +5,8 @@ import type { StoryEpisode } from "@/src/domain/common/types";
 
 export const episode01: StoryEpisode = {
   id: 1,
-  title: "また会う日|まで",
+  title: "すばらしい|新生活",
+  synopsis: "フィードバックの方法を説明。ユーザーが習慣化を行う下地が完了。あとは本人次第。",
   commonBefore: [
     {
       id: "episode-01-before-1",

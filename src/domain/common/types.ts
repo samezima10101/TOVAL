@@ -67,6 +67,7 @@ export type StoryRoute = StoryChoice & {
 export type StoryEpisode = {
   id: EpisodeId;
   title: string;
+  synopsis?: string;
   soloCharacter?: StoryCharacter;
   commonBefore: readonly StoryLine[];
   routes?: readonly StoryRoute[];
