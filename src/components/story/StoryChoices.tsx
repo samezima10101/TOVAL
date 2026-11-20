@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import NaturalText from "@/src/components/common/NaturalText";
 
 import { Colors, Fonts } from "@/src/constants/theme";
 import { StoryChoice } from "@/src/domain/common/types";
@@ -47,10 +48,10 @@ export default function StoryChoices({
             accessibilityState={{ disabled: isDisabled }}
           >
             <View style={styles.label}>
-              <Text style={[styles.choiceText, (isLocked || requirement) && styles.lockedText]}>
+              <NaturalText style={[styles.choiceText, (isLocked || requirement) && styles.lockedText]}>
                 {route.label}
-              </Text>
-              {requirement ? <Text style={styles.requirement}>解放条件: {requirement}</Text> : null}
+              </NaturalText>
+              {requirement ? <NaturalText style={styles.requirement}>{`解放条件: ${requirement}`}</NaturalText> : null}
             </View>
             {!requirement && isLocked ? <Text style={styles.cost}>🔒 {priceNt} NT</Text> : null}
           </TouchableOpacity>
