@@ -3,7 +3,7 @@ import type { StoryEpisode } from "@/src/domain/common/types";
 
 export const episode06: StoryEpisode = {
   id: 6,
-  title: "窓の外の雨",
+  title: "とアル日の|モノローグ",
   soloCharacter: "alta",
   commonBefore: [
     {
@@ -74,7 +74,7 @@ export const episode06: StoryEpisode = {
       speaker: "sub",
       text: "「そろそろやり方覚えてよね～」",
       left: "none",
-      right: "gemized2",
+      right: "smile2",
     },
     {
       id: "episode-06-sheet-13",

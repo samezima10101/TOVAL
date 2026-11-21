@@ -1,4 +1,5 @@
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import NaturalText from "@/src/components/common/NaturalText";
 
 import { Colors, Fonts } from "@/src/constants/theme";
 
@@ -28,7 +29,7 @@ export default function StoryUnlockConfirmation({
       <Text style={styles.title}>
         {hasEnoughNt ? "選択肢を解放しますか？" : "NTが不足しています"}
       </Text>
-      <Text style={styles.routeLabel}>「{routeLabel}」</Text>
+      <NaturalText style={styles.routeLabel}>{`「${routeLabel}」`}</NaturalText>
       <Text style={styles.balance}>
         必要: {priceNt} NT　所持: {totalNt} NT
       </Text>

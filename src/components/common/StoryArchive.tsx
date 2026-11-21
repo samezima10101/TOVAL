@@ -25,6 +25,7 @@ import {
 
 import FileTextboxBackground from "@/src/components/common/FileTextboxBackground";
 import OptionalBreakText from "@/src/components/common/OptionalBreakText";
+import NaturalText from "@/src/components/common/NaturalText";
 import StoryNumber from "@/src/components/common/StoryNumber";
 import type { StoryArchiveChapter } from "@/src/components/common/storyArchiveTypes";
 import { Fonts, SoloStoryColors } from "@/src/constants/theme";
@@ -398,7 +399,7 @@ export default function StoryArchive({
                   )}
                 </Pressable>
               ) : null}
-              <Text
+              <NaturalText
                 style={[styles.description, { color: detailText }]}
                 maxFontSizeMultiplier={1.2}
               >
@@ -406,7 +407,7 @@ export default function StoryArchive({
                   (chapter?.emptyLabel === "未入荷"
                     ? "このチャプターには、まだ入荷している会話がありません。"
                     : "このチャプターのストーリーは準備中です。")}
-              </Text>
+              </NaturalText>
               {item ? (
                 <View style={styles.metadata}>
                   <Text

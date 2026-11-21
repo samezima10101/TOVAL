@@ -21,6 +21,7 @@
     "@react-native-community/slider": "5.2.1",
     "@react-native-masked-view/masked-view": "0.3.2",
     "@react-native-picker/picker": "2.11.4",
+    "budoux": "^0.10.4",
     "expo": "~58.0.19",
     "expo-asset": "~58.0.18",
     "expo-audio": "~58.0.10",

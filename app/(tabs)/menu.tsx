@@ -105,11 +105,11 @@ export default function MenuScreen() {
         <SettingsCard>
           <SettingsTitle>チュートリアル</SettingsTitle>
           <Text style={styles.tutorialDescription}>
-            タイマーの使い方をもう一度練習できます。練習ではNT・記録は増えません。
+            名前・タスクの入力から、タイマーの使い方を確認できます。入力した名前・タスクは設定に保存されます。練習ではNT・記録は増えません。
           </Text>
           <PrimaryButton
-            title="はじめる"
-            accessibilityLabel="チュートリアルをもう一度行う"
+            title="チュートリアルを始める"
+            accessibilityLabel="チュートリアルを始める"
             onPress={replay}
           />
         </SettingsCard>

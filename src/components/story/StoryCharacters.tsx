@@ -83,7 +83,10 @@ const faceAssets: {
     nervous2: require("@/assets/faces/alta/A08-2.png"),
     nervous3: require("@/assets/faces/alta/A08-3.png"),
     nervous4: require("@/assets/faces/alta/A08-4.png"),
-    gemized2: require("@/assets/faces/alta/A09-2.png"),
+    smile1: require("@/assets/faces/alta/A09-1.png"),
+    smile2: require("@/assets/faces/alta/A09-2.png"),
+    smile3: require("@/assets/faces/alta/A09-3.png"),
+    smile4: require("@/assets/faces/alta/A09-4.png"),
   },
 };
 
@@ -104,7 +107,7 @@ export default function StoryCharacters({
   const subCharacter = STORY_CHARACTER_BY_SPEAKER.sub;
   const [shake] = useState(() => new Animated.Value(0));
   const effectType = effect?.type;
-  const target = effect?.target;
+  const target = effect?.type === "shout" ? effect.target : undefined;
   useEffect(() => {
     shake.setValue(0);
     if (effectType !== "shout") return;

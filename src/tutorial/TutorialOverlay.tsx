@@ -9,6 +9,7 @@ import {
   type ViewInstance,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import NaturalText from "@/src/components/common/NaturalText";
 
 import { Fonts } from "@/src/constants/theme";
 import { useAppState } from "@/src/state/AppStateProvider";
@@ -220,12 +221,12 @@ export default function TutorialOverlay({
             <Text style={styles.speaker}>
               {step.speaker === "alta" ? "アルタ" : "ジェム"}
             </Text>
-            <Text style={styles.text}>
+            <NaturalText style={styles.text}>
               {step.text.replace(
                 /\[userName\]/g,
                 () => state?.userName ?? "ゲスト",
               )}
-            </Text>
+            </NaturalText>
             {tutorial.error ? (
               <Text style={styles.error} accessibilityRole="alert">
                 {tutorial.error}

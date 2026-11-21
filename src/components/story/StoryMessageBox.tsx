@@ -10,6 +10,7 @@ import {
 import FileTextboxBackground, {
   FILE_TEXTBOX_HEADER_HEIGHT,
 } from "@/src/components/common/FileTextboxBackground";
+import NaturalText from "@/src/components/common/NaturalText";
 import StoryWindowBackground from "@/src/components/story/StoryWindowBackground";
 import { Fonts } from "@/src/constants/theme";
 import type { StoryLine } from "@/src/domain/common/types";
@@ -88,7 +89,12 @@ export function StoryMessage({
       accessibilityHint={`現在のセリフ: ${line.text}`}
       accessibilityState={{ disabled: isProcessing }}
     >
-      <Text style={styles.messageText}>{visibleText}</Text>
+      <NaturalText
+        style={styles.messageText}
+        visibleCharacters={Array.from(visibleText).length}
+      >
+        {line.text}
+      </NaturalText>
       {showPrompt ? <Text style={styles.tapPrompt}>▼</Text> : null}
     </TouchableOpacity>
   );

@@ -195,7 +195,7 @@ export default function HomeScreen() {
                 >
                   {episodeLabel}
                 </Text>
-                <Text
+                <OptionalBreakText
                   style={[
                     styles.episodeTitle,
                     compact && styles.episodeTitleCompact,
@@ -206,8 +206,8 @@ export default function HomeScreen() {
                   minimumFontScale={0.7}
                   maxFontSizeMultiplier={fontMultiplier}
                 >
-                  第{todaysEpisode.id}話　<OptionalBreakText>{todaysEpisode.title}</OptionalBreakText>
-                </Text>
+                  {`第${todaysEpisode.id}話　${todaysEpisode.title}`}
+                </OptionalBreakText>
               </View>
             ) : null}
             {state.activeTimer ? (

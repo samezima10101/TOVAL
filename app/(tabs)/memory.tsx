@@ -50,7 +50,7 @@ export default function MemoryScreen() {
           number: id,
           title: isUnlocked ? episode.title : "未開放",
           description: isUnlocked
-            ? (episode.commonBefore[0]?.text ?? "")
+            ? (episode.synopsis ?? "")
             : "その日の最初のタスクを完了すると、次のストーリーが解放されます。",
           status:
             id === 0
