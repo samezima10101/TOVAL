@@ -289,10 +289,14 @@ export default function TutorialProvider({ children }: PropsWithChildren) {
     Keyboard.dismiss();
     indexRef.current = 0;
     setIndex(0);
+    setPendingIndex(null);
+    setIntroPart(0);
+    setIntroInput(false);
     setStartedAt(0);
+    setPowerSaving(false);
     setInitial(false);
     setError(null);
-    setPhase("practice");
+    setPhase("intro");
   };
   const nextIntro = () => {
     if (getIntroSegment(introPart).field) setIntroInput(true);
