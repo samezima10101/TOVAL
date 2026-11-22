@@ -12,12 +12,12 @@
 | 追加分岐価格・サイド価格・入荷条件 | [conversationSettings.ts](../src/config/conversationSettings.ts) |
 | ショップ／メモリーの章名・話の所属と順序 | [storyArchive.ts](../src/config/storyArchive.ts) |
 | 第0話の本文・表情・入力位置 | [episode00.ts](../src/content/stories/episode00.ts) |
-| 初回会話の分割・名前／タスク入力 | [episode00.ts](../src/content/stories/episode00.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
+| 初回会話の分割・名前入力 | [episode00.ts](../src/content/stories/episode00.ts)・[IntroInput.tsx](../src/tutorial/IntroInput.tsx) |
 | 操作練習の台詞・強調対象・進行条件 | [steps.ts](../src/tutorial/steps.ts)・[TutorialOverlay.tsx](../src/tutorial/TutorialOverlay.tsx) |
 
 メインは`title`、`commonBefore`、`routes`の`label`・`lines`、`commonAfter`を編集する。再生順は共通前半→選択分岐→共通後半。行には一意な`id`、`speaker`（`boss`=ジェム、`sub`=アルタ、`both`=両者）、`text`、左右の表情を指定し、本文の改行は`\n`を使う。`both`は両者の名前を表示する。none以外の立ち絵は話者によらず不透明で表示する。
 
-メモリーの再生ボタン下には各話ファイルの任意項目`synopsis`を表示する。未設定なら空欄にし、台詞の冒頭では補わない。現在は体験版原稿`00(special)`・`01 (special)`の`D2`を第0話・第1話へ設定している。未解放の話はあらすじを出さず、解放方法の案内を表示する。
+メモリーの再生ボタン下には各話ファイルの任意項目`synopsis`を表示する。未設定なら空欄にし、台詞の冒頭では補わない。現在は体験版原稿`01 (special)`の`D2`を第1話へ設定している。第0話は`00（special）`の`D2`が空欄のため`synopsis`を設定しない。未解放の話はあらすじを出さず、解放方法の案内を表示する。
 
 メイン・サイドのタイトルは、改行候補の位置に半角`|`を入れられる。例: `title: "コンタクト|コンタクト"`。指定がある段落はその候補を優先し、指定がなければBudouXで自然な文節の候補を作る。`|`自体は表示・読み上げず、`\n`は常に改行として残す。タイトルの適用先はメモリー／ショップの一覧・詳細、ホームの話タイトル、ログの解放話、サイドの見出し。会話本文・チュートリアル・あらすじ・選択肢も文節で折り返すが、本文内の`|`は通常の文字として扱う。
 
@@ -45,7 +45,7 @@
 
 | キャラクター | 表情名と画像（各範囲は番号順） |
 | --- | --- |
-| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt1〜6` → `G03-1〜6.png`、`beam1〜2` → `G04-1〜2.png`、`nervous1〜4` → `G05-1〜4.png`、`shocked1〜4` → `G08-1〜4.png`、`glare2` → `G09-2.png` |
+| ジェム | `normal1〜4` → `gem/G01-1〜4.png`、`surprised1〜4` → `G02-1〜4.png`、`doubt1〜6` → `G03-1〜6.png`、`beam1〜2` → `G04-1〜2.png`、`beam4` → `G04-4.png`、`nervous1〜4` → `G05-1〜4.png`、`shocked1〜4` → `G08-1〜4.png`、`glare2` → `G09-2.png` |
 | アルタ | `normal1〜4` → `alta/A01-1〜4.png`、`grumpy1〜4` → `A02-1〜4.png`、`grin1〜4` → `A03-1〜4.png`、`sparkle1〜2` → `A04-1〜2.png`、`smirk3〜4` → `A05-3〜4.png`、`nervous1〜4` → `A08-1〜4.png` |
 
 画像は`assets/faces/`以下。既存の`normal`・`talk`・`doubt`は互換用に従来の画像を維持する。例: `left: "surprised1", right: "sparkle1"`。
@@ -60,7 +60,7 @@
 
 設定変更は開発アプリをReloadして反映する。配布アプリには更新ビルドが必要で、アプリ内管理画面やクラウド管理はない。保存キー・schemaVersion・未対応形式の扱いは[データ仕様](data-integrations.md)に集約する。
 
-第3話は同じ原稿のタブ`03`を反映し、共通前29行・分岐A5行／B4行・共通後10行。行種別が空でも本文と話者がある行を含め、本文・選択肢・左右表情・`[userName]`を保持する。既存タイトル・話ID・分岐IDを維持する。追加表情はジェム`smile3` → `gem/G07-3.png`、アルタ`angry2` → `alta/A07-2.png`。
+第3話は[体験版原稿](https://docs.google.com/spreadsheets/d/138wHLq7cdnp77vWVXrO5G0nPDxp1VOE50gwBNTa9cro/edit?gid=2043461533#gid=2043461533)のタブ`05`を反映したジェム単独回。共通前6行、分岐A「また明日～」1行／B「ちょっと待って」1行。Bでは「今日はこれで終わり？」を選び3行の会話を読んだ後、「・・・」を選んで29行の会話へ進み、共通後はない。行種別が空の3台詞も含めた全40台詞で、左表情は原稿どおり、右表情は`none`。原稿にタイトル指定がないため「カンペキ主義」を維持し、話ID3・分岐ID`episode-03-route-a`／`episode-03-route-b`も維持する。追加選択は同じBの権利内で選び直せ、別課金・進行位置保存はしない。
 
 ショップ初回挨拶は`src/content/shop.ts`の`SIDE_STORY_OPENING`に原稿タブ`side_story_opening`の8行を定義する。`[userName]`は保存済みの名前へ差し込み、`left`・`right`がともに`none`なら店員の立ち絵を非表示、それ以外は表示する。第14話解放後の初回入店で通常挨拶に代えて表示し、読了後は通常挨拶／入荷告知に戻る。再確認はテスト領域の進行リセット後に第14話を解放して入店する。
 
@@ -72,9 +72,9 @@
 
 終了の確認は`TutorialProvider.tsx`の`close`に集約する。`skipped`は確認アラートを表示し、キャンセルでは保存・遷移せず、「スキップする」を選んだ後だけ終了処理へ進む。右端のボタン・入力ダイアログ・ストーリー／タイマーの戻る操作は同じ処理を使い、`completed`は確認なしで完了する。`TutorialOverlay`のスキップボタンは案内ボックスから分けて右上へ配置し、VoiceOverでも案内と一緒に操作できるようにする。
 
-[体験版原稿](https://docs.google.com/spreadsheets/d/138wHLq7cdnp77vWVXrO5G0nPDxp1VOE50gwBNTa9cro/edit)のタブ`00(special)`の24台詞・2入力は`src/content/stories/episode00.ts`を唯一の本文として管理する。タイトルは`ファースト|コンタクト`。`INTRO_LINES`の`input`行を`getIntroSegment`で、名前入力前12台詞→タスク入力前10台詞→残り2台詞へ区切る。初回は既存の`app/story.tsx`へ`source=tutorial`で渡し、指定位置で`IntroInput.tsx`を重ねる。終了後は同じ原稿のタブ`tutorial`を基にした35段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
+[体験版原稿](https://docs.google.com/spreadsheets/d/138wHLq7cdnp77vWVXrO5G0nPDxp1VOE50gwBNTa9cro/edit)のタブ`00（special）`の17台詞・名前入力1回は`src/content/stories/episode00.ts`を唯一の本文として管理する。タイトルは`チュートリアル`。`INTRO_LINES`の`input`行を`getIntroSegment`で、名前入力前16台詞→残り1台詞へ区切る。初回は既存の`app/story.tsx`へ`source=tutorial`で渡し、指定位置で`IntroInput.tsx`を重ねる。終了後は同じ原稿のタブ`tutorial`を基にした35段階の案内へ進む。`boss`／`sub`はメイン会話と同じ対応。
 
-同じファイルの`episode00`は入力行を除いた見返し用の24台詞。メモリーのChapter 1・第0話から既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
+同じファイルの`episode00`は入力行を除いた見返し用の17台詞。メモリーのChapter 1・第0話から既存の表示部品で再生する。保存済みの名前を差し込み、再入力・操作練習・保存処理は起動しない。第0話は常時再生可能な`STORY_ARCHIVE_CATALOG`にだけ追加し、日次解放・保存検証に使う`STORY_CATALOG`は第1〜14話を維持する。
 
 `steps.ts`の`scene`は案内中の既存画面／ダイアログ、`target`はコーチマークの対象、`action`は実操作を待つ条件。`action`がない段階はボックス内外のタップまたは「次へ」で進み、実操作の段階は強調対象だけで進む。「戻る」は前の段階へ移り、先頭では進行を変えない。`fullScreen: true`では画面を暗くせず全体を見せ、ボックスは画面下部へ置く。本文の高さ上限や内部スクロールを設けず、実測したボックスを対象の上か下へ配置し、フッターへの重なりを許す。
 
@@ -84,7 +84,7 @@
 
 ボックス全体（枠・背景・本文・操作）の切り替えは`TutorialEffects.tsx`の`TutorialTransition`で140msのフェード（不透明度75%→100%）と4ポイントの移動を行う。ボックス自体を消さず、連続タップでは前のアニメーションを停止して最新の本文へ切り替える。iPhoneの「視差効果を減らす」が有効な場合はアニメーションを行わず、設定変更も反映する。
 
-初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`app/(tabs)/menu.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の入力保存と案内への連続遷移を検証する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。メニューの「チュートリアルを始める」も会話00の先頭から開始する。`replay`で会話の分割位置・入力表示・練習段階・遷移待ち・省電力表示をリセットし、名前入力→タスク登録→操作練習へ進む。入力欄は保存済みの値から始め、保存成功後だけ次の会話へ進む。再実行の終了／スキップはメニューへ戻り、初回判定を変更しない。
+初回判定・進行・一時タイマー状態は`TutorialProvider.tsx`、案内とエラー表示は`TutorialOverlay.tsx`、メニューの入口は`app/(tabs)/menu.tsx`を編集する。練習中は内側のAppStateContextで開始／停止／終了操作を差し替え、本番のタイマー・報酬・保存を呼ばない。ネイティブModal内にも案内を置き、閉じ終わってから通常画面へ戻す。初回の入力保存と案内への連続遷移を検証する場合は、実利用とは別の検証端末・保存領域でチュートリアルキーがない状態を用意する。メニューの「チュートリアルを始める」も会話00の先頭から開始する。`replay`で会話の分割位置・入力表示・練習段階・遷移待ち・省電力表示をリセットし、名前入力→最後の1台詞→操作練習へ進む。タスク未登録の練習中は一時的に「チュートリアル」を表示し、通常のタスク名へ保存しない。初回の完了／スキップ後、タスク未登録ならホームの必須入力で登録する。入力欄は保存済みの値から始め、保存成功後だけ次の会話へ進む。再実行の終了／スキップはメニューへ戻り、初回判定を変更しない。
 
 ホームとメニューのタブ間移動は`router.navigate`を使う。`router.dismissTo`が送るPOP_TOはSDK 58のタブでは処理されないため、ストーリー・タイマーなどタブの外側のスタックから戻る場合だけに使う。タブ内かどうかは`useSegments()`の先頭が`(tabs)`かで判定する。`useRootNavigationState()`の最上位ルートはSDK内部の`__root`なので、直接`(tabs)`と比較しない。開始と終了の両方で同じ判定を使い、手動タブ押下を発生させない。
 

@@ -14,7 +14,7 @@ export type GemExpression =
   | NormalExpression
   | `surprised${1 | 2 | 3 | 4}`
   | `doubt${1 | 2 | 3 | 4 | 5 | 6}`
-  | `beam${1 | 2}`
+  | `beam${1 | 2 | 4}`
   | `nervous${1 | 2 | 3 | 4}`
   | `annoyed${1}`
   | "smile3"

@@ -41,6 +41,7 @@ const faceAssets: {
     doubt6: require("@/assets/faces/gem/G03-6.png"),
     beam1: require("@/assets/faces/gem/G04-1.png"),
     beam2: require("@/assets/faces/gem/G04-2.png"),
+    beam4: require("@/assets/faces/gem/G04-4.png"),
     nervous1: require("@/assets/faces/gem/G05-1.png"),
     nervous2: require("@/assets/faces/gem/G05-2.png"),
     nervous3: require("@/assets/faces/gem/G05-3.png"),
